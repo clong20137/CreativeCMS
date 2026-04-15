@@ -26,6 +26,21 @@ const emptyListing = {
   sortOrder: '0'
 }
 
+const emptyBookingSlot = {
+  date: '',
+  startTime: '09:00',
+  endTime: '09:30',
+  locationTypes: ['phone', 'zoom'],
+  isActive: true
+}
+
+const meetingOptions = [
+  { value: 'phone', label: 'Phone Call' },
+  { value: 'zoom', label: 'Zoom' },
+  { value: 'google-meet', label: 'Google Meet' },
+  { value: 'in-person', label: 'In Person' }
+]
+
 async function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
@@ -71,12 +86,17 @@ export default function AdminPluginDetail() {
   const [pluginPrice, setPluginPrice] = useState('')
   const [menuItems, setMenuItems] = useState<any[]>([])
   const [listings, setListings] = useState<any[]>([])
+  const [bookingSlots, setBookingSlots] = useState<any[]>([])
+  const [appointments, setAppointments] = useState<any[]>([])
   const [menuForm, setMenuForm] = useState(emptyMenuItem)
   const [listingForm, setListingForm] = useState(emptyListing)
+  const [bookingForm, setBookingForm] = useState(emptyBookingSlot)
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null)
   const [editingListingId, setEditingListingId] = useState<string | null>(null)
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null)
   const [showMenuForm, setShowMenuForm] = useState(false)
   const [showListingForm, setShowListingForm] = useState(false)
+  const [showBookingForm, setShowBookingForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [imageUploading, setImageUploading] = useState(false)
   const [message, setMessage] = useState('')
@@ -100,6 +120,14 @@ export default function AdminPluginDetail() {
       }
       if (foundPlugin.slug === 'real-estate-listings') {
         setListings(await adminAPI.getRealEstateListings())
+      }
+      if (foundPlugin.slug === 'booking-appointments') {
+        const [slots, bookingAppointments] = await Promise.all([
+          adminAPI.getBookingSlots(),
+          adminAPI.getBookingAppointments()
+        ])
+        setBookingSlots(slots)
+        setAppointments(bookingAppointments)
       }
     } catch (err: any) {
       setError(err.error || 'Failed to load plugin')
@@ -238,6 +266,67 @@ export default function AdminPluginDetail() {
     await adminAPI.deleteRealEstateListing(id)
     setMessage('Listing deleted')
     setListings(await adminAPI.getRealEstateListings())
+  }
+
+  const resetBookingForm = () => {
+    setBookingForm(emptyBookingSlot)
+    setEditingSlotId(null)
+    setShowBookingForm(false)
+  }
+
+  const toggleMeetingType = (type: string) => {
+    setBookingForm(current => ({
+      ...current,
+      locationTypes: current.locationTypes.includes(type)
+        ? current.locationTypes.filter(item => item !== type)
+        : [...current.locationTypes, type]
+    }))
+  }
+
+  const saveBookingSlot = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const payload = {
+        ...bookingForm,
+        locationTypes: bookingForm.locationTypes.length > 0 ? bookingForm.locationTypes : ['phone']
+      }
+      if (editingSlotId) {
+        await adminAPI.updateBookingSlot(editingSlotId, payload)
+        setMessage('Availability slot updated')
+      } else {
+        await adminAPI.createBookingSlot(payload)
+        setMessage('Availability slot created')
+      }
+      resetBookingForm()
+      setBookingSlots(await adminAPI.getBookingSlots())
+    } catch (err: any) {
+      setError(err.error || 'Failed to save availability')
+    }
+  }
+
+  const editBookingSlot = (slot: any) => {
+    setEditingSlotId(String(slot.id))
+    setBookingForm({
+      date: slot.date || '',
+      startTime: slot.startTime || '09:00',
+      endTime: slot.endTime || '09:30',
+      locationTypes: Array.isArray(slot.locationTypes) ? slot.locationTypes : ['phone'],
+      isActive: slot.isActive !== false
+    })
+    setShowBookingForm(true)
+  }
+
+  const deleteBookingSlot = async (id: string) => {
+    if (!confirm('Delete this availability slot?')) return
+    await adminAPI.deleteBookingSlot(id)
+    setMessage('Availability slot deleted')
+    setBookingSlots(await adminAPI.getBookingSlots())
+  }
+
+  const updateAppointmentStatus = async (id: string, status: string) => {
+    await adminAPI.updateBookingAppointment(id, { status })
+    setMessage('Appointment updated')
+    setAppointments(await adminAPI.getBookingAppointments())
   }
 
   return (
@@ -392,6 +481,97 @@ export default function AdminPluginDetail() {
                   </div>
                 ))}
                 {listings.length === 0 && <div className="card p-8 text-center text-gray-600 xl:col-span-3">No listings yet.</div>}
+              </div>
+            </>
+          )}
+
+          {plugin.slug === 'booking-appointments' && (
+            <>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Availability</h2>
+                  <p className="text-gray-600">Price shown to buyers: {formatPrice(plugin.price)}</p>
+                </div>
+                <button onClick={() => { setShowBookingForm(!showBookingForm); setEditingSlotId(null) }} className="inline-flex items-center gap-2 btn-primary">
+                  {showBookingForm ? <FiX /> : <FiPlus />}
+                  {showBookingForm ? 'Close Form' : 'Add Time Slot'}
+                </button>
+              </div>
+
+              {showBookingForm && (
+                <form onSubmit={saveBookingSlot} className="card p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="date" value={bookingForm.date} onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    <input type="time" value={bookingForm.startTime} onChange={(e) => setBookingForm({ ...bookingForm, startTime: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    <input type="time" value={bookingForm.endTime} onChange={(e) => setBookingForm({ ...bookingForm, endTime: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {meetingOptions.map(option => (
+                      <label key={option.value} className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-gray-700">
+                        <input type="checkbox" checked={bookingForm.locationTypes.includes(option.value)} onChange={() => toggleMeetingType(option.value)} />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" checked={bookingForm.isActive} onChange={(e) => setBookingForm({ ...bookingForm, isActive: e.target.checked })} />
+                    Show this slot publicly
+                  </label>
+                  <button type="submit" className="btn-primary">{editingSlotId ? 'Save Time Slot' : 'Create Time Slot'}</button>
+                </form>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {bookingSlots.map((slot) => (
+                  <div key={slot.id} className="card p-6">
+                    <div className="flex justify-between gap-4 mb-3">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">{new Date(`${slot.date}T00:00:00`).toLocaleDateString()}</h3>
+                        <p className="text-blue-600 font-semibold">{slot.startTime} - {slot.endTime}</p>
+                      </div>
+                      <span className={`h-fit px-2 py-1 rounded text-xs font-semibold ${slot.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+                        {slot.isActive ? 'Shown' : 'Hidden'}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 mb-5">
+                      {(slot.locationTypes || []).map((type: string) => meetingOptions.find(option => option.value === type)?.label || type).join(', ')}
+                    </p>
+                    <div className="flex gap-2">
+                      <button onClick={() => editBookingSlot(slot)} className="inline-flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"><FiEdit /> Edit</button>
+                      <button onClick={() => deleteBookingSlot(String(slot.id))} className="inline-flex items-center gap-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"><FiTrash2 /> Delete</button>
+                    </div>
+                  </div>
+                ))}
+                {bookingSlots.length === 0 && <div className="card p-8 text-center text-gray-600 xl:col-span-3">No availability slots yet.</div>}
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Appointments</h2>
+                <div className="space-y-4">
+                  {appointments.map((appointment) => (
+                    <div key={appointment.id} className="card p-6">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">{appointment.name}</h3>
+                          <p className="text-gray-600">{appointment.email}{appointment.phone ? ` | ${appointment.phone}` : ''}</p>
+                          <p className="text-blue-700 font-semibold mt-2">
+                            {appointment.BookingAvailabilitySlot?.date} {appointment.BookingAvailabilitySlot?.startTime} - {appointment.BookingAvailabilitySlot?.endTime}
+                          </p>
+                          <p className="text-gray-600 capitalize">{String(appointment.meetingType).replace('-', ' ')}</p>
+                          {appointment.notes && <p className="text-gray-600 mt-2">{appointment.notes}</p>}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {['scheduled', 'completed', 'cancelled'].map(status => (
+                            <button key={status} onClick={() => updateAppointmentStatus(String(appointment.id), status)} className={`px-3 py-2 rounded-lg text-sm font-semibold capitalize ${appointment.status === status ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700'}`}>
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {appointments.length === 0 && <div className="card p-8 text-center text-gray-600">No appointments booked yet.</div>}
+                </div>
               </div>
             </>
           )}

@@ -17,6 +17,9 @@ import ContactMessage from './models/ContactMessage.js'
 import Plugin from './models/Plugin.js'
 import RestaurantMenuItem from './models/RestaurantMenuItem.js'
 import RealEstateListing from './models/RealEstateListing.js'
+import ClientPluginPurchase from './models/ClientPluginPurchase.js'
+import BookingAvailabilitySlot from './models/BookingAvailabilitySlot.js'
+import BookingAppointment from './models/BookingAppointment.js'
 
 // Import routes
 import authRoutes from './routes/auth.js'
@@ -65,6 +68,14 @@ Ticket.belongsTo(User, { foreignKey: 'clientId' })
 
 SubscriptionPlan.hasMany(Subscription, { foreignKey: 'planId' })
 Subscription.belongsTo(SubscriptionPlan, { foreignKey: 'planId' })
+
+User.hasMany(ClientPluginPurchase, { foreignKey: 'clientId' })
+ClientPluginPurchase.belongsTo(User, { foreignKey: 'clientId' })
+Plugin.hasMany(ClientPluginPurchase, { foreignKey: 'pluginId' })
+ClientPluginPurchase.belongsTo(Plugin, { foreignKey: 'pluginId' })
+
+BookingAvailabilitySlot.hasOne(BookingAppointment, { foreignKey: 'availabilitySlotId' })
+BookingAppointment.belongsTo(BookingAvailabilitySlot, { foreignKey: 'availabilitySlotId' })
 
 // Middleware
 app.disable('x-powered-by')

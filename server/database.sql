@@ -160,6 +160,51 @@ CREATE TABLE IF NOT EXISTS RealEstateListings (
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Client Plugin Purchases Table
+CREATE TABLE IF NOT EXISTS ClientPluginPurchases (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  clientId INT NOT NULL,
+  pluginId INT NOT NULL,
+  pluginSlug VARCHAR(255) NOT NULL,
+  pluginName VARCHAR(255) NOT NULL,
+  price DECIMAL(10, 2) DEFAULT 0,
+  status ENUM('pending', 'active', 'cancelled') DEFAULT 'pending',
+  stripeCheckoutSessionId VARCHAR(255),
+  stripePaymentIntentId VARCHAR(255),
+  purchasedAt DATETIME,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (clientId) REFERENCES Users(id) ON DELETE CASCADE,
+  FOREIGN KEY (pluginId) REFERENCES Plugins(id) ON DELETE CASCADE
+);
+
+-- Booking Plugin Availability Slots Table
+CREATE TABLE IF NOT EXISTS BookingAvailabilitySlots (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  date DATE NOT NULL,
+  startTime VARCHAR(20) NOT NULL,
+  endTime VARCHAR(20) NOT NULL,
+  locationTypes JSON,
+  isActive BOOLEAN DEFAULT true,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Booking Plugin Appointments Table
+CREATE TABLE IF NOT EXISTS BookingAppointments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  availabilitySlotId INT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(255),
+  meetingType ENUM('in-person', 'zoom', 'google-meet', 'phone') NOT NULL,
+  notes LONGTEXT,
+  status ENUM('scheduled', 'cancelled', 'completed') DEFAULT 'scheduled',
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (availabilitySlotId) REFERENCES BookingAvailabilitySlots(id) ON DELETE CASCADE
+);
+
 -- Site Settings Table
 CREATE TABLE IF NOT EXISTS SiteSettings (
   id INT PRIMARY KEY DEFAULT 1,
@@ -261,6 +306,10 @@ CREATE INDEX idx_restaurant_menu_category ON RestaurantMenuItems(category);
 CREATE INDEX idx_restaurant_menu_available ON RestaurantMenuItems(isAvailable);
 CREATE INDEX idx_real_estate_active ON RealEstateListings(isActive);
 CREATE INDEX idx_real_estate_sort ON RealEstateListings(sortOrder);
+CREATE INDEX idx_client_plugin_client ON ClientPluginPurchases(clientId);
+CREATE INDEX idx_client_plugin_slug ON ClientPluginPurchases(pluginSlug);
+CREATE INDEX idx_booking_slots_date ON BookingAvailabilitySlots(date);
+CREATE INDEX idx_booking_appointments_slot ON BookingAppointments(availabilitySlotId);
 
 -- Sample Admin User (Password: admin123 - hashed with bcryptjs)
 INSERT INTO Users (name, email, password, role, company, isActive)
@@ -277,6 +326,19 @@ VALUES (
   true,
   true,
   '/plugins/restaurant'
+)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO Plugins (slug, name, description, category, price, isEnabled, isPurchased, demoUrl)
+VALUES (
+  'booking-appointments',
+  'Booking Appointments',
+  'Let visitors book appointments from available time slots for in-person, Zoom, Google Meet, or phone calls.',
+  'Scheduling',
+  349.00,
+  true,
+  true,
+  '/plugins/booking'
 )
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
 

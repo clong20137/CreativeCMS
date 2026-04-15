@@ -2,6 +2,7 @@ import express from 'express'
 import Stripe from 'stripe'
 import Invoice from '../models/Invoice.js'
 import Plugin from '../models/Plugin.js'
+import ClientPluginPurchase from '../models/ClientPluginPurchase.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
 
 const router = express.Router()
@@ -46,6 +47,30 @@ async function markPluginPurchased(session) {
 
   const plugin = await Plugin.findOne({ where: { slug: pluginSlug } })
   if (!plugin) return
+
+  const clientId = session.metadata?.clientId
+  if (clientId) {
+    const purchaseData = {
+      clientId: Number(clientId),
+      pluginId: plugin.id,
+      pluginSlug: plugin.slug,
+      pluginName: plugin.name,
+      price: plugin.price,
+      status: 'active',
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+      purchasedAt: new Date()
+    }
+    const purchase = await ClientPluginPurchase.findOne({
+      where: { clientId: Number(clientId), pluginSlug: plugin.slug }
+    })
+    if (purchase) {
+      await purchase.update(purchaseData)
+    } else {
+      await ClientPluginPurchase.create(purchaseData)
+    }
+    return
+  }
 
   await plugin.update({
     isPurchased: true,

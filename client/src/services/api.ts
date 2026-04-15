@@ -106,10 +106,13 @@ export const contactMessagesAPI = {
 
 export const pluginsAPI = {
   getPlugins: () => unwrap<any[]>(api.get('/plugins')),
+  getClientPlugins: () => unwrap<any[]>(api.get('/plugins/client')),
   createPluginCheckoutSession: (slug: string) => unwrap<{ url: string }>(api.post(`/plugins/${slug}/checkout-session`)),
   getRestaurantMenu: () => unwrap<{ plugin: any; items: any[] }>(api.get('/plugins/restaurant/menu')),
   getRealEstateListings: () => unwrap<{ plugin: any; listings: any[] }>(api.get('/plugins/real-estate/listings')),
-  getRealEstateListing: (id: string) => unwrap<{ plugin: any; listing: any }>(api.get(`/plugins/real-estate/listings/${id}`))
+  getRealEstateListing: (id: string) => unwrap<{ plugin: any; listing: any }>(api.get(`/plugins/real-estate/listings/${id}`)),
+  getBookingSlots: () => unwrap<{ plugin: any; slots: any[] }>(api.get('/plugins/booking/slots')),
+  createBookingAppointment: (data: any) => unwrap(api.post('/plugins/booking/appointments', data))
 }
 
 // Admin API
@@ -147,6 +150,12 @@ export const adminAPI = {
   createRealEstateListing: (data: any) => unwrap(api.post('/admin/plugins/real-estate/listings', data)),
   updateRealEstateListing: (id: string, data: any) => unwrap(api.put(`/admin/plugins/real-estate/listings/${id}`, data)),
   deleteRealEstateListing: (id: string) => unwrap(api.delete(`/admin/plugins/real-estate/listings/${id}`)),
+  getBookingSlots: () => unwrap<any[]>(api.get('/admin/plugins/booking/slots')),
+  createBookingSlot: (data: any) => unwrap(api.post('/admin/plugins/booking/slots', data)),
+  updateBookingSlot: (id: string, data: any) => unwrap(api.put(`/admin/plugins/booking/slots/${id}`, data)),
+  deleteBookingSlot: (id: string) => unwrap(api.delete(`/admin/plugins/booking/slots/${id}`)),
+  getBookingAppointments: () => unwrap<any[]>(api.get('/admin/plugins/booking/appointments')),
+  updateBookingAppointment: (id: string, data: any) => unwrap(api.put(`/admin/plugins/booking/appointments/${id}`, data)),
   getSiteSettings: () => unwrap(api.get('/admin/site-settings')),
   updateSiteSettings: (data: any) => unwrap(api.put('/admin/site-settings', data)),
   uploadImage: (dataUrl: string) => unwrap<{ url: string }>(api.post('/admin/uploads', { dataUrl })),

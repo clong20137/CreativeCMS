@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect } from 'react'
 import { FiDownload, FiCreditCard, FiRefreshCw, FiX } from 'react-icons/fi'
-import { invoicesAPI, subscriptionsAPI } from '../services/api'
+import { invoicesAPI, pluginsAPI, subscriptionsAPI } from '../services/api'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import ClientLayout from '../components/ClientLayout'
 
 export default function ClientPortalBilling() {
   const [invoices, setInvoices] = useState<any[]>([])
   const [subscription, setSubscription] = useState<any>(null)
+  const [plugins, setPlugins] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [paymentMessage, setPaymentMessage] = useState('')
@@ -15,12 +16,14 @@ export default function ClientPortalBilling() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
-      const [invoicesData, subData] = await Promise.all([
+      const [invoicesData, subData, pluginData] = await Promise.all([
         invoicesAPI.getClientInvoices(clientId),
-        subscriptionsAPI.getClientSubscription(clientId)
+        subscriptionsAPI.getClientSubscription(clientId),
+        pluginsAPI.getClientPlugins()
       ])
       setInvoices(invoicesData)
       setSubscription(subData)
+      setPlugins(pluginData)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -41,6 +44,14 @@ export default function ClientPortalBilling() {
     if (paymentStatus === 'cancelled') {
       setPaymentMessage('Payment was cancelled. No charge was made.')
     }
+    const pluginPaymentStatus = new URLSearchParams(window.location.search).get('plugin_payment')
+    if (pluginPaymentStatus === 'success') {
+      setPaymentMessage('Plugin payment received. Your plugin will show as purchased after Stripe confirms the payment.')
+      fetchData()
+    }
+    if (pluginPaymentStatus === 'cancelled') {
+      setPaymentMessage('Plugin payment was cancelled. No charge was made.')
+    }
   }, [fetchData])
 
   const handlePayInvoice = async (invoiceId: string) => {
@@ -57,6 +68,15 @@ export default function ClientPortalBilling() {
 
   const downloadInvoice = (invoiceId: string) => {
     window.open(invoicesAPI.getDownloadUrl(invoiceId), '_blank')
+  }
+
+  const handlePurchasePlugin = async (slug: string) => {
+    try {
+      const session = await pluginsAPI.createPluginCheckoutSession(slug)
+      window.location.href = session.url
+    } catch (error: any) {
+      alert(error.error || 'Plugin checkout is not configured yet')
+    }
   }
 
   const handleCancelSubscription = async () => {
@@ -162,6 +182,49 @@ export default function ClientPortalBilling() {
               >
                 Get Started
               </button>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Website Plugins</h2>
+          {loading ? (
+            <PageSkeleton />
+          ) : plugins.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {plugins.map((plugin) => {
+                const purchase = plugin.clientPurchase
+                const isPurchased = purchase?.status === 'active'
+                const isPending = purchase?.status === 'pending'
+
+                return (
+                  <div key={plugin.id} className="card p-6">
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                      <h3 className="text-xl font-bold text-gray-900">{plugin.name}</h3>
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${isPurchased ? 'bg-green-100 text-green-800' : isPending ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>
+                        {isPurchased ? 'Purchased' : isPending ? 'Payment pending' : 'Available'}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 mb-5">{plugin.description}</p>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {Number(plugin.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                      </p>
+                      {isPurchased ? (
+                        <span className="font-semibold text-green-700">Installed on your account</span>
+                      ) : (
+                        <button onClick={() => handlePurchasePlugin(plugin.slug)} className="btn-primary">
+                          Purchase Plugin
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="card p-8 text-center">
+              <p className="text-gray-600">No plugins are available right now</p>
             </div>
           )}
         </div>

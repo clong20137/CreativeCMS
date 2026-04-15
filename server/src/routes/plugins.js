@@ -1,11 +1,29 @@
 import express from 'express'
 import Stripe from 'stripe'
+import jwt from 'jsonwebtoken'
 import Plugin from '../models/Plugin.js'
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
 import RealEstateListing from '../models/RealEstateListing.js'
+import ClientPluginPurchase from '../models/ClientPluginPurchase.js'
+import BookingAvailabilitySlot from '../models/BookingAvailabilitySlot.js'
+import BookingAppointment from '../models/BookingAppointment.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
 
 const router = express.Router()
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+
+function verifyClient(req, res, next) {
+  try {
+    const token = req.headers.authorization?.split(' ')[1]
+    if (!token) return res.status(401).json({ error: 'No token provided' })
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (decoded.role !== 'client') return res.status(403).json({ error: 'Client access required' })
+    req.userId = decoded.userId
+    next()
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' })
+  }
+}
 
 async function getStripeClient() {
   const settings = await getOrCreateSiteSettings()
@@ -110,12 +128,79 @@ export async function getOrCreateRealEstatePlugin() {
   return plugin
 }
 
+export async function getOrCreateBookingPlugin() {
+  const [plugin] = await Plugin.findOrCreate({
+    where: { slug: 'booking-appointments' },
+    defaults: {
+      slug: 'booking-appointments',
+      name: 'Booking Appointments',
+      description: 'Let visitors book appointments from available time slots for in-person, Zoom, Google Meet, or phone calls.',
+      category: 'Scheduling',
+      price: 349,
+      isEnabled: true,
+      isPurchased: true,
+      demoUrl: '/plugins/booking'
+    }
+  })
+
+  const slotCount = await BookingAvailabilitySlot.count()
+  if (slotCount === 0) {
+    const today = new Date()
+    const firstDate = new Date(today)
+    firstDate.setDate(today.getDate() + 3)
+    const secondDate = new Date(today)
+    secondDate.setDate(today.getDate() + 5)
+
+    await BookingAvailabilitySlot.bulkCreate([
+      {
+        date: firstDate.toISOString().slice(0, 10),
+        startTime: '10:00',
+        endTime: '10:30',
+        locationTypes: ['phone', 'zoom', 'google-meet']
+      },
+      {
+        date: firstDate.toISOString().slice(0, 10),
+        startTime: '14:00',
+        endTime: '14:30',
+        locationTypes: ['phone', 'zoom', 'google-meet', 'in-person']
+      },
+      {
+        date: secondDate.toISOString().slice(0, 10),
+        startTime: '11:00',
+        endTime: '11:45',
+        locationTypes: ['phone', 'zoom']
+      }
+    ])
+  }
+
+  return plugin
+}
+
 export async function ensureDemoPlugins() {
   await Promise.all([
     getOrCreateRestaurantPlugin(),
-    getOrCreateRealEstatePlugin()
+    getOrCreateRealEstatePlugin(),
+    getOrCreateBookingPlugin()
   ])
 }
+
+router.get('/client', verifyClient, async (req, res) => {
+  try {
+    await ensureDemoPlugins()
+    const [plugins, purchases] = await Promise.all([
+      Plugin.findAll({ where: { isEnabled: true }, order: [['name', 'ASC']] }),
+      ClientPluginPurchase.findAll({ where: { clientId: req.userId } })
+    ])
+
+    const purchasesBySlug = new Map(purchases.map(purchase => [purchase.pluginSlug, purchase]))
+    res.json(plugins.map(plugin => ({
+      ...plugin.toJSON(),
+      clientPurchase: purchasesBySlug.get(plugin.slug) || null
+    })))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
 
 router.get('/', async (req, res) => {
   try {
@@ -130,12 +215,16 @@ router.get('/', async (req, res) => {
   }
 })
 
-router.post('/:slug/checkout-session', async (req, res) => {
+router.post('/:slug/checkout-session', verifyClient, async (req, res) => {
   try {
     await ensureDemoPlugins()
     const plugin = await Plugin.findOne({ where: { slug: req.params.slug } })
     if (!plugin) return res.status(404).json({ error: 'Plugin not found' })
-    if (plugin.isPurchased) return res.status(400).json({ error: 'Plugin is already purchased' })
+
+    const existingPurchase = await ClientPluginPurchase.findOne({
+      where: { clientId: req.userId, pluginSlug: plugin.slug, status: 'active' }
+    })
+    if (existingPurchase) return res.status(400).json({ error: 'Plugin is already purchased' })
 
     const stripe = await getStripeClient()
     if (!stripe) return res.status(400).json({ error: 'Stripe is not configured' })
@@ -157,13 +246,77 @@ router.post('/:slug/checkout-session', async (req, res) => {
         }
       ],
       metadata: {
-        pluginSlug: plugin.slug
+        pluginSlug: plugin.slug,
+        clientId: String(req.userId)
       },
-      success_url: `${frontendUrl}/admin/plugins?plugin_payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${frontendUrl}/admin/plugins?plugin_payment=cancelled`
+      success_url: `${frontendUrl}/client-dashboard/billing?plugin_payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendUrl}/client-dashboard/billing?plugin_payment=cancelled`
     })
 
+    const pendingPurchase = await ClientPluginPurchase.findOne({
+      where: { clientId: req.userId, pluginSlug: plugin.slug }
+    })
+    const purchaseData = {
+      clientId: req.userId,
+      pluginId: plugin.id,
+      pluginSlug: plugin.slug,
+      pluginName: plugin.name,
+      price: plugin.price,
+      status: 'pending',
+      stripeCheckoutSessionId: session.id
+    }
+
+    if (pendingPurchase) {
+      await pendingPurchase.update(purchaseData)
+    } else {
+      await ClientPluginPurchase.create(purchaseData)
+    }
+
     res.json({ url: session.url })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/booking/slots', async (req, res) => {
+  try {
+    const plugin = await getOrCreateBookingPlugin()
+    const appointments = await BookingAppointment.findAll({ where: { status: 'scheduled' } })
+    const bookedSlotIds = appointments.map(appointment => appointment.availabilitySlotId)
+    const slots = await BookingAvailabilitySlot.findAll({
+      where: { isActive: true },
+      order: [['date', 'ASC'], ['startTime', 'ASC']]
+    })
+
+    res.json({
+      plugin,
+      slots: slots.filter(slot => !bookedSlotIds.includes(slot.id))
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/booking/appointments', async (req, res) => {
+  try {
+    const slot = await BookingAvailabilitySlot.findByPk(req.body.availabilitySlotId)
+    if (!slot || !slot.isActive) return res.status(404).json({ error: 'Availability slot not found' })
+
+    const existingAppointment = await BookingAppointment.findOne({
+      where: { availabilitySlotId: slot.id, status: 'scheduled' }
+    })
+    if (existingAppointment) return res.status(400).json({ error: 'This appointment time has already been booked' })
+
+    const appointment = await BookingAppointment.create({
+      availabilitySlotId: slot.id,
+      name: req.body.name,
+      email: req.body.email,
+      phone: req.body.phone || '',
+      meetingType: req.body.meetingType,
+      notes: req.body.notes || ''
+    })
+
+    res.status(201).json(appointment)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

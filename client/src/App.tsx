@@ -12,6 +12,7 @@ import Plugins from './pages/Plugins'
 import RestaurantPluginDemo from './pages/RestaurantPluginDemo'
 import RealEstatePluginDemo from './pages/RealEstatePluginDemo'
 import RealEstateListingDetail from './pages/RealEstateListingDetail'
+import BookingPluginDemo from './pages/BookingPluginDemo'
 import Login from './pages/Login'
 import ClientDashboard from './pages/ClientDashboard'
 import ClientPortalBilling from './pages/ClientPortalBilling'
@@ -69,6 +70,7 @@ function App() {
             <Route path="/plugins/restaurant" element={<RestaurantPluginDemo />} />
             <Route path="/plugins/real-estate" element={<RealEstatePluginDemo />} />
             <Route path="/plugins/real-estate/:id" element={<RealEstateListingDetail />} />
+            <Route path="/plugins/booking" element={<BookingPluginDemo />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/client-dashboard" element={<ClientDashboard />} />

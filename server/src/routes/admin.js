@@ -16,8 +16,10 @@ import Ticket from '../models/Ticket.js'
 import Plugin from '../models/Plugin.js'
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
 import RealEstateListing from '../models/RealEstateListing.js'
+import BookingAvailabilitySlot from '../models/BookingAvailabilitySlot.js'
+import BookingAppointment from '../models/BookingAppointment.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
-import { ensureDemoPlugins, getOrCreateRestaurantPlugin, getOrCreateRealEstatePlugin } from './plugins.js'
+import { ensureDemoPlugins, getOrCreateBookingPlugin, getOrCreateRestaurantPlugin, getOrCreateRealEstatePlugin } from './plugins.js'
 import crypto from 'crypto'
 import { base32Encode, verifyTotp } from './auth.js'
 import jwt from 'jsonwebtoken'
@@ -287,6 +289,88 @@ router.delete('/plugins/real-estate/listings/:id', async (req, res) => {
 
     await listing.destroy()
     res.json({ message: 'Listing deleted' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/plugins/booking/slots', async (req, res) => {
+  try {
+    await getOrCreateBookingPlugin()
+    const slots = await BookingAvailabilitySlot.findAll({
+      order: [['date', 'ASC'], ['startTime', 'ASC']]
+    })
+    res.json(slots)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/plugins/booking/slots', async (req, res) => {
+  try {
+    const slot = await BookingAvailabilitySlot.create({
+      date: req.body.date,
+      startTime: req.body.startTime,
+      endTime: req.body.endTime,
+      locationTypes: Array.isArray(req.body.locationTypes) ? req.body.locationTypes : [],
+      isActive: req.body.isActive !== false
+    })
+    res.status(201).json(slot)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/plugins/booking/slots/:id', async (req, res) => {
+  try {
+    const slot = await BookingAvailabilitySlot.findByPk(req.params.id)
+    if (!slot) return res.status(404).json({ error: 'Availability slot not found' })
+
+    await slot.update({
+      date: req.body.date,
+      startTime: req.body.startTime,
+      endTime: req.body.endTime,
+      locationTypes: Array.isArray(req.body.locationTypes) ? req.body.locationTypes : [],
+      isActive: req.body.isActive !== false
+    })
+    res.json(slot)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.delete('/plugins/booking/slots/:id', async (req, res) => {
+  try {
+    const slot = await BookingAvailabilitySlot.findByPk(req.params.id)
+    if (!slot) return res.status(404).json({ error: 'Availability slot not found' })
+
+    await slot.destroy()
+    res.json({ message: 'Availability slot deleted' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/plugins/booking/appointments', async (req, res) => {
+  try {
+    await getOrCreateBookingPlugin()
+    const appointments = await BookingAppointment.findAll({
+      include: [{ model: BookingAvailabilitySlot }],
+      order: [['createdAt', 'DESC']]
+    })
+    res.json(appointments)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/plugins/booking/appointments/:id', async (req, res) => {
+  try {
+    const appointment = await BookingAppointment.findByPk(req.params.id)
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found' })
+
+    await appointment.update({ status: req.body.status || appointment.status })
+    res.json(appointment)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
