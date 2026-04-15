@@ -76,9 +76,6 @@ export default function ClientDashboard() {
           <Link to="/client-dashboard/billing" className="card p-4 font-semibold text-blue-600 hover:shadow-lg transition">
             Billing
           </Link>
-          <Link to="/client-dashboard/payment-methods" className="card p-4 font-semibold text-blue-600 hover:shadow-lg transition">
-            Payment Methods
-          </Link>
           <Link to="/client-dashboard/settings" className="card p-4 font-semibold text-blue-600 hover:shadow-lg transition">
             Account Settings
           </Link>

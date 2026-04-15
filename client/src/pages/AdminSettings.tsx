@@ -37,6 +37,7 @@ const emptySettings = {
   googleApiKey: '',
   stripePublishableKey: '',
   stripeSecretKey: '',
+  stripeWebhookSecret: '',
   bankName: '',
   bankAccountLast4: '',
   payoutInstructions: '',
@@ -367,6 +368,7 @@ export default function AdminSettings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input value={settings.stripePublishableKey || ''} onChange={(e) => handleChange('stripePublishableKey', e.target.value)} placeholder="Stripe publishable key" className="px-4 py-2 border rounded-lg" />
                   <input value={settings.stripeSecretKey || ''} onChange={(e) => handleChange('stripeSecretKey', e.target.value)} placeholder="Stripe secret key" className="px-4 py-2 border rounded-lg" />
+                  <input value={settings.stripeWebhookSecret || ''} onChange={(e) => handleChange('stripeWebhookSecret', e.target.value)} placeholder="Stripe webhook signing secret" className="px-4 py-2 border rounded-lg md:col-span-2" />
                   <input value={settings.bankName || ''} onChange={(e) => handleChange('bankName', e.target.value)} placeholder="Bank name" className="px-4 py-2 border rounded-lg" />
                   <input value={settings.bankAccountLast4 || ''} onChange={(e) => handleChange('bankAccountLast4', e.target.value)} placeholder="Bank account last 4" className="px-4 py-2 border rounded-lg" />
                 </div>

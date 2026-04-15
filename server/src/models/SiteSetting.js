@@ -144,6 +144,10 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  stripeWebhookSecret: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   bankName: {
     type: DataTypes.STRING,
     allowNull: true

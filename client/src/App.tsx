@@ -11,7 +11,6 @@ import Contact from './pages/Contact'
 import Login from './pages/Login'
 import ClientDashboard from './pages/ClientDashboard'
 import ClientPortalBilling from './pages/ClientPortalBilling'
-import ClientPortalPaymentMethods from './pages/ClientPortalPaymentMethods'
 import ClientPortalSettings from './pages/ClientPortalSettings'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminClients from './pages/AdminClients'
@@ -64,7 +63,6 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/client-dashboard" element={<ClientDashboard />} />
             <Route path="/client-dashboard/billing" element={<ClientPortalBilling />} />
-            <Route path="/client-dashboard/payment-methods" element={<ClientPortalPaymentMethods />} />
             <Route path="/client-dashboard/settings" element={<ClientPortalSettings />} />
             <Route path="/client-dashboard/tickets" element={<ClientTickets />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />

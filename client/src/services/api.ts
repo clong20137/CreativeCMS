@@ -153,13 +153,4 @@ export const usersAPI = {
   updatePreferences: (data: any) => unwrap(api.put('/users/preferences', data))
 }
 
-// Payment Methods API
-export const paymentMethodsAPI = {
-  getPaymentMethods: () => unwrap<any[]>(api.get('/payment-methods')),
-  addPaymentMethod: (data: any) => unwrap(api.post('/payment-methods', data)),
-  updatePaymentMethod: (id: string, data: any) => unwrap(api.put(`/payment-methods/${id}`, data)),
-  deletePaymentMethod: (id: string) => unwrap(api.delete(`/payment-methods/${id}`)),
-  setDefaultPaymentMethod: (id: string) => unwrap(api.put(`/payment-methods/${id}/default`))
-}
-
 export default api

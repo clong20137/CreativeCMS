@@ -238,9 +238,11 @@ router.post('/:id/checkout-session', async (req, res) => {
       metadata: {
         invoiceId: String(invoice.id)
       },
-      success_url: `${frontendUrl}/client-dashboard/billing?payment=success`,
+      success_url: `${frontendUrl}/client-dashboard/billing?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${frontendUrl}/client-dashboard/billing?payment=cancelled`
     })
+
+    await invoice.update({ stripeCheckoutSessionId: session.id })
 
     res.json({ url: session.url })
   } catch (error) {

@@ -70,6 +70,14 @@ const Invoice = sequelize.define('Invoice', {
   terms: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  stripeCheckoutSessionId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  stripePaymentIntentId: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   timestamps: true

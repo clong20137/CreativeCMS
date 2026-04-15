@@ -9,6 +9,7 @@ export default function ClientPortalBilling() {
   const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [paymentMessage, setPaymentMessage] = useState('')
   const clientId = localStorage.getItem('userId') || ''
 
   const fetchData = useCallback(async () => {
@@ -29,6 +30,17 @@ export default function ClientPortalBilling() {
 
   useEffect(() => {
     fetchData()
+  }, [fetchData])
+
+  useEffect(() => {
+    const paymentStatus = new URLSearchParams(window.location.search).get('payment')
+    if (paymentStatus === 'success') {
+      setPaymentMessage('Payment received. Your invoice status will update shortly.')
+      fetchData()
+    }
+    if (paymentStatus === 'cancelled') {
+      setPaymentMessage('Payment was cancelled. No charge was made.')
+    }
   }, [fetchData])
 
   const handlePayInvoice = async (invoiceId: string) => {
@@ -79,6 +91,12 @@ export default function ClientPortalBilling() {
   return (
     <ClientLayout title="Billing">
         {/* Subscription Section */}
+        {paymentMessage && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
+            {paymentMessage}
+          </div>
+        )}
+
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">My Subscription</h2>
           {loading ? (

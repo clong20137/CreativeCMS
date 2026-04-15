@@ -27,6 +27,7 @@ DB_USER=root
 DB_PASSWORD=123456
 JWT_SECRET=your-super-secret-jwt-key-change-this
 STRIPE_SECRET_KEY=sk_test_your_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_signing_secret
 ```
 
 Create the database:
@@ -101,7 +102,7 @@ npm start
 - `PUT /api/admin/users/:id`
 - `DELETE /api/admin/users/:id`
 
-### Profile and Payment Methods
+### Profile
 
 - `GET /api/users/profile`
 - `PUT /api/users/profile`
@@ -109,11 +110,6 @@ npm start
 - `PUT /api/users/password`
 - `GET /api/users/preferences`
 - `PUT /api/users/preferences`
-- `GET /api/payment-methods`
-- `POST /api/payment-methods`
-- `PUT /api/payment-methods/:id`
-- `DELETE /api/payment-methods/:id`
-- `PUT /api/payment-methods/:id/default`
 
 ## Environment Variables
 
@@ -126,7 +122,20 @@ npm start
 | `DB_USER` | Database user |
 | `DB_PASSWORD` | Database password |
 | `JWT_SECRET` | Secret used to sign JWT tokens |
-| `STRIPE_SECRET_KEY` | Stripe secret key, optional for current local flow |
+| `STRIPE_SECRET_KEY` | Stripe secret key used to create Checkout Sessions |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret used to verify Checkout payment completion events |
+
+## Stripe Checkout Webhook
+
+Invoice payments use Stripe Checkout. Creating a Checkout Session starts the payment, but the invoice is only marked paid after Stripe sends a verified `checkout.session.completed` webhook.
+
+Register this endpoint in the Stripe Dashboard:
+
+```text
+https://your-api-domain.com/api/stripe/webhook
+```
+
+Send the `checkout.session.completed` event and save the webhook signing secret as `STRIPE_WEBHOOK_SECRET` or in Admin Settings under Payments.
 
 ## Troubleshooting
 

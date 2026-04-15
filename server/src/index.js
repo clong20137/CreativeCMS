@@ -21,11 +21,11 @@ import subscriptionRoutes from './routes/subscriptions.js'
 import portfolioRoutes from './routes/portfolio.js'
 import adminRoutes from './routes/admin.js'
 import usersRoutes from './routes/users.js'
-import paymentMethodsRoutes from './routes/payment-methods.js'
 import servicePackageRoutes from './routes/service-packages.js'
 import siteSettingsRoutes from './routes/site-settings.js'
 import ticketRoutes from './routes/tickets.js'
 import contactMessageRoutes from './routes/contact-messages.js'
+import stripeWebhookRoutes from './routes/stripe-webhooks.js'
 
 dotenv.config()
 
@@ -74,6 +74,8 @@ app.use(cors({
   },
   credentials: true
 }))
+
+app.use('/api/stripe', stripeWebhookRoutes)
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
@@ -111,7 +113,6 @@ app.use('/api/subscriptions', subscriptionRoutes)
 app.use('/api/portfolio', portfolioRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/users', usersRoutes)
-app.use('/api/payment-methods', paymentMethodsRoutes)
 app.use('/api/service-packages', servicePackageRoutes)
 app.use('/api/site-settings', siteSettingsRoutes)
 app.use('/api/tickets', ticketRoutes)
