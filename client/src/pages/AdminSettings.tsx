@@ -44,6 +44,68 @@ const emptySettings = {
 }
 
 const tabs = ['General', 'Contact', 'Homepage', 'Services', 'Pricing', 'Testimonials', 'Payments', 'Security']
+const MAX_DATA_URL_LENGTH = 900_000
+const MAX_IMAGE_WIDTH = 1920
+const MAX_IMAGE_HEIGHT = 1080
+const IMAGE_QUALITY = 0.82
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('Failed to load image'))
+    image.src = src
+  })
+}
+
+async function getUploadDataUrl(file: File) {
+  if (!file.type.startsWith('image/')) {
+    const dataUrl = await readFileAsDataUrl(file)
+    if (dataUrl.length > MAX_DATA_URL_LENGTH) {
+      throw new Error('This upload is too large. Please use a hosted video URL or a smaller file.')
+    }
+    return dataUrl
+  }
+
+  if (file.type === 'image/svg+xml' || file.type === 'image/gif') {
+    const dataUrl = await readFileAsDataUrl(file)
+    if (dataUrl.length > MAX_DATA_URL_LENGTH) {
+      throw new Error('This image is too large. Please use a smaller image or paste a hosted image URL.')
+    }
+    return dataUrl
+  }
+
+  const objectUrl = URL.createObjectURL(file)
+
+  try {
+    const image = await loadImage(objectUrl)
+    const scale = Math.min(1, MAX_IMAGE_WIDTH / image.width, MAX_IMAGE_HEIGHT / image.height)
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(image.width * scale))
+    canvas.height = Math.max(1, Math.round(image.height * scale))
+
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Image compression is not available in this browser.')
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height)
+    const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY)
+    if (dataUrl.length > MAX_DATA_URL_LENGTH) {
+      throw new Error('This image is still too large after compression. Please use a smaller image or paste a hosted image URL.')
+    }
+    return dataUrl
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('General')
@@ -74,11 +136,17 @@ export default function AdminSettings() {
 
   const handleChange = (key: string, value: any) => setSettings(prev => ({ ...prev, [key]: value }))
 
-  const handleUpload = (key: string, file: File | undefined) => {
+  const handleUpload = async (key: string, file: File | undefined) => {
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => handleChange(key, String(reader.result || ''))
-    reader.readAsDataURL(file)
+    try {
+      setError('')
+      setMessage('Preparing upload...')
+      handleChange(key, await getUploadDataUrl(file))
+      setMessage('Upload ready. Save settings to publish it.')
+    } catch (err: any) {
+      setMessage('')
+      setError(err.message || 'Failed to prepare upload')
+    }
   }
 
   const updateListItem = (key: string, index: number, field: string, value: any) => {
@@ -216,15 +284,15 @@ export default function AdminSettings() {
                     </label>
                   </div>
                 </section>
-                <ListEditor title="What We Do" listKey="whatWeDo" items={settings.whatWeDo} fields={['title', 'desc']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} />
-                <ListEditor title="Featured Work" listKey="featuredWork" items={settings.featuredWork} fields={['title', 'category', 'image', 'description']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} />
+                <ListEditor title="What We Do" listKey="whatWeDo" items={settings.whatWeDo} fields={['title', 'desc']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} setError={setError} />
+                <ListEditor title="Featured Work" listKey="featuredWork" items={settings.featuredWork} fields={['title', 'category', 'image', 'description']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} setError={setError} />
               </section>
             )}
 
             {activeTab === 'Pricing' && (
               <section className="space-y-6">
-                <ListEditor title="Web Design Packages" listKey="webDesignPackages" items={settings.webDesignPackages} fields={['name', 'description', 'price', 'billingPeriod', 'features']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} />
-                <ListEditor title="FAQ" listKey="faqs" items={settings.faqs} fields={['q', 'a']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} />
+                <ListEditor title="Web Design Packages" listKey="webDesignPackages" items={settings.webDesignPackages} fields={['name', 'description', 'price', 'billingPeriod', 'features']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} setError={setError} />
+                <ListEditor title="FAQ" listKey="faqs" items={settings.faqs} fields={['q', 'a']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} setError={setError} />
               </section>
             )}
 
@@ -238,6 +306,7 @@ export default function AdminSettings() {
                   updateListItem={updateListItem}
                   addListItem={addListItem}
                   removeListItem={removeListItem}
+                  setError={setError}
                 />
               </section>
             )}
@@ -252,7 +321,7 @@ export default function AdminSettings() {
                   <input value={settings.googlePlaceId || ''} onChange={(e) => handleChange('googlePlaceId', e.target.value)} placeholder="Google Place ID" className="px-4 py-2 border rounded-lg" />
                   <input value={settings.googleApiKey || ''} onChange={(e) => handleChange('googleApiKey', e.target.value)} placeholder="Google API Key" className="px-4 py-2 border rounded-lg" />
                 </div>
-                <ListEditor title="Manual Testimonials" listKey="testimonials" items={settings.testimonials} fields={['name', 'company', 'role', 'image', 'text']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} />
+                <ListEditor title="Manual Testimonials" listKey="testimonials" items={settings.testimonials} fields={['name', 'company', 'role', 'image', 'text']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} setError={setError} />
               </section>
             )}
 
@@ -306,12 +375,15 @@ export default function AdminSettings() {
   )
 }
 
-function ListEditor({ title, listKey, items, fields, updateListItem, addListItem, removeListItem }: any) {
-  const handleListImageUpload = (index: number, file: File | undefined) => {
+function ListEditor({ title, listKey, items, fields, updateListItem, addListItem, removeListItem, setError }: any) {
+  const handleListImageUpload = async (index: number, file: File | undefined) => {
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => updateListItem(listKey, index, 'image', String(reader.result || ''))
-    reader.readAsDataURL(file)
+    try {
+      setError('')
+      updateListItem(listKey, index, 'image', await getUploadDataUrl(file))
+    } catch (err: any) {
+      setError(err.message || 'Failed to prepare upload')
+    }
   }
 
   return (
