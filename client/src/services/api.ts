@@ -104,6 +104,11 @@ export const contactMessagesAPI = {
   createMessage: (data: any) => unwrap(api.post('/contact-messages', data))
 }
 
+export const pluginsAPI = {
+  getPlugins: () => unwrap<any[]>(api.get('/plugins')),
+  getRestaurantMenu: () => unwrap<{ plugin: any; items: any[] }>(api.get('/plugins/restaurant/menu'))
+}
+
 // Admin API
 export const adminAPI = {
   getStats: () => unwrap(api.get('/admin/stats')),
@@ -129,6 +134,12 @@ export const adminAPI = {
   createPortfolioItem: (data: any) => unwrap(api.post('/admin/portfolio-items', data)),
   updatePortfolioItem: (id: string, data: any) => unwrap(api.put(`/admin/portfolio-items/${id}`, data)),
   deletePortfolioItem: (id: string) => unwrap(api.delete(`/admin/portfolio-items/${id}`)),
+  getPlugins: () => unwrap<any[]>(api.get('/admin/plugins')),
+  updatePlugin: (slug: string, data: any) => unwrap(api.put(`/admin/plugins/${slug}`, data)),
+  getRestaurantMenuItems: () => unwrap<any[]>(api.get('/admin/plugins/restaurant/menu')),
+  createRestaurantMenuItem: (data: any) => unwrap(api.post('/admin/plugins/restaurant/menu', data)),
+  updateRestaurantMenuItem: (id: string, data: any) => unwrap(api.put(`/admin/plugins/restaurant/menu/${id}`, data)),
+  deleteRestaurantMenuItem: (id: string) => unwrap(api.delete(`/admin/plugins/restaurant/menu/${id}`)),
   getSiteSettings: () => unwrap(api.get('/admin/site-settings')),
   updateSiteSettings: (data: any) => unwrap(api.put('/admin/site-settings', data)),
   uploadImage: (dataUrl: string) => unwrap<{ url: string }>(api.post('/admin/uploads', { dataUrl })),

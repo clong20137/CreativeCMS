@@ -12,6 +12,7 @@ export default function Navigation() {
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path
+  const isSectionActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`)
   const dashboardPath = userRole === 'admin' ? '/admin/dashboard' : '/client-dashboard'
 
   useEffect(() => {
@@ -76,6 +77,12 @@ export default function Navigation() {
               Pricing
             </Link>
             <Link
+              to="/plugins"
+              className={`inline-flex h-10 items-center ${isSectionActive('/plugins') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
+            >
+              Plugins
+            </Link>
+            <Link
               to="/contact"
               className={`inline-flex h-10 items-center ${isActive('/contact') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
             >
@@ -112,6 +119,9 @@ export default function Navigation() {
             </Link>
             <Link to="/pricing" className="block py-2 text-gray-700 hover:text-blue-600">
               Pricing
+            </Link>
+            <Link to="/plugins" className="block py-2 text-gray-700 hover:text-blue-600">
+              Plugins
             </Link>
             <Link to="/contact" className="block py-2 text-gray-700 hover:text-blue-600">
               Contact

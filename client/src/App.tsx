@@ -8,6 +8,8 @@ import PortfolioDetail from './pages/PortfolioDetail'
 import Services from './pages/Services'
 import Pricing from './pages/Pricing'
 import Contact from './pages/Contact'
+import Plugins from './pages/Plugins'
+import RestaurantPluginDemo from './pages/RestaurantPluginDemo'
 import Login from './pages/Login'
 import ClientDashboard from './pages/ClientDashboard'
 import ClientPortalBilling from './pages/ClientPortalBilling'
@@ -22,6 +24,7 @@ import AdminPortfolio from './pages/AdminPortfolio'
 import AdminSettings from './pages/AdminSettings'
 import AdminTickets from './pages/AdminTickets'
 import AdminMessages from './pages/AdminMessages'
+import AdminPlugins from './pages/AdminPlugins'
 import ClientTickets from './pages/ClientTickets'
 import NotFound from './pages/NotFound'
 import { siteSettingsAPI } from './services/api'
@@ -59,6 +62,8 @@ function App() {
             <Route path="/portfolio/:id" element={<PortfolioDetail />} />
             <Route path="/services" element={<Services />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/plugins" element={<Plugins />} />
+            <Route path="/plugins/restaurant" element={<RestaurantPluginDemo />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/client-dashboard" element={<ClientDashboard />} />
@@ -75,6 +80,7 @@ function App() {
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/tickets" element={<AdminTickets />} />
             <Route path="/admin/messages" element={<AdminMessages />} />
+            <Route path="/admin/plugins" element={<AdminPlugins />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

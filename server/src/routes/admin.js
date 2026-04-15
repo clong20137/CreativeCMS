@@ -13,7 +13,10 @@ import ServicePackage from '../models/ServicePackage.js'
 import PortfolioItem from '../models/PortfolioItem.js'
 import ContactMessage from '../models/ContactMessage.js'
 import Ticket from '../models/Ticket.js'
+import Plugin from '../models/Plugin.js'
+import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
+import { getOrCreateRestaurantPlugin } from './plugins.js'
 import crypto from 'crypto'
 import { base32Encode, verifyTotp } from './auth.js'
 import jwt from 'jsonwebtoken'
@@ -133,6 +136,92 @@ router.get('/notifications', async (req, res) => {
       newTickets,
       total: newMessages + newTickets
     })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/plugins', async (req, res) => {
+  try {
+    await getOrCreateRestaurantPlugin()
+    const plugins = await Plugin.findAll({ order: [['name', 'ASC']] })
+    res.json(plugins)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/plugins/:slug', async (req, res) => {
+  try {
+    const plugin = await Plugin.findOne({ where: { slug: req.params.slug } })
+    if (!plugin) return res.status(404).json({ error: 'Plugin not found' })
+
+    await plugin.update({
+      isEnabled: Boolean(req.body.isEnabled),
+      isPurchased: req.body.isPurchased === undefined ? plugin.isPurchased : Boolean(req.body.isPurchased)
+    })
+    res.json(plugin)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/plugins/restaurant/menu', async (req, res) => {
+  try {
+    await getOrCreateRestaurantPlugin()
+    const items = await RestaurantMenuItem.findAll({
+      order: [['category', 'ASC'], ['sortOrder', 'ASC'], ['name', 'ASC']]
+    })
+    res.json(items)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/plugins/restaurant/menu', async (req, res) => {
+  try {
+    const item = await RestaurantMenuItem.create({
+      name: req.body.name,
+      description: req.body.description || '',
+      category: req.body.category || 'Entrees',
+      price: Number(req.body.price || 0),
+      image: req.body.image || '',
+      isAvailable: req.body.isAvailable !== false,
+      sortOrder: Number(req.body.sortOrder || 0)
+    })
+    res.status(201).json(item)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/plugins/restaurant/menu/:id', async (req, res) => {
+  try {
+    const item = await RestaurantMenuItem.findByPk(req.params.id)
+    if (!item) return res.status(404).json({ error: 'Menu item not found' })
+
+    await item.update({
+      name: req.body.name,
+      description: req.body.description || '',
+      category: req.body.category || 'Entrees',
+      price: Number(req.body.price || 0),
+      image: req.body.image || '',
+      isAvailable: req.body.isAvailable !== false,
+      sortOrder: Number(req.body.sortOrder || 0)
+    })
+    res.json(item)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.delete('/plugins/restaurant/menu/:id', async (req, res) => {
+  try {
+    const item = await RestaurantMenuItem.findByPk(req.params.id)
+    if (!item) return res.status(404).json({ error: 'Menu item not found' })
+
+    await item.destroy()
+    res.json({ message: 'Menu item deleted' })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

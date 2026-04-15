@@ -116,6 +116,34 @@ CREATE TABLE IF NOT EXISTS PortfolioItems (
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Optional Website Plugins Table
+CREATE TABLE IF NOT EXISTS Plugins (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description LONGTEXT,
+  category VARCHAR(255) DEFAULT 'Business',
+  isEnabled BOOLEAN DEFAULT false,
+  isPurchased BOOLEAN DEFAULT false,
+  demoUrl VARCHAR(500),
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Restaurant Menu Plugin Items Table
+CREATE TABLE IF NOT EXISTS RestaurantMenuItems (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description LONGTEXT,
+  category VARCHAR(255) DEFAULT 'Entrees',
+  price DECIMAL(10, 2) NOT NULL,
+  image LONGTEXT,
+  isAvailable BOOLEAN DEFAULT true,
+  sortOrder INT DEFAULT 0,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- Site Settings Table
 CREATE TABLE IF NOT EXISTS SiteSettings (
   id INT PRIMARY KEY DEFAULT 1,
@@ -211,8 +239,24 @@ CREATE INDEX idx_subscription_plans_active ON SubscriptionPlans(isActive);
 CREATE INDEX idx_service_packages_active ON ServicePackages(isActive);
 CREATE INDEX idx_portfolio_items_published ON PortfolioItems(isPublished);
 CREATE INDEX idx_portfolio_items_category ON PortfolioItems(category);
+CREATE INDEX idx_plugins_slug ON Plugins(slug);
+CREATE INDEX idx_plugins_enabled ON Plugins(isEnabled);
+CREATE INDEX idx_restaurant_menu_category ON RestaurantMenuItems(category);
+CREATE INDEX idx_restaurant_menu_available ON RestaurantMenuItems(isAvailable);
 
 -- Sample Admin User (Password: admin123 - hashed with bcryptjs)
 INSERT INTO Users (name, email, password, role, company, isActive)
 VALUES ('Admin', 'admin@creative.com', '$2a$10$YourHashedPasswordHere', 'admin', 'Creative by Caleb', true)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO Plugins (slug, name, description, category, isEnabled, isPurchased, demoUrl)
+VALUES (
+  'restaurant-menu',
+  'Restaurant Menu',
+  'Create menu categories, item photos, descriptions, and prices for a restaurant website.',
+  'Restaurant',
+  true,
+  true,
+  '/plugins/restaurant'
+)
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);

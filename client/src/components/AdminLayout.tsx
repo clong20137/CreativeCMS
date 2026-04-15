@@ -14,6 +14,7 @@ const adminLinks = [
   { label: 'Portfolio', path: '/admin/portfolio', icon: FiImage },
   { label: 'Messages', path: '/admin/messages', icon: FiInbox },
   { label: 'Tickets', path: '/admin/tickets', icon: FiHelpCircle },
+  { label: 'Plugins', path: '/admin/plugins', icon: FiGrid },
   { label: 'Settings', path: '/admin/settings', icon: FiSettings }
 ]
 

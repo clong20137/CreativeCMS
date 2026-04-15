@@ -14,6 +14,8 @@ import PortfolioItem from './models/PortfolioItem.js'
 import SiteSetting from './models/SiteSetting.js'
 import Ticket from './models/Ticket.js'
 import ContactMessage from './models/ContactMessage.js'
+import Plugin from './models/Plugin.js'
+import RestaurantMenuItem from './models/RestaurantMenuItem.js'
 
 // Import routes
 import authRoutes from './routes/auth.js'
@@ -28,6 +30,7 @@ import siteSettingsRoutes from './routes/site-settings.js'
 import ticketRoutes from './routes/tickets.js'
 import contactMessageRoutes from './routes/contact-messages.js'
 import stripeWebhookRoutes from './routes/stripe-webhooks.js'
+import pluginRoutes from './routes/plugins.js'
 
 dotenv.config()
 
@@ -122,6 +125,7 @@ app.use('/api/service-packages', servicePackageRoutes)
 app.use('/api/site-settings', siteSettingsRoutes)
 app.use('/api/tickets', ticketRoutes)
 app.use('/api/contact-messages', contactMessageRoutes)
+app.use('/api/plugins', pluginRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {
