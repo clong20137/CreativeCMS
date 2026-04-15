@@ -106,7 +106,9 @@ export const contactMessagesAPI = {
 
 export const pluginsAPI = {
   getPlugins: () => unwrap<any[]>(api.get('/plugins')),
-  getRestaurantMenu: () => unwrap<{ plugin: any; items: any[] }>(api.get('/plugins/restaurant/menu'))
+  getRestaurantMenu: () => unwrap<{ plugin: any; items: any[] }>(api.get('/plugins/restaurant/menu')),
+  getRealEstateListings: () => unwrap<{ plugin: any; listings: any[] }>(api.get('/plugins/real-estate/listings')),
+  getRealEstateListing: (id: string) => unwrap<{ plugin: any; listing: any }>(api.get(`/plugins/real-estate/listings/${id}`))
 }
 
 // Admin API
@@ -140,6 +142,10 @@ export const adminAPI = {
   createRestaurantMenuItem: (data: any) => unwrap(api.post('/admin/plugins/restaurant/menu', data)),
   updateRestaurantMenuItem: (id: string, data: any) => unwrap(api.put(`/admin/plugins/restaurant/menu/${id}`, data)),
   deleteRestaurantMenuItem: (id: string) => unwrap(api.delete(`/admin/plugins/restaurant/menu/${id}`)),
+  getRealEstateListings: () => unwrap<any[]>(api.get('/admin/plugins/real-estate/listings')),
+  createRealEstateListing: (data: any) => unwrap(api.post('/admin/plugins/real-estate/listings', data)),
+  updateRealEstateListing: (id: string, data: any) => unwrap(api.put(`/admin/plugins/real-estate/listings/${id}`, data)),
+  deleteRealEstateListing: (id: string) => unwrap(api.delete(`/admin/plugins/real-estate/listings/${id}`)),
   getSiteSettings: () => unwrap(api.get('/admin/site-settings')),
   updateSiteSettings: (data: any) => unwrap(api.put('/admin/site-settings', data)),
   uploadImage: (dataUrl: string) => unwrap<{ url: string }>(api.post('/admin/uploads', { dataUrl })),

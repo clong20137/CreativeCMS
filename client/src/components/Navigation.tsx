@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { FiMenu, FiX } from 'react-icons/fi'
-import { siteSettingsAPI } from '../services/api'
+import { pluginsAPI, siteSettingsAPI } from '../services/api'
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -9,6 +9,7 @@ export default function Navigation() {
   const [siteName, setSiteName] = useState('Creative by Caleb')
   const [logoUrl, setLogoUrl] = useState('')
   const [logoSize, setLogoSize] = useState(40)
+  const [hasActivePlugins, setHasActivePlugins] = useState(false)
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path
@@ -33,6 +34,19 @@ export default function Navigation() {
     }
 
     fetchSettings()
+  }, [])
+
+  useEffect(() => {
+    const fetchPlugins = async () => {
+      try {
+        const plugins = await pluginsAPI.getPlugins()
+        setHasActivePlugins(plugins.length > 0)
+      } catch (error) {
+        console.error('Error loading plugin navigation:', error)
+      }
+    }
+
+    fetchPlugins()
   }, [])
 
   return (
@@ -76,12 +90,14 @@ export default function Navigation() {
             >
               Pricing
             </Link>
-            <Link
-              to="/plugins"
-              className={`inline-flex h-10 items-center ${isSectionActive('/plugins') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
-            >
-              Plugins
-            </Link>
+            {hasActivePlugins && (
+              <Link
+                to="/plugins"
+                className={`inline-flex h-10 items-center ${isSectionActive('/plugins') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
+              >
+                Plugins
+              </Link>
+            )}
             <Link
               to="/contact"
               className={`inline-flex h-10 items-center ${isActive('/contact') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
@@ -120,9 +136,11 @@ export default function Navigation() {
             <Link to="/pricing" className="block py-2 text-gray-700 hover:text-blue-600">
               Pricing
             </Link>
-            <Link to="/plugins" className="block py-2 text-gray-700 hover:text-blue-600">
-              Plugins
-            </Link>
+            {hasActivePlugins && (
+              <Link to="/plugins" className="block py-2 text-gray-700 hover:text-blue-600">
+                Plugins
+              </Link>
+            )}
             <Link to="/contact" className="block py-2 text-gray-700 hover:text-blue-600">
               Contact
             </Link>

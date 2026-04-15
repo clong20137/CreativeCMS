@@ -14,6 +14,17 @@ const emptyMenuItem = {
   sortOrder: '0'
 }
 
+const emptyListing = {
+  title: '',
+  address: '',
+  description: '',
+  price: '',
+  image: '',
+  moreInfoUrl: '',
+  isActive: true,
+  sortOrder: '0'
+}
+
 async function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
@@ -49,25 +60,32 @@ async function compressMenuImage(file: File) {
 export default function AdminPlugins() {
   const [plugins, setPlugins] = useState<any[]>([])
   const [menuItems, setMenuItems] = useState<any[]>([])
+  const [listings, setListings] = useState<any[]>([])
   const [formData, setFormData] = useState(emptyMenuItem)
+  const [listingFormData, setListingFormData] = useState(emptyListing)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingListingId, setEditingListingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [showListingForm, setShowListingForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [imageUploading, setImageUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
   const restaurantPlugin = plugins.find(plugin => plugin.slug === 'restaurant-menu')
+  const realEstatePlugin = plugins.find(plugin => plugin.slug === 'real-estate-listings')
 
   const fetchPlugins = async () => {
     try {
       setLoading(true)
-      const [pluginData, itemData] = await Promise.all([
+      const [pluginData, itemData, listingData] = await Promise.all([
         adminAPI.getPlugins(),
-        adminAPI.getRestaurantMenuItems()
+        adminAPI.getRestaurantMenuItems(),
+        adminAPI.getRealEstateListings()
       ])
       setPlugins(pluginData)
       setMenuItems(itemData)
+      setListings(listingData)
     } catch (err: any) {
       setError(err.error || 'Failed to load plugins')
     } finally {
@@ -85,15 +103,21 @@ export default function AdminPlugins() {
     setShowForm(false)
   }
 
-  const togglePlugin = async () => {
-    if (!restaurantPlugin) return
+  const resetListingForm = () => {
+    setListingFormData(emptyListing)
+    setEditingListingId(null)
+    setShowListingForm(false)
+  }
+
+  const togglePlugin = async (plugin: any) => {
+    if (!plugin) return
     try {
       setError('')
-      const updated = await adminAPI.updatePlugin(restaurantPlugin.slug, {
-        isEnabled: !restaurantPlugin.isEnabled
+      const updated = await adminAPI.updatePlugin(plugin.slug, {
+        isEnabled: !plugin.isEnabled
       })
       setPlugins(current => current.map(plugin => plugin.id === updated.id ? updated : plugin))
-      setMessage(updated.isEnabled ? 'Restaurant menu plugin activated' : 'Restaurant menu plugin deactivated')
+      setMessage(updated.isEnabled ? `${updated.name} plugin activated` : `${updated.name} plugin deactivated`)
     } catch (err: any) {
       setError(err.error || 'Failed to update plugin')
     }
@@ -110,6 +134,22 @@ export default function AdminPlugins() {
       setMessage('Menu item image uploaded')
     } catch (err: any) {
       setError(err.error || 'Failed to upload menu image')
+    } finally {
+      setImageUploading(false)
+    }
+  }
+
+  const handleListingImageUpload = async (file?: File) => {
+    if (!file) return
+    try {
+      setImageUploading(true)
+      setError('')
+      const dataUrl = await compressMenuImage(file)
+      const upload = await adminAPI.uploadImage(dataUrl)
+      setListingFormData(current => ({ ...current, image: upload.url }))
+      setMessage('Listing image uploaded')
+    } catch (err: any) {
+      setError(err.error || 'Failed to upload listing image')
     } finally {
       setImageUploading(false)
     }
@@ -165,6 +205,57 @@ export default function AdminPlugins() {
     }
   }
 
+  const handleListingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      setError('')
+      const payload = {
+        ...listingFormData,
+        price: Number(listingFormData.price || 0),
+        sortOrder: Number(listingFormData.sortOrder || 0)
+      }
+
+      if (editingListingId) {
+        await adminAPI.updateRealEstateListing(editingListingId, payload)
+        setMessage('Listing updated')
+      } else {
+        await adminAPI.createRealEstateListing(payload)
+        setMessage('Listing created')
+      }
+
+      resetListingForm()
+      fetchPlugins()
+    } catch (err: any) {
+      setError(err.error || 'Failed to save listing')
+    }
+  }
+
+  const handleListingEdit = (listing: any) => {
+    setEditingListingId(String(listing.id))
+    setListingFormData({
+      title: listing.title || '',
+      address: listing.address || '',
+      description: listing.description || '',
+      price: String(listing.price || ''),
+      image: listing.image || '',
+      moreInfoUrl: listing.moreInfoUrl || '',
+      isActive: listing.isActive !== false,
+      sortOrder: String(listing.sortOrder || 0)
+    })
+    setShowListingForm(true)
+  }
+
+  const handleListingDelete = async (id: string) => {
+    if (!confirm('Delete this listing?')) return
+    try {
+      await adminAPI.deleteRealEstateListing(id)
+      setMessage('Listing deleted')
+      fetchPlugins()
+    } catch (err: any) {
+      setError(err.error || 'Failed to delete listing')
+    }
+  }
+
   return (
     <AdminLayout title="Plugins">
       {message && <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">{message}</div>}
@@ -172,27 +263,51 @@ export default function AdminPlugins() {
 
       {loading ? <PageSkeleton /> : (
         <div className="space-y-8">
-          <section className="card p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-3 mb-3">
-                  <h2 className="text-2xl font-bold text-gray-900">Restaurant Menu</h2>
-                  <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold">
-                    {restaurantPlugin?.isPurchased ? 'Purchased demo' : 'Not purchased'}
-                  </span>
-                  <span className={`px-2 py-1 rounded text-xs font-semibold ${restaurantPlugin?.isEnabled ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
-                    {restaurantPlugin?.isEnabled ? 'Active' : 'Inactive'}
-                  </span>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <section className="card p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <h2 className="text-2xl font-bold text-gray-900">Restaurant Menu</h2>
+                    <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold">
+                      {restaurantPlugin?.isPurchased ? 'Purchased demo' : 'Not purchased'}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${restaurantPlugin?.isEnabled ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                      {restaurantPlugin?.isEnabled ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <p className="text-gray-600">
+                    Create menu categories, item photos, descriptions, prices, and availability for restaurant websites using this template.
+                  </p>
                 </div>
-                <p className="text-gray-600 max-w-3xl">
-                  Create menu categories, item photos, descriptions, prices, and availability for restaurant websites using this template.
-                </p>
+                <button onClick={() => togglePlugin(restaurantPlugin)} className={restaurantPlugin?.isEnabled ? 'btn-secondary' : 'btn-primary'}>
+                  {restaurantPlugin?.isEnabled ? 'Deactivate' : 'Activate'}
+                </button>
               </div>
-              <button onClick={togglePlugin} className={restaurantPlugin?.isEnabled ? 'btn-secondary' : 'btn-primary'}>
-                {restaurantPlugin?.isEnabled ? 'Deactivate Plugin' : 'Activate Plugin'}
-              </button>
-            </div>
-          </section>
+            </section>
+
+            <section className="card p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <h2 className="text-2xl font-bold text-gray-900">Real Estate Listings</h2>
+                    <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold">
+                      {realEstatePlugin?.isPurchased ? 'Purchased demo' : 'Not purchased'}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${realEstatePlugin?.isEnabled ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                      {realEstatePlugin?.isEnabled ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <p className="text-gray-600">
+                    Add property listings with photos, prices, descriptions, and more information buttons for real estate websites.
+                  </p>
+                </div>
+                <button onClick={() => togglePlugin(realEstatePlugin)} className={realEstatePlugin?.isEnabled ? 'btn-secondary' : 'btn-primary'}>
+                  {realEstatePlugin?.isEnabled ? 'Deactivate' : 'Activate'}
+                </button>
+              </div>
+            </section>
+          </div>
 
           {restaurantPlugin?.isEnabled && (
             <>
@@ -263,6 +378,78 @@ export default function AdminPlugins() {
                   </div>
                 ))}
                 {menuItems.length === 0 && <div className="card p-8 text-center text-gray-600 xl:col-span-3">No menu items yet.</div>}
+              </div>
+            </>
+          )}
+
+          {realEstatePlugin?.isEnabled && (
+            <>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Real Estate Listings</h2>
+                  <p className="text-gray-600">These listings appear on the public real estate plugin demo.</p>
+                </div>
+                <button onClick={() => { setShowListingForm(!showListingForm); setEditingListingId(null) }} className="inline-flex items-center gap-2 btn-primary">
+                  {showListingForm ? <FiX /> : <FiPlus />}
+                  {showListingForm ? 'Close Form' : 'Add Listing'}
+                </button>
+              </div>
+
+              {showListingForm && (
+                <form onSubmit={handleListingSubmit} className="card p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" placeholder="Listing title" value={listingFormData.title} onChange={(e) => setListingFormData({ ...listingFormData, title: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    <input type="text" placeholder="Address or location" value={listingFormData.address} onChange={(e) => setListingFormData({ ...listingFormData, address: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <input type="number" min="0" step="1" placeholder="Price" value={listingFormData.price} onChange={(e) => setListingFormData({ ...listingFormData, price: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    <input type="number" placeholder="Sort order" value={listingFormData.sortOrder} onChange={(e) => setListingFormData({ ...listingFormData, sortOrder: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                  </div>
+                  <textarea placeholder="Description" value={listingFormData.description} onChange={(e) => setListingFormData({ ...listingFormData, description: e.target.value })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" rows={3} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="url" placeholder="Image URL" value={listingFormData.image} onChange={(e) => setListingFormData({ ...listingFormData, image: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <input type="url" placeholder="More info URL, optional" value={listingFormData.moreInfoUrl} onChange={(e) => setListingFormData({ ...listingFormData, moreInfoUrl: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                  </div>
+                  <label className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-700">
+                    <FiImage />
+                    {imageUploading ? 'Uploading...' : 'Upload Listing Image'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleListingImageUpload(e.target.files?.[0])} />
+                  </label>
+                  {listingFormData.image && (
+                    <img src={listingFormData.image} alt={listingFormData.title || 'Listing'} className="h-32 w-48 rounded-lg object-cover border" />
+                  )}
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" checked={listingFormData.isActive} onChange={(e) => setListingFormData({ ...listingFormData, isActive: e.target.checked })} />
+                    Show listing publicly
+                  </label>
+                  <button type="submit" className="btn-primary">{editingListingId ? 'Save Listing' : 'Create Listing'}</button>
+                </form>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {listings.map((listing) => (
+                  <div key={listing.id} className="card overflow-hidden">
+                    {listing.image ? (
+                      <img src={listing.image} alt={listing.title} className="h-48 w-full object-cover" />
+                    ) : (
+                      <div className="h-48 bg-gray-100 flex items-center justify-center text-gray-500">No image</div>
+                    )}
+                    <div className="p-6">
+                      <p className="text-xl font-bold text-blue-600 mb-2">
+                        {Number(listing.price || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                      </p>
+                      <h3 className="text-xl font-bold text-gray-900">{listing.title}</h3>
+                      {listing.address && <p className="text-sm font-semibold text-gray-500 mt-1">{listing.address}</p>}
+                      <p className="text-gray-600 my-4">{listing.description || 'No description'}</p>
+                      <span className={`inline-flex mb-5 px-2 py-1 rounded text-xs font-semibold ${listing.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+                        {listing.isActive ? 'Shown' : 'Hidden'}
+                      </span>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleListingEdit(listing)} className="inline-flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"><FiEdit /> Edit</button>
+                        <button onClick={() => handleListingDelete(String(listing.id))} className="inline-flex items-center gap-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"><FiTrash2 /> Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {listings.length === 0 && <div className="card p-8 text-center text-gray-600 xl:col-span-3">No listings yet.</div>}
               </div>
             </>
           )}

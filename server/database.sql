@@ -144,6 +144,21 @@ CREATE TABLE IF NOT EXISTS RestaurantMenuItems (
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Real Estate Plugin Listings Table
+CREATE TABLE IF NOT EXISTS RealEstateListings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  address VARCHAR(255),
+  description LONGTEXT,
+  price DECIMAL(12, 2) NOT NULL,
+  image LONGTEXT,
+  moreInfoUrl VARCHAR(500),
+  isActive BOOLEAN DEFAULT true,
+  sortOrder INT DEFAULT 0,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- Site Settings Table
 CREATE TABLE IF NOT EXISTS SiteSettings (
   id INT PRIMARY KEY DEFAULT 1,
@@ -243,6 +258,8 @@ CREATE INDEX idx_plugins_slug ON Plugins(slug);
 CREATE INDEX idx_plugins_enabled ON Plugins(isEnabled);
 CREATE INDEX idx_restaurant_menu_category ON RestaurantMenuItems(category);
 CREATE INDEX idx_restaurant_menu_available ON RestaurantMenuItems(isAvailable);
+CREATE INDEX idx_real_estate_active ON RealEstateListings(isActive);
+CREATE INDEX idx_real_estate_sort ON RealEstateListings(sortOrder);
 
 -- Sample Admin User (Password: admin123 - hashed with bcryptjs)
 INSERT INTO Users (name, email, password, role, company, isActive)
@@ -258,5 +275,17 @@ VALUES (
   true,
   true,
   '/plugins/restaurant'
+)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO Plugins (slug, name, description, category, isEnabled, isPurchased, demoUrl)
+VALUES (
+  'real-estate-listings',
+  'Real Estate Listings',
+  'Add property listings with photos, prices, descriptions, and more information buttons.',
+  'Real Estate',
+  true,
+  true,
+  '/plugins/real-estate'
 )
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);

@@ -16,6 +16,7 @@ import Ticket from './models/Ticket.js'
 import ContactMessage from './models/ContactMessage.js'
 import Plugin from './models/Plugin.js'
 import RestaurantMenuItem from './models/RestaurantMenuItem.js'
+import RealEstateListing from './models/RealEstateListing.js'
 
 // Import routes
 import authRoutes from './routes/auth.js'

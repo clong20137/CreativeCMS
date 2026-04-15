@@ -26,7 +26,7 @@ export default function Plugins() {
     <div>
       <SEO
         title="Website Plugins and Add Ons"
-        description="Explore optional website plugins from Creative by Caleb, including restaurant menu tools for editable items, photos, and prices."
+        description="Explore optional website plugins from Creative by Caleb, including restaurant menus and real estate listing tools."
         path="/plugins"
       />
 
@@ -57,7 +57,7 @@ export default function Plugins() {
                   )}
                 </div>
               ))}
-              {plugins.length === 0 && <div className="card p-8 text-center text-gray-600 md:col-span-2">No plugins are available yet.</div>}
+              {plugins.length === 0 && <div className="card p-8 text-center text-gray-600 md:col-span-2">No active plugin demos are available yet.</div>}
             </div>
           )}
         </div>

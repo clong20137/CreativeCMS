@@ -15,8 +15,9 @@ import ContactMessage from '../models/ContactMessage.js'
 import Ticket from '../models/Ticket.js'
 import Plugin from '../models/Plugin.js'
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
+import RealEstateListing from '../models/RealEstateListing.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
-import { getOrCreateRestaurantPlugin } from './plugins.js'
+import { ensureDemoPlugins, getOrCreateRestaurantPlugin, getOrCreateRealEstatePlugin } from './plugins.js'
 import crypto from 'crypto'
 import { base32Encode, verifyTotp } from './auth.js'
 import jwt from 'jsonwebtoken'
@@ -143,7 +144,7 @@ router.get('/notifications', async (req, res) => {
 
 router.get('/plugins', async (req, res) => {
   try {
-    await getOrCreateRestaurantPlugin()
+    await ensureDemoPlugins()
     const plugins = await Plugin.findAll({ order: [['name', 'ASC']] })
     res.json(plugins)
   } catch (error) {
@@ -222,6 +223,69 @@ router.delete('/plugins/restaurant/menu/:id', async (req, res) => {
 
     await item.destroy()
     res.json({ message: 'Menu item deleted' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/plugins/real-estate/listings', async (req, res) => {
+  try {
+    await getOrCreateRealEstatePlugin()
+    const listings = await RealEstateListing.findAll({
+      order: [['sortOrder', 'ASC'], ['createdAt', 'DESC']]
+    })
+    res.json(listings)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/plugins/real-estate/listings', async (req, res) => {
+  try {
+    const listing = await RealEstateListing.create({
+      title: req.body.title,
+      address: req.body.address || '',
+      description: req.body.description || '',
+      price: Number(req.body.price || 0),
+      image: req.body.image || '',
+      moreInfoUrl: req.body.moreInfoUrl || '',
+      isActive: req.body.isActive !== false,
+      sortOrder: Number(req.body.sortOrder || 0)
+    })
+    res.status(201).json(listing)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/plugins/real-estate/listings/:id', async (req, res) => {
+  try {
+    const listing = await RealEstateListing.findByPk(req.params.id)
+    if (!listing) return res.status(404).json({ error: 'Listing not found' })
+
+    await listing.update({
+      title: req.body.title,
+      address: req.body.address || '',
+      description: req.body.description || '',
+      price: Number(req.body.price || 0),
+      image: req.body.image || '',
+      moreInfoUrl: req.body.moreInfoUrl || '',
+      isActive: req.body.isActive !== false,
+      sortOrder: Number(req.body.sortOrder || 0)
+    })
+    res.json(listing)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.delete('/plugins/real-estate/listings/:id', async (req, res) => {
+  try {
+    const listing = await RealEstateListing.findByPk(req.params.id)
+    if (!listing) return res.status(404).json({ error: 'Listing not found' })
+
+    await listing.destroy()
+    res.json({ message: 'Listing deleted' })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
