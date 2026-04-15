@@ -97,10 +97,11 @@ router.put('/:id', verifyToken, async (req, res) => {
 // Delete payment method
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    let userMethods = paymentMethods.get(req.userId) || []
+    const existingMethods = paymentMethods.get(req.userId) || []
+    let userMethods = existingMethods
     userMethods = userMethods.filter(m => m.id !== req.params.id)
     
-    if (userMethods.length === paymentMethods.get(req.userId).length) {
+    if (userMethods.length === existingMethods.length) {
       return res.status(404).json({ error: 'Payment method not found' })
     }
     

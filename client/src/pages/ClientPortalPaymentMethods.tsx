@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiCheckCircle } from 'react-icons/fi'
+import { FiPlus, FiTrash2, FiX, FiCheckCircle } from 'react-icons/fi'
 import { paymentMethodsAPI } from '../services/api'
 
 export default function ClientPortalPaymentMethods() {
@@ -186,7 +186,7 @@ export default function ClientPortalPaymentMethods() {
                   value={formData.cardNumber}
                   onChange={handleFormChange}
                   placeholder="1234 5678 9012 3456"
-                  maxLength="16"
+                  maxLength={16}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
                 />
               </div>
@@ -249,7 +249,7 @@ export default function ClientPortalPaymentMethods() {
                     value={formData.cvv}
                     onChange={handleFormChange}
                     placeholder="123"
-                    maxLength="4"
+                    maxLength={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
                   />
                 </div>

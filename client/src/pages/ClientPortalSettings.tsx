@@ -40,7 +40,7 @@ export default function ClientPortalSettings() {
 
   const handleProfileChange = (e: any) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev: any) => ({ ...prev, [name]: value }))
   }
 
   const handleSaveProfile = async () => {
@@ -81,7 +81,7 @@ export default function ClientPortalSettings() {
         newEmail: emailData.newEmail,
         password: emailData.password
       })
-      setProfile(prev => ({ ...prev, email: emailData.newEmail }))
+      setProfile((prev: any) => ({ ...prev, email: emailData.newEmail }))
       setEmailData({ newEmail: '', password: '' })
       setShowEmailModal(false)
       setMessage('Email updated successfully')

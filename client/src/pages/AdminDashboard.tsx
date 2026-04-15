@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { FiLogOut, FiUsers, FiFileText, FiTrendingUp, FiBarChart3 } from 'react-icons/fi'
+import { useState, useCallback, useEffect } from 'react'
+import { FiLogOut, FiUsers, FiFileText, FiTrendingUp, FiBarChart } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { adminAPI } from '../services/api'
 import { DashboardStatsSkeleton } from '../components/SkeletonLoaders'
@@ -10,19 +10,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    checkAdmin()
-    fetchStats()
-  }, [])
-
-  const checkAdmin = () => {
+  const checkAdmin = useCallback(() => {
     const userRole = localStorage.getItem('userRole')
     if (userRole !== 'admin') {
       navigate('/login')
     }
-  }
+  }, [navigate])
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true)
       const data = await adminAPI.getStats()
@@ -32,11 +27,18 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    checkAdmin()
+    fetchStats()
+  }, [checkAdmin, fetchStats])
 
   const handleLogout = () => {
     localStorage.removeItem('authToken')
+    localStorage.removeItem('userId')
     localStorage.removeItem('userRole')
+    localStorage.removeItem('userEmail')
     navigate('/')
   }
 
@@ -86,7 +88,7 @@ export default function AdminDashboard() {
               color="purple"
             />
             <StatCard
-              icon={FiBarChart3}
+              icon={FiBarChart}
               label="Total Revenue"
               value={`$${(stats.totalRevenue || 0).toLocaleString()}`}
               color="orange"
@@ -105,7 +107,7 @@ export default function AdminDashboard() {
           {[
             { label: 'Manage Clients', url: '/admin/clients', icon: FiUsers },
             { label: 'View Projects', url: '/admin/projects', icon: FiFileText },
-            { label: 'Invoices', url: '/admin/invoices', icon: FiBarChart3 },
+            { label: 'Invoices', url: '/admin/invoices', icon: FiBarChart },
             { label: 'Subscriptions', url: '/admin/subscriptions', icon: FiTrendingUp }
           ].map((link, i) => {
             const Icon = link.icon

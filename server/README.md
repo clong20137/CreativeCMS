@@ -1,42 +1,50 @@
 # Backend Server Setup
 
-This is the Express.js backend server for the Creative Portfolio website with admin and client portals.
+This is the Express.js backend for the Creative Portfolio website. It uses MySQL through Sequelize, JWT authentication, and REST API routes for admin and client portals.
 
 ## Prerequisites
 
-- Node.js (v16+)
-- MongoDB (local or MongoDB Atlas)
+- Node.js v16+
+- MySQL 8+ or compatible database
 - npm or yarn
 
 ## Installation
 
-1. Navigate to server directory:
 ```bash
 cd server
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
-3. Create `.env` file with configuration:
+Create `server/.env`:
+
 ```env
 PORT=5000
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/creative-portfolio
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=creative_portfolio
+DB_USER=root
+DB_PASSWORD=123456
 JWT_SECRET=your-super-secret-jwt-key-change-this
 STRIPE_SECRET_KEY=sk_test_your_key
 ```
 
-## Running the Server
+Create the database:
 
-Development mode (with auto-reload):
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS creative_portfolio;"
+```
+
+You can also import `database.sql`. In development, the server syncs Sequelize models automatically.
+
+## Running
+
 ```bash
 npm run dev
 ```
 
-Production mode:
+Production:
+
 ```bash
 npm start
 ```
@@ -44,127 +52,84 @@ npm start
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
 ### Projects
-- `GET /api/projects/client/:clientId` - Get client projects
-- `GET /api/projects/:id` - Get single project
-- `POST /api/projects` - Create project
-- `PUT /api/projects/:id` - Update project
-- `DELETE /api/projects/:id` - Delete project
+
+- `GET /api/projects/client/:clientId`
+- `GET /api/projects/:id`
+- `POST /api/projects`
+- `PUT /api/projects/:id`
+- `DELETE /api/projects/:id`
 
 ### Invoices
-- `GET /api/invoices/client/:clientId` - Get client invoices
-- `GET /api/invoices/:id` - Get single invoice
-- `POST /api/invoices` - Create invoice
-- `PUT /api/invoices/:id` - Update invoice
-- `PUT /api/invoices/:id/pay` - Mark as paid
-- `DELETE /api/invoices/:id` - Delete invoice
+
+- `GET /api/invoices/client/:clientId`
+- `GET /api/invoices/:id`
+- `POST /api/invoices`
+- `PUT /api/invoices/:id`
+- `PUT /api/invoices/:id/pay`
+- `DELETE /api/invoices/:id`
 
 ### Subscriptions
-- `GET /api/subscriptions/client/:clientId` - Get client subscription
-- `GET /api/subscriptions/:id` - Get single subscription
-- `POST /api/subscriptions` - Create subscription
-- `PUT /api/subscriptions/:id` - Update subscription
-- `PUT /api/subscriptions/:id/cancel` - Cancel subscription
-- `DELETE /api/subscriptions/:id` - Delete subscription
+
+- `GET /api/subscriptions/client/:clientId`
+- `GET /api/subscriptions/:id`
+- `POST /api/subscriptions`
+- `PUT /api/subscriptions/:id`
+- `PUT /api/subscriptions/:id/cancel`
+- `DELETE /api/subscriptions/:id`
 
 ### Portfolio
-- `GET /api/portfolio` - Get all portfolio items
-- `GET /api/portfolio/category/:category` - Get by category
-- `GET /api/portfolio/:id` - Get single item
+
+- `GET /api/portfolio`
+- `GET /api/portfolio/category/:category`
+- `GET /api/portfolio/:id`
 
 ### Admin
-- `GET /api/admin/stats` - Dashboard statistics
-- `GET /api/admin/clients` - Get all clients
-- `GET /api/admin/projects` - Get all projects
-- `GET /api/admin/invoices` - Get all invoices
-- `GET /api/admin/subscriptions` - Get all subscriptions
-- `GET /api/admin/revenue/monthly` - Monthly revenue
-- `POST /api/admin/users` - Create user
-- `PUT /api/admin/users/:id` - Update user
-- `DELETE /api/admin/users/:id` - Delete user
 
-## Database Schema
+- `GET /api/admin/stats`
+- `GET /api/admin/clients`
+- `GET /api/admin/projects`
+- `GET /api/admin/invoices`
+- `GET /api/admin/subscriptions`
+- `GET /api/admin/revenue/monthly`
+- `POST /api/admin/users`
+- `PUT /api/admin/users/:id`
+- `DELETE /api/admin/users/:id`
 
-### User
-```typescript
-{
-  name: String,
-  email: String (unique),
-  password: String (hashed),
-  phone: String,
-  company: String,
-  role: 'client' | 'admin',
-  avatar: String,
-  isActive: Boolean,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
+### Profile and Payment Methods
 
-### Project
-```typescript
-{
-  clientId: ObjectId,
-  title: String,
-  description: String,
-  category: 'web-design' | 'photography' | 'videography' | 'branding',
-  status: 'pending' | 'in-progress' | 'completed' | 'on-hold',
-  progress: Number (0-100),
-  startDate: Date,
-  dueDate: Date,
-  budget: Number,
-  spent: Number
-}
-```
+- `GET /api/users/profile`
+- `PUT /api/users/profile`
+- `PUT /api/users/email`
+- `PUT /api/users/password`
+- `GET /api/users/preferences`
+- `PUT /api/users/preferences`
+- `GET /api/payment-methods`
+- `POST /api/payment-methods`
+- `PUT /api/payment-methods/:id`
+- `DELETE /api/payment-methods/:id`
+- `PUT /api/payment-methods/:id/default`
 
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| PORT | Server port (default: 5000) |
-| MONGODB_URI | MongoDB connection string |
-| JWT_SECRET | Secret for JWT tokens |
-| STRIPE_SECRET_KEY | Stripe API key |
-| EMAIL_USER | Email for notifications |
-| EMAIL_PASSWORD | Email password |
-
-## Testing Endpoints
-
-Using curl:
-```bash
-# Register
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"John","email":"john@test.com","password":"password","role":"client"}'
-
-# Login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"john@test.com","password":"password"}'
-
-# Get stats (requires token)
-curl -X GET http://localhost:5000/api/admin/stats \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
+| `PORT` | Server port, default `5000` |
+| `DB_HOST` | MySQL host |
+| `DB_PORT` | MySQL port, default `3306` |
+| `DB_NAME` | Database name, default `creative_portfolio` |
+| `DB_USER` | Database user |
+| `DB_PASSWORD` | Database password |
+| `JWT_SECRET` | Secret used to sign JWT tokens |
+| `STRIPE_SECRET_KEY` | Stripe secret key, optional for current local flow |
 
 ## Troubleshooting
 
-**MongoDB Connection Error:**
-- Ensure MongoDB is running locally or update MONGODB_URI with Atlas connection string
-- Check network connectivity to database
+If the database connection fails, verify MySQL is running, the `creative_portfolio` database exists, and the `DB_*` values match your local credentials.
 
-**Port Already in Use:**
-- Change PORT in .env to another port (e.g., 5001)
-- Or kill process: `lsof -ti:5000 | xargs kill`
-
-## Next Steps
-
-1. Connect to actual MongoDB instance
-2. Set up real Stripe account for payments
-3. Configure email notifications
-4. Set production JWT_SECRET
-5. Deploy to cloud provider (Heroku, AWS, etc.)
+If port `5000` is already in use, change `PORT` in `.env`.

@@ -2,6 +2,10 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import sequelize from './database.js'
+import User from './models/User.js'
+import Project from './models/Project.js'
+import Invoice from './models/Invoice.js'
+import Subscription from './models/Subscription.js'
 
 // Import routes
 import authRoutes from './routes/auth.js'
@@ -17,6 +21,18 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 5000
+
+User.hasMany(Project, { foreignKey: 'clientId' })
+Project.belongsTo(User, { foreignKey: 'clientId' })
+
+User.hasMany(Invoice, { foreignKey: 'clientId' })
+Invoice.belongsTo(User, { foreignKey: 'clientId' })
+
+Project.hasMany(Invoice, { foreignKey: 'projectId' })
+Invoice.belongsTo(Project, { foreignKey: 'projectId' })
+
+User.hasMany(Subscription, { foreignKey: 'clientId' })
+Subscription.belongsTo(User, { foreignKey: 'clientId' })
 
 // Middleware
 app.use(cors())

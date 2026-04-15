@@ -141,7 +141,7 @@ export default function AdminClients() {
               </thead>
               <tbody>
                 {clients.map((client) => (
-                  <tr key={client._id} className="bg-white border-b hover:bg-gray-50">
+                  <tr key={client.id} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-3 text-sm text-gray-900">{client.name}</td>
                     <td className="px-6 py-3 text-sm text-gray-600">{client.email}</td>
                     <td className="px-6 py-3 text-sm text-gray-600">{client.company}</td>
@@ -155,7 +155,7 @@ export default function AdminClients() {
                             company: client.company || '',
                             phone: client.phone || ''
                           })
-                          setEditingId(client._id)
+                          setEditingId(String(client.id))
                           setShowForm(true)
                         }}
                         className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
@@ -163,7 +163,7 @@ export default function AdminClients() {
                         <FiEdit size={16} /> Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(client._id)}
+                        onClick={() => handleDelete(String(client.id))}
                         className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
                       >
                         <FiTrash2 size={16} /> Delete

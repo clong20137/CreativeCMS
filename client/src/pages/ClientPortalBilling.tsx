@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { FiDownload, FiCreditCard, FiRefreshCw, FiX } from 'react-icons/fi'
 import { invoicesAPI, subscriptionsAPI } from '../services/api'
 import { PageSkeleton } from '../components/SkeletonLoaders'
@@ -10,11 +10,7 @@ export default function ClientPortalBilling() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const clientId = localStorage.getItem('userId') || ''
 
-  useEffect(() => {
-    fetchData()
-  }, [clientId])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const [invoicesData, subData] = await Promise.all([
@@ -28,7 +24,11 @@ export default function ClientPortalBilling() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [clientId])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handlePayInvoice = async (invoiceId: string) => {
     try {
@@ -42,7 +42,7 @@ export default function ClientPortalBilling() {
   const handleCancelSubscription = async () => {
     if (confirm('Are you sure you want to cancel your subscription?')) {
       try {
-        await subscriptionsAPI.cancelSubscription(subscription._id)
+        await subscriptionsAPI.cancelSubscription(String(subscription.id))
         fetchData()
       } catch (error) {
         console.error('Error canceling subscription:', error)
@@ -149,7 +149,7 @@ export default function ClientPortalBilling() {
           ) : invoices.length > 0 ? (
             <div className="space-y-4">
               {invoices.map((invoice) => (
-                <div key={invoice._id} className="card p-6 flex items-center justify-between hover:shadow-lg transition">
+                <div key={invoice.id} className="card p-6 flex items-center justify-between hover:shadow-lg transition">
                   <div className="flex-1">
                     <div className="flex items-center gap-4 mb-2">
                       <h3 className="font-bold text-gray-900">{invoice.invoiceNumber}</h3>
@@ -172,7 +172,7 @@ export default function ClientPortalBilling() {
                     </button>
                     {invoice.status !== 'paid' && (
                       <button
-                        onClick={() => handlePayInvoice(invoice._id)}
+                        onClick={() => handlePayInvoice(String(invoice.id))}
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                       >
                         <FiCreditCard size={16} /> Pay Now
