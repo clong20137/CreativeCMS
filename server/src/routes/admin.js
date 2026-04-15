@@ -7,6 +7,7 @@ import Subscription from '../models/Subscription.js'
 import SubscriptionPlan from '../models/SubscriptionPlan.js'
 import ServicePackage from '../models/ServicePackage.js'
 import PortfolioItem from '../models/PortfolioItem.js'
+import ContactMessage from '../models/ContactMessage.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
 import crypto from 'crypto'
 import { base32Encode, verifyTotp } from './auth.js'
@@ -313,6 +314,26 @@ router.put('/users/:id/two-factor', async (req, res) => {
       message: 'Two-factor authentication updated',
       user: { id: user.id, email: user.email, twoFactorEnabled: user.twoFactorEnabled }
     })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/contact-messages', async (req, res) => {
+  try {
+    const messages = await ContactMessage.findAll({ order: [['createdAt', 'DESC']] })
+    res.json(messages)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/contact-messages/:id', async (req, res) => {
+  try {
+    const message = await ContactMessage.findByPk(req.params.id)
+    if (!message) return res.status(404).json({ error: 'Message not found' })
+    await message.update(req.body)
+    res.json(message)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

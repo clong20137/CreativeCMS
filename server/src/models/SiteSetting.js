@@ -15,6 +15,10 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  logoUrl: {
+    type: DataTypes.TEXT('long'),
+    allowNull: true
+  },
   contactEmail: {
     type: DataTypes.STRING,
     defaultValue: 'hello@creativestudio.com'
@@ -63,6 +67,10 @@ const SiteSetting = sequelize.define('SiteSetting', {
       { title: 'Videography', desc: 'Cinematic quality video production' },
       { title: 'Brand Building', desc: 'Complete identity and strategy' }
     ]
+  },
+  webDesignPackages: {
+    type: DataTypes.JSON,
+    defaultValue: []
   },
   featuredWork: {
     type: DataTypes.JSON,

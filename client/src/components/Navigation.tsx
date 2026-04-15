@@ -7,6 +7,7 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(localStorage.getItem('userRole'))
   const [siteName, setSiteName] = useState('Creative Studio')
+  const [logoUrl, setLogoUrl] = useState('')
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path
@@ -22,6 +23,7 @@ export default function Navigation() {
       try {
         const settings = await siteSettingsAPI.getSettings()
         setSiteName(settings.siteName || 'Creative Studio')
+        setLogoUrl(settings.logoUrl || '')
       } catch (error) {
         console.error('Error loading site settings:', error)
       }
@@ -35,7 +37,7 @@ export default function Navigation() {
       <div className="container">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="text-2xl font-bold text-blue-600">
-            {siteName}
+            {logoUrl ? <img src={logoUrl} alt={siteName} className="h-10 w-auto object-contain" /> : siteName}
           </Link>
 
           {/* Desktop Menu */}

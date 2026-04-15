@@ -8,6 +8,9 @@ import AdminLayout from '../components/AdminLayout'
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [stats, setStats] = useState<any>(null)
+  const [clients, setClients] = useState<any[]>([])
+  const [subscriptions, setSubscriptions] = useState<any[]>([])
+  const [invoices, setInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -21,8 +24,16 @@ export default function AdminDashboard() {
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await adminAPI.getStats()
+      const [data, clientsData, subscriptionsData, invoicesData] = await Promise.all([
+        adminAPI.getStats(),
+        adminAPI.getClients(),
+        adminAPI.getSubscriptions(),
+        adminAPI.getInvoices()
+      ])
       setStats(data)
+      setClients(clientsData)
+      setSubscriptions(subscriptionsData)
+      setInvoices(invoicesData)
     } catch (err: any) {
       setError(err.error || 'Failed to load stats')
     } finally {
@@ -101,6 +112,35 @@ export default function AdminDashboard() {
             )
           })}
         </div>
+
+        {stats && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-12">
+            <MiniBarChart
+              title="Business Snapshot"
+              data={[
+                { label: 'Clients', value: stats.totalClients || clients.length },
+                { label: 'Projects', value: stats.totalProjects || 0 },
+                { label: 'Subscriptions', value: stats.activeSubscriptions || 0 }
+              ]}
+            />
+            <MiniBarChart
+              title="Invoice Revenue"
+              data={[
+                { label: 'Paid', value: invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + Number(i.total || 0), 0) },
+                { label: 'Open', value: invoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + Number(i.total || 0), 0) }
+              ]}
+              currency
+            />
+            <MiniBarChart
+              title="Subscription Status"
+              data={[
+                { label: 'Active', value: subscriptions.filter(s => s.status === 'active').length },
+                { label: 'Cancelled', value: subscriptions.filter(s => s.status === 'cancelled').length },
+                { label: 'Other', value: subscriptions.filter(s => !['active', 'cancelled'].includes(s.status)).length }
+              ]}
+            />
+          </div>
+        )}
     </AdminLayout>
   )
 }
@@ -121,6 +161,29 @@ function StatCard({ icon: Icon, label, value, color }: any) {
       </div>
       <p className="text-gray-600 text-sm mb-1">{label}</p>
       <p className="text-3xl font-bold text-gray-900">{value}</p>
+    </div>
+  )
+}
+
+function MiniBarChart({ title, data, currency = false }: any) {
+  const max = Math.max(...data.map((item: any) => Number(item.value || 0)), 1)
+
+  return (
+    <div className="card p-6">
+      <h3 className="text-xl font-bold text-gray-900 mb-6">{title}</h3>
+      <div className="space-y-4">
+        {data.map((item: any) => (
+          <div key={item.label}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="font-semibold text-gray-700">{item.label}</span>
+              <span className="text-gray-600">{currency ? `$${Number(item.value || 0).toLocaleString()}` : item.value}</span>
+            </div>
+            <div className="h-3 bg-gray-100 rounded">
+              <div className="h-3 bg-blue-600 rounded" style={{ width: `${(Number(item.value || 0) / max) * 100}%` }}></div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

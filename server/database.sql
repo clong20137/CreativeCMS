@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   id INT PRIMARY KEY DEFAULT 1,
   siteName VARCHAR(255) DEFAULT 'Creative Studio',
   faviconUrl LONGTEXT,
+  logoUrl LONGTEXT,
   contactEmail VARCHAR(255) DEFAULT 'hello@creativestudio.com',
   phone VARCHAR(255) DEFAULT '+1 (555) 123-4567',
   hours VARCHAR(255) DEFAULT 'Mon-Fri, 9am-6pm EST',
@@ -130,6 +131,7 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   twitterUrl VARCHAR(500),
   linkedinUrl VARCHAR(500),
   whatWeDo JSON,
+  webDesignPackages JSON,
   featuredWork JSON,
   faqs JSON,
   testimonials JSON,
@@ -141,6 +143,20 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   bankName VARCHAR(255),
   bankAccountLast4 VARCHAR(20),
   payoutInstructions LONGTEXT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Contact Messages Table
+CREATE TABLE IF NOT EXISTS ContactMessages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(255),
+  company VARCHAR(255),
+  service VARCHAR(255),
+  message LONGTEXT NOT NULL,
+  status ENUM('new', 'read', 'archived') DEFAULT 'new',
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

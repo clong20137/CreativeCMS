@@ -22,6 +22,7 @@ import AdminServices from './pages/AdminServices'
 import AdminPortfolio from './pages/AdminPortfolio'
 import AdminSettings from './pages/AdminSettings'
 import AdminTickets from './pages/AdminTickets'
+import AdminMessages from './pages/AdminMessages'
 import ClientTickets from './pages/ClientTickets'
 import NotFound from './pages/NotFound'
 import { siteSettingsAPI } from './services/api'
@@ -77,6 +78,7 @@ function App() {
             <Route path="/admin/portfolio" element={<AdminPortfolio />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/tickets" element={<AdminTickets />} />
+            <Route path="/admin/messages" element={<AdminMessages />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

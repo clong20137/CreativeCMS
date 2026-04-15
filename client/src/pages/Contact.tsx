@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FiMail, FiPhone, FiMapPin } from 'react-icons/fi'
-import { siteSettingsAPI } from '../services/api'
+import { contactMessagesAPI, siteSettingsAPI } from '../services/api'
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -47,12 +47,11 @@ export default function Contact() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically send this data to a backend
-    console.log('Form submitted:', formData)
-    setIsSubmitted(true)
-    setTimeout(() => {
+    try {
+      await contactMessagesAPI.createMessage(formData)
+      setIsSubmitted(true)
       setFormData({
         name: '',
         email: '',
@@ -61,8 +60,10 @@ export default function Contact() {
         service: '',
         message: ''
       })
-      setIsSubmitted(false)
-    }, 3000)
+      setTimeout(() => setIsSubmitted(false), 3000)
+    } catch (error) {
+      console.error('Error sending message:', error)
+    }
   }
 
   return (

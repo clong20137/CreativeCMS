@@ -3,7 +3,7 @@ import { FiCheck } from 'react-icons/fi'
 import { servicePackagesAPI, siteSettingsAPI } from '../services/api'
 
 export default function Pricing() {
-  const pricingPlans = [
+  const fallbackPricingPlans = [
     {
       id: 1,
       name: 'Starter',
@@ -68,6 +68,7 @@ export default function Pricing() {
     { service: 'Logo Design', price: 1000, unit: 'project' },
     { service: 'Brand Identity', price: 3000, unit: 'project' }
   ]
+  const [pricingPlans, setPricingPlans] = useState<any[]>(fallbackPricingPlans)
   const [servicePackages, setServicePackages] = useState<any[]>(fallbackServicePackages)
   const fallbackFaqs = [
     {
@@ -97,6 +98,7 @@ export default function Pricing() {
           setServicePackages(services)
         }
         const settings = await siteSettingsAPI.getSettings()
+        if (Array.isArray(settings.webDesignPackages) && settings.webDesignPackages.length > 0) setPricingPlans(settings.webDesignPackages)
         if (Array.isArray(settings.faqs) && settings.faqs.length > 0) setFaqs(settings.faqs)
       } catch (error) {
         console.error('Error loading services:', error)
@@ -152,18 +154,21 @@ export default function Pricing() {
                     Get Started
                   </button>
                   <div className="space-y-4">
-                    {plan.features.map((feature, i) => (
+                    {(plan.features || []).map((feature: any, i: number) => {
+                      const featureName = typeof feature === 'string' ? feature : feature.name
+                      const included = typeof feature === 'string' ? true : feature.included
+                      return (
                       <div key={i} className="flex items-center gap-3">
                         <div className={`w-5 h-5 rounded flex items-center justify-center ${
-                          feature.included ? 'bg-green-100' : 'bg-gray-100'
+                          included ? 'bg-green-100' : 'bg-gray-100'
                         }`}>
-                          {feature.included && <FiCheck className="text-green-600" />}
+                          {included && <FiCheck className="text-green-600" />}
                         </div>
-                        <span className={feature.included ? 'text-gray-900' : 'text-gray-400 line-through'}>
-                          {feature.name}
+                        <span className={included ? 'text-gray-900' : 'text-gray-400 line-through'}>
+                          {featureName}
                         </span>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </div>
               </div>

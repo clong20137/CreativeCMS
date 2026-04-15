@@ -93,6 +93,10 @@ export const siteSettingsAPI = {
   getSettings: () => unwrap(api.get('/site-settings'))
 }
 
+export const contactMessagesAPI = {
+  createMessage: (data: any) => unwrap(api.post('/contact-messages', data))
+}
+
 // Admin API
 export const adminAPI = {
   getStats: () => unwrap(api.get('/admin/stats')),
@@ -119,6 +123,8 @@ export const adminAPI = {
   deletePortfolioItem: (id: string) => unwrap(api.delete(`/admin/portfolio-items/${id}`)),
   getSiteSettings: () => unwrap(api.get('/admin/site-settings')),
   updateSiteSettings: (data: any) => unwrap(api.put('/admin/site-settings', data)),
+  getContactMessages: () => unwrap<any[]>(api.get('/admin/contact-messages')),
+  updateContactMessage: (id: string, data: any) => unwrap(api.put(`/admin/contact-messages/${id}`, data)),
   updateTwoFactor: (id: string, enabled: boolean) => unwrap(api.put(`/admin/users/${id}/two-factor`, { enabled })),
   startTwoFactorSetup: (id: string) => unwrap(api.post(`/admin/users/${id}/two-factor/setup`)),
   confirmTwoFactorSetup: (id: string, code: string) => unwrap(api.post(`/admin/users/${id}/two-factor/confirm`, { code }))
