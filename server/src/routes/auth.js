@@ -16,6 +16,10 @@ function signTwoFactorToken(user) {
   return jwt.sign({ userId: user.id, purpose: 'two-factor' }, JWT_SECRET, { expiresIn: '10m' })
 }
 
+function signPasswordResetToken(user) {
+  return jwt.sign({ userId: user.id, purpose: 'password-reset' }, JWT_SECRET, { expiresIn: '15m' })
+}
+
 function createTwoFactorCode() {
   return String(Math.floor(100000 + Math.random() * 900000))
 }
@@ -88,15 +92,31 @@ async function sendTwoFactorCode(user, code) {
   return true
 }
 
+async function sendPasswordResetCode(user, code) {
+  const transporter = createTransporter()
+  if (!transporter) return false
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: user.email,
+    subject: 'Reset your Creative Studio password',
+    text: `Your password reset code is ${code}. It expires in 15 minutes.`,
+    html: `<p>Your password reset code is <strong>${code}</strong>.</p><p>It expires in 15 minutes.</p>`
+  })
+
+  return true
+}
+
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, company, role } = req.body
+    const { name, email, password, company } = req.body
+    if (!password || password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
     
     const existingUser = await User.findOne({ where: { email } })
     if (existingUser) return res.status(400).json({ error: 'Email already exists' })
     
-    const user = await User.create({ name, email, password, company, role: role || 'client' })
+    const user = await User.create({ name, email, password, company, role: 'client' })
     
     const token = signAuthToken(user)
     
@@ -114,6 +134,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body
+    if (!email || !password) return res.status(400).json({ error: 'Email and password are required' })
     
     const user = await User.findOne({ where: { email } })
     if (!user) return res.status(401).json({ error: 'Invalid credentials' })
@@ -194,6 +215,72 @@ router.post('/verify-2fa', async (req, res) => {
 })
 
 export { base32Encode, verifyTotp }
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body
+    const user = await User.findOne({ where: { email } })
+
+    if (!user) {
+      return res.json({ message: 'If an account exists, a reset code was sent' })
+    }
+
+    const code = createTwoFactorCode()
+    await user.update({
+      passwordResetCode: code,
+      passwordResetExpires: new Date(Date.now() + 15 * 60 * 1000)
+    })
+
+    const sent = await sendPasswordResetCode(user, code)
+    if (!sent) return res.status(500).json({ error: 'Password reset email is not configured' })
+
+    res.json({
+      message: 'Password reset code sent',
+      tempToken: signPasswordResetToken(user),
+      requiresAuthenticator: user.twoFactorEnabled && user.twoFactorMethod === 'app'
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { tempToken, resetCode, twoFactorCode, newPassword } = req.body
+    if (!tempToken || !resetCode || !newPassword) {
+      return res.status(400).json({ error: 'Reset code and new password are required' })
+    }
+    if (newPassword.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
+
+    const decoded = jwt.verify(tempToken, JWT_SECRET)
+    if (decoded.purpose !== 'password-reset') return res.status(401).json({ error: 'Invalid reset session' })
+
+    const user = await User.findByPk(decoded.userId)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+    if (!user.passwordResetCode || user.passwordResetCode !== resetCode) return res.status(401).json({ error: 'Invalid reset code' })
+    if (!user.passwordResetExpires || new Date(user.passwordResetExpires).getTime() < Date.now()) {
+      return res.status(401).json({ error: 'Reset code expired' })
+    }
+
+    if (user.twoFactorEnabled && user.twoFactorMethod === 'app' && user.twoFactorSecret) {
+      if (!verifyTotp(user.twoFactorSecret, twoFactorCode || '')) {
+        return res.status(401).json({ error: 'Invalid authenticator code' })
+      }
+    }
+
+    await user.update({
+      password: newPassword,
+      passwordResetCode: null,
+      passwordResetExpires: null,
+      twoFactorCode: null,
+      twoFactorExpires: null
+    })
+
+    res.json({ message: 'Password reset successful' })
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid reset session' })
+  }
+})
 
 // Get Current User
 router.get('/me', (req, res) => {

@@ -1,9 +1,23 @@
 import express from 'express'
 import nodemailer from 'nodemailer'
+import jwt from 'jsonwebtoken'
 import ContactMessage from '../models/ContactMessage.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
 
 const router = express.Router()
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+
+const verifyAdmin = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1]
+    if (!token) return res.status(401).json({ error: 'No token provided' })
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Admin access required' })
+    next()
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' })
+  }
+}
 
 function createTransporter() {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) return null
@@ -38,7 +52,7 @@ router.post('/', async (req, res) => {
   }
 })
 
-router.get('/', async (req, res) => {
+router.get('/', verifyAdmin, async (req, res) => {
   try {
     const messages = await ContactMessage.findAll({ order: [['createdAt', 'DESC']] })
     res.json(messages)
@@ -47,7 +61,7 @@ router.get('/', async (req, res) => {
   }
 })
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyAdmin, async (req, res) => {
   try {
     const message = await ContactMessage.findByPk(req.params.id)
     if (!message) return res.status(404).json({ error: 'Message not found' })

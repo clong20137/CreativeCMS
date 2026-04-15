@@ -6,6 +6,7 @@ import { authAPI } from '../services/api'
 export default function Login() {
   const navigate = useNavigate()
   const [isCreatingAccount, setIsCreatingAccount] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [name, setName] = useState('')
   const [company, setCompany] = useState('')
   const [email, setEmail] = useState('')
@@ -13,6 +14,10 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [twoFactorCode, setTwoFactorCode] = useState('')
   const [twoFactorToken, setTwoFactorToken] = useState('')
+  const [twoFactorMethod, setTwoFactorMethod] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const [resetCode, setResetCode] = useState('')
+  const [requiresResetAuthenticator, setRequiresResetAuthenticator] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -44,6 +49,7 @@ export default function Login() {
 
       if (data.requiresTwoFactor) {
         setTwoFactorToken(data.tempToken)
+        setTwoFactorMethod(data.method || 'email')
         setError('')
         return
       }
@@ -56,6 +62,56 @@ export default function Login() {
       navigate(data.user.role === 'admin' ? '/admin/dashboard' : '/client-dashboard')
     } catch (err: any) {
       setError(err.error || 'Unable to sign in')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const data = await authAPI.forgotPassword({ email })
+      setResetToken(data.tempToken || '')
+      setRequiresResetAuthenticator(Boolean(data.requiresAuthenticator))
+      setError('')
+    } catch (err: any) {
+      setError(err.error || 'Unable to start password reset')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    try {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match')
+        setIsLoading(false)
+        return
+      }
+
+      await authAPI.resetPassword({
+        tempToken: resetToken,
+        resetCode,
+        twoFactorCode,
+        newPassword: password
+      })
+
+      setIsResettingPassword(false)
+      setResetToken('')
+      setResetCode('')
+      setTwoFactorCode('')
+      setPassword('')
+      setConfirmPassword('')
+      setError('')
+    } catch (err: any) {
+      setError(err.error || 'Unable to reset password')
     } finally {
       setIsLoading(false)
     }
@@ -86,7 +142,7 @@ export default function Login() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-blue-600 mb-2">
-            {isCreatingAccount ? 'Create Account' : 'Client Portal'}
+            {isResettingPassword ? 'Reset Password' : isCreatingAccount ? 'Create Account' : 'Client Portal'}
           </h1>
           <p className="text-gray-600">
             {isCreatingAccount ? 'Start your client portal access' : 'Sign in to access your project dashboard'}
@@ -95,7 +151,7 @@ export default function Login() {
 
         {/* Login Card */}
         <div className="card p-8">
-          <form onSubmit={twoFactorToken ? handleTwoFactorSubmit : handleSubmit} className="space-y-6">
+          <form onSubmit={isResettingPassword ? resetToken ? handleResetPassword : handleForgotPassword : twoFactorToken ? handleTwoFactorSubmit : handleSubmit} className="space-y-6">
             {error && (
               <div className="p-4 bg-red-100 border border-red-400 rounded-lg text-red-700">
                 {error}
@@ -104,11 +160,42 @@ export default function Login() {
 
             {twoFactorToken && (
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
-                A verification code was sent to your email.
+                {twoFactorMethod === 'app'
+                  ? 'Enter the code from your authenticator app.'
+                  : 'A verification code was sent to your email.'}
               </div>
             )}
 
-            {twoFactorToken ? (
+            {isResettingPassword ? (
+              <>
+                {!resetToken ? (
+                  <div>
+                    <label htmlFor="resetEmail" className="block text-gray-700 font-semibold mb-2">Email Address</label>
+                    <input
+                      type="email"
+                      id="resetEmail"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      placeholder="hello@example.com"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
+                      Enter the reset code from your email{requiresResetAuthenticator ? ' and your authenticator app code.' : '.'}
+                    </div>
+                    <input value={resetCode} onChange={(e) => setResetCode(e.target.value)} placeholder="Email reset code" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    {requiresResetAuthenticator && (
+                      <input value={twoFactorCode} onChange={(e) => setTwoFactorCode(e.target.value)} placeholder="Authenticator app code" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    )}
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                  </>
+                )}
+              </>
+            ) : twoFactorToken ? (
               <div>
                 <label htmlFor="twoFactorCode" className="block text-gray-700 font-semibold mb-2">
                   Verification Code
@@ -162,7 +249,7 @@ export default function Login() {
               </>
             )}
 
-            {!twoFactorToken && (
+            {!twoFactorToken && !isResettingPassword && (
               <>
             <div>
               <label htmlFor="email" className="block text-gray-700 font-semibold mb-2">
@@ -231,15 +318,15 @@ export default function Login() {
             )}
 
             {/* Remember Me & Forgot Password */}
-            {!isCreatingAccount && (
+            {!isCreatingAccount && !twoFactorToken && !isResettingPassword && (
               <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2">
                 <input type="checkbox" className="w-4 h-4" />
                 <span className="text-gray-600">Remember me</span>
               </label>
-              <a href="#" className="text-blue-600 hover:text-blue-800">
+              <button type="button" onClick={() => setIsResettingPassword(true)} className="text-blue-600 hover:text-blue-800">
                 Forgot password?
-              </a>
+              </button>
             </div>
             )}
 
@@ -250,8 +337,8 @@ export default function Login() {
               className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading
-                ? twoFactorToken ? 'Verifying...' : isCreatingAccount ? 'Creating account...' : 'Signing in...'
-                : twoFactorToken ? 'Verify Code' : isCreatingAccount ? 'Create Account' : 'Sign In'}
+                ? isResettingPassword ? 'Working...' : twoFactorToken ? 'Verifying...' : isCreatingAccount ? 'Creating account...' : 'Signing in...'
+                : isResettingPassword ? resetToken ? 'Reset Password' : 'Send Reset Code' : twoFactorToken ? 'Verify Code' : isCreatingAccount ? 'Create Account' : 'Sign In'}
             </button>
           </form>
 
@@ -268,16 +355,24 @@ export default function Login() {
         {/* Help Text */}
         <div className="text-center mt-8 text-gray-600">
           <p>
-            {isCreatingAccount ? 'Already have an account?' : "Don't have an account?"}{' '}
+            {isResettingPassword ? 'Remembered your password?' : isCreatingAccount ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button
               type="button"
               onClick={() => {
-                setIsCreatingAccount(!isCreatingAccount)
+                if (isResettingPassword) {
+                  setIsResettingPassword(false)
+                  setIsCreatingAccount(false)
+                } else {
+                  setIsCreatingAccount(!isCreatingAccount)
+                }
+                setResetToken('')
+                setResetCode('')
+                setTwoFactorCode('')
                 setError('')
               }}
               className="text-blue-600 font-semibold hover:text-blue-800"
             >
-              {isCreatingAccount ? 'Sign in' : 'Create one'}
+              {isResettingPassword ? 'Sign in' : isCreatingAccount ? 'Sign in' : 'Create one'}
             </button>
           </p>
         </div>

@@ -72,6 +72,10 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.JSON,
     defaultValue: []
   },
+  services: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
   featuredWork: {
     type: DataTypes.JSON,
     defaultValue: []

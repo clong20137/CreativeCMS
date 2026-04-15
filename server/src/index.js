@@ -31,6 +31,14 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 5000
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean)
+
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-secret-key')) {
+  throw new Error('JWT_SECRET must be set to a strong unique value in production')
+}
 
 User.hasMany(Project, { foreignKey: 'clientId' })
 Project.belongsTo(User, { foreignKey: 'clientId' })
@@ -51,9 +59,39 @@ SubscriptionPlan.hasMany(Subscription, { foreignKey: 'planId' })
 Subscription.belongsTo(SubscriptionPlan, { foreignKey: 'planId' })
 
 // Middleware
-app.use(cors())
+app.disable('x-powered-by')
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('Referrer-Policy', 'no-referrer')
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  next()
+})
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true)
+    callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true
+}))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
+
+const authAttempts = new Map()
+app.use('/api/auth', (req, res, next) => {
+  if (!['POST'].includes(req.method)) return next()
+  const key = req.ip
+  const now = Date.now()
+  const attempts = (authAttempts.get(key) || []).filter(time => now - time < 15 * 60 * 1000)
+  attempts.push(now)
+  authAttempts.set(key, attempts)
+
+  if (attempts.length > 30) {
+    return res.status(429).json({ error: 'Too many authentication attempts. Please try again later.' })
+  }
+
+  next()
+})
 
 // Database Connection & Sync
 sequelize.authenticate()

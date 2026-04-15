@@ -11,8 +11,23 @@ import ContactMessage from '../models/ContactMessage.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
 import crypto from 'crypto'
 import { base32Encode, verifyTotp } from './auth.js'
+import jwt from 'jsonwebtoken'
 
 const router = express.Router()
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+
+router.use((req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1]
+    if (!token) return res.status(401).json({ error: 'No token provided' })
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Admin access required' })
+    req.userId = decoded.userId
+    next()
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' })
+  }
+})
 
 // Get dashboard stats
 router.get('/stats', async (req, res) => {
@@ -371,8 +386,12 @@ router.post('/subscriptions/assign', async (req, res) => {
 // Create user (by admin)
 router.post('/users', async (req, res) => {
   try {
+    if (!req.body.password || req.body.password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' })
+    }
     const user = await User.create(req.body)
-    res.status(201).json({ message: 'User created', user })
+    const { password, ...safeUser } = user.toJSON()
+    res.status(201).json({ message: 'User created', user: safeUser })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -384,7 +403,8 @@ router.put('/users/:id', async (req, res) => {
     const user = await User.findByPk(req.params.id)
     if (!user) return res.status(404).json({ error: 'User not found' })
     await user.update(req.body)
-    res.json(user)
+    const { password, ...safeUser } = user.toJSON()
+    res.json(safeUser)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

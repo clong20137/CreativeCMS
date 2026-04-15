@@ -43,6 +43,8 @@ export const authAPI = {
   register: (data: any) => unwrap(api.post('/auth/register', data)),
   login: (data: any) => unwrap(api.post('/auth/login', data)),
   verifyTwoFactor: (data: any) => unwrap(api.post('/auth/verify-2fa', data)),
+  forgotPassword: (data: any) => unwrap(api.post('/auth/forgot-password', data)),
+  resetPassword: (data: any) => unwrap(api.post('/auth/reset-password', data)),
   getMe: () => unwrap(api.get('/auth/me'))
 }
 

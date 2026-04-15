@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   linkedinUrl VARCHAR(500),
   whatWeDo JSON,
   webDesignPackages JSON,
+  services JSON,
   featuredWork JSON,
   faqs JSON,
   testimonials JSON,

@@ -11,10 +11,41 @@ export async function getOrCreateSiteSettings() {
   return settings
 }
 
+function publicSiteSettings(settings) {
+  const data = settings.toJSON()
+  const allowedKeys = [
+    'siteName',
+    'faviconUrl',
+    'logoUrl',
+    'logoText',
+    'contactEmail',
+    'phone',
+    'hours',
+    'locationLine1',
+    'locationLine2',
+    'facebookUrl',
+    'instagramUrl',
+    'twitterUrl',
+    'linkedinUrl',
+    'whatWeDo',
+    'featuredWork',
+    'webDesignPackages',
+    'services',
+    'faqs',
+    'testimonials',
+    'stripePublishableKey'
+  ]
+
+  return allowedKeys.reduce((safe, key) => {
+    safe[key] = data[key]
+    return safe
+  }, {})
+}
+
 router.get('/', async (req, res) => {
   try {
     const settings = await getOrCreateSiteSettings()
-    res.json(settings)
+    res.json(publicSiteSettings(settings))
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

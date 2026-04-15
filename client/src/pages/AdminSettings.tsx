@@ -20,6 +20,7 @@ const emptySettings = {
   whatWeDo: [] as any[],
   featuredWork: [] as any[],
   webDesignPackages: [] as any[],
+  services: [] as any[],
   faqs: [] as any[],
   testimonials: [] as any[],
   googleReviewsEnabled: false,
@@ -32,7 +33,7 @@ const emptySettings = {
   payoutInstructions: ''
 }
 
-const tabs = ['General', 'Contact', 'Homepage', 'Pricing', 'Testimonials', 'Payments', 'Security']
+const tabs = ['General', 'Contact', 'Homepage', 'Services', 'Pricing', 'Testimonials', 'Payments', 'Security']
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('General')
@@ -196,6 +197,20 @@ export default function AdminSettings() {
               </section>
             )}
 
+            {activeTab === 'Services' && (
+              <section className="space-y-6">
+                <ListEditor
+                  title="Services Page"
+                  listKey="services"
+                  items={settings.services}
+                  fields={['title', 'description', 'features', 'url', 'image']}
+                  updateListItem={updateListItem}
+                  addListItem={addListItem}
+                  removeListItem={removeListItem}
+                />
+              </section>
+            )}
+
             {activeTab === 'Testimonials' && (
               <section className="space-y-4">
                 <label className="flex items-center gap-2">
@@ -253,6 +268,13 @@ export default function AdminSettings() {
 }
 
 function ListEditor({ title, listKey, items, fields, updateListItem, addListItem, removeListItem }: any) {
+  const handleListImageUpload = (index: number, file: File | undefined) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => updateListItem(listKey, index, 'image', String(reader.result || ''))
+    reader.readAsDataURL(file)
+  }
+
   return (
     <section>
       <h2 className="text-2xl font-bold text-gray-900 mb-4">{title}</h2>
@@ -260,14 +282,18 @@ function ListEditor({ title, listKey, items, fields, updateListItem, addListItem
         {(items || []).map((item: any, index: number) => (
           <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-2 border rounded-lg p-3">
             {fields.map((field: string) => (
-              <textarea
-                key={field}
-                value={Array.isArray(item[field]) ? item[field].join('\n') : item[field] || ''}
-                onChange={(e) => updateListItem(listKey, index, field, field === 'features' ? e.target.value.split('\n').filter(Boolean) : e.target.value)}
-                placeholder={field === 'features' ? 'features, one per line' : field}
-                className="px-4 py-2 border rounded-lg"
-                rows={field === 'description' || field === 'text' || field === 'features' ? 3 : 1}
-              />
+              <div key={field}>
+                <textarea
+                  value={Array.isArray(item[field]) ? item[field].join('\n') : item[field] || ''}
+                  onChange={(e) => updateListItem(listKey, index, field, field === 'features' ? e.target.value.split('\n').filter(Boolean) : e.target.value)}
+                  placeholder={field === 'features' ? 'features, one per line' : field}
+                  className="w-full px-4 py-2 border rounded-lg"
+                  rows={field === 'description' || field === 'text' || field === 'features' ? 3 : 1}
+                />
+                {field === 'image' && (
+                  <input type="file" accept="image/*" onChange={(e) => handleListImageUpload(index, e.target.files?.[0])} className="mt-2 w-full px-3 py-2 border rounded-lg" />
+                )}
+              </div>
             ))}
             <button type="button" onClick={() => removeListItem(listKey, index)} className="btn-secondary">Remove</button>
           </div>

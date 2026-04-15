@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { FiMonitor, FiCamera, FiVideo, FiPenTool } from 'react-icons/fi'
+import { siteSettingsAPI } from '../services/api'
 
 export default function Services() {
-  const services = [
+  const fallbackServices = [
     {
       id: 1,
       icon: FiMonitor,
@@ -59,6 +61,22 @@ export default function Services() {
       ]
     }
   ]
+  const [services, setServices] = useState<any[]>(fallbackServices)
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const settings = await siteSettingsAPI.getSettings()
+        if (Array.isArray(settings.services) && settings.services.length > 0) {
+          setServices(settings.services)
+        }
+      } catch (error) {
+        console.error('Error loading services:', error)
+      }
+    }
+
+    fetchServices()
+  }, [])
 
   return (
     <div>
@@ -75,11 +93,11 @@ export default function Services() {
         <div className="container">
           <div className="space-y-16">
             {services.map((service, index) => {
-              const IconComponent = service.icon
+              const IconComponent = service.icon || [FiMonitor, FiCamera, FiVideo, FiPenTool][index % 4]
               const isEven = index % 2 === 0
 
               return (
-                <div key={service.id} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div key={service.id || `${service.title}-${index}`} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                   <div className={isEven ? 'order-1' : 'order-2'}>
                     <div className="mb-6">
                       <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
@@ -89,20 +107,24 @@ export default function Services() {
                     </div>
                     <p className="text-lg text-gray-600 mb-8">{service.description}</p>
                     <div className="space-y-3">
-                      {service.features.map((feature, i) => (
+                      {(service.features || []).map((feature: string, i: number) => (
                         <div key={i} className="flex items-center gap-3">
                           <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                           <span className="text-gray-700">{feature}</span>
                         </div>
                       ))}
                     </div>
-                    <button className="btn-primary mt-8">Learn More</button>
+                    <a href={service.url || '/contact'} className="btn-primary mt-8 inline-block">Learn More</a>
                   </div>
 
                   <div className={isEven ? 'order-2' : 'order-1'}>
-                    <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg h-96 flex items-center justify-center">
-                      <IconComponent size={120} className="text-blue-200" />
-                    </div>
+                    {service.image ? (
+                      <img src={service.image} alt={service.title} className="rounded-lg h-96 w-full object-cover" />
+                    ) : (
+                      <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg h-96 flex items-center justify-center">
+                        <IconComponent size={120} className="text-blue-200" />
+                      </div>
+                    )}
                   </div>
                 </div>
               )

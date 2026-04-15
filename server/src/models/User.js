@@ -99,6 +99,14 @@ const User = sequelize.define('User', {
   twoFactorSecret: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  passwordResetCode: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  passwordResetExpires: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   timestamps: true,
