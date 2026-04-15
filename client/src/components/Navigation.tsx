@@ -1,12 +1,19 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiMenu, FiX } from 'react-icons/fi'
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(localStorage.getItem('userRole'))
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path
+  const dashboardPath = userRole === 'admin' ? '/admin/dashboard' : '/client-dashboard'
+
+  useEffect(() => {
+    setUserRole(localStorage.getItem('userRole'))
+    setIsOpen(false)
+  }, [location.pathname])
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
@@ -17,42 +24,42 @@ export default function Navigation() {
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden md:flex items-center gap-8">
             <Link
               to="/"
-              className={`${isActive('/') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} pb-1 transition`}
+              className={`inline-flex h-10 items-center ${isActive('/') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
             >
               Home
             </Link>
             <Link
               to="/portfolio"
-              className={`${isActive('/portfolio') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} pb-1 transition`}
+              className={`inline-flex h-10 items-center ${isActive('/portfolio') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
             >
               Portfolio
             </Link>
             <Link
               to="/services"
-              className={`${isActive('/services') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} pb-1 transition`}
+              className={`inline-flex h-10 items-center ${isActive('/services') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
             >
               Services
             </Link>
             <Link
               to="/pricing"
-              className={`${isActive('/pricing') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} pb-1 transition`}
+              className={`inline-flex h-10 items-center ${isActive('/pricing') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
             >
               Pricing
             </Link>
             <Link
               to="/contact"
-              className={`${isActive('/contact') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} pb-1 transition`}
+              className={`inline-flex h-10 items-center ${isActive('/contact') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
             >
               Contact
             </Link>
             <Link
-              to="/login"
-              className="btn-secondary text-sm"
+              to={userRole ? dashboardPath : '/login'}
+              className="btn-secondary text-sm inline-flex h-10 items-center"
             >
-              Client Login
+              {userRole ? 'Dashboard' : 'Client Login'}
             </Link>
           </div>
 
@@ -83,8 +90,8 @@ export default function Navigation() {
             <Link to="/contact" className="block py-2 text-gray-700 hover:text-blue-600">
               Contact
             </Link>
-            <Link to="/login" className="block py-2 btn-secondary w-full text-left">
-              Client Login
+            <Link to={userRole ? dashboardPath : '/login'} className="block py-2 btn-secondary w-full text-left">
+              {userRole ? 'Dashboard' : 'Client Login'}
             </Link>
           </div>
         )}

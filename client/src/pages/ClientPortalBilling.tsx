@@ -39,6 +39,10 @@ export default function ClientPortalBilling() {
     }
   }
 
+  const downloadInvoice = (invoiceId: string) => {
+    window.open(invoicesAPI.getDownloadUrl(invoiceId), '_blank')
+  }
+
   const handleCancelSubscription = async () => {
     if (confirm('Are you sure you want to cancel your subscription?')) {
       try {
@@ -167,7 +171,10 @@ export default function ClientPortalBilling() {
                   </div>
 
                   <div className="flex gap-2">
-                    <button className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition">
+                    <button
+                      onClick={() => downloadInvoice(String(invoice.id))}
+                      className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
+                    >
                       <FiDownload size={20} />
                     </button>
                     {invoice.status !== 'paid' && (

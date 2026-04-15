@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -24,6 +24,9 @@ api.interceptors.response.use(
   error => {
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken')
+      localStorage.removeItem('userId')
+      localStorage.removeItem('userRole')
+      localStorage.removeItem('userEmail')
       window.location.href = '/login'
     }
     return Promise.reject(error.response?.data || error.message)
@@ -58,7 +61,9 @@ export const invoicesAPI = {
   createInvoice: (data: any) => unwrap(api.post('/invoices', data)),
   updateInvoice: (id: string, data: any) => unwrap(api.put(`/invoices/${id}`, data)),
   payInvoice: (id: string) => unwrap(api.put(`/invoices/${id}/pay`)),
-  deleteInvoice: (id: string) => unwrap(api.delete(`/invoices/${id}`))
+  deleteInvoice: (id: string) => unwrap(api.delete(`/invoices/${id}`)),
+  sendInvoice: (id: string) => unwrap(api.post(`/invoices/${id}/send`)),
+  getDownloadUrl: (id: string) => `${API_URL}/invoices/${id}/download`
 }
 
 // Subscriptions API
