@@ -46,10 +46,10 @@ const emptySettings = {
 }
 
 const tabs = ['General', 'Contact', 'Homepage', 'Services', 'Pricing', 'Testimonials', 'Payments', 'Security']
-const MAX_DATA_URL_LENGTH = 250_000
-const MAX_IMAGE_WIDTH = 1280
-const MAX_IMAGE_HEIGHT = 720
-const IMAGE_QUALITY = 0.72
+const MAX_DATA_URL_LENGTH = 80_000
+const MAX_IMAGE_WIDTH = 900
+const MAX_IMAGE_HEIGHT = 600
+const IMAGE_QUALITY = 0.65
 const IMAGE_SETTING_KEYS = ['faviconUrl', 'logoUrl', 'heroMediaUrl']
 const IMAGE_LIST_KEYS = ['featuredWork', 'services', 'testimonials']
 
@@ -134,7 +134,7 @@ async function compactDataUrl(value: any) {
   return compressImageSource(value)
 }
 
-async function compactSettingsPayload(settings: typeof emptySettings) {
+async function compactSettingsPayload(settings: Record<string, any>) {
   const payload: any = { ...settings }
 
   for (const key of IMAGE_SETTING_KEYS) {
@@ -151,6 +151,47 @@ async function compactSettingsPayload(settings: typeof emptySettings) {
   }
 
   return payload
+}
+
+function getActiveTabPayload(settings: typeof emptySettings, activeTab: string) {
+  const payloadMap: Record<string, string[]> = {
+    General: ['siteName', 'faviconUrl', 'logoUrl', 'logoSize'],
+    Contact: [
+      'contactEmail',
+      'phone',
+      'hours',
+      'locationLine1',
+      'locationLine2',
+      'facebookUrl',
+      'instagramUrl',
+      'twitterUrl',
+      'linkedinUrl',
+      'footerDescription'
+    ],
+    Homepage: [
+      'heroTitle',
+      'heroSubtitle',
+      'heroPrimaryLabel',
+      'heroPrimaryUrl',
+      'heroSecondaryLabel',
+      'heroSecondaryUrl',
+      'heroMediaType',
+      'heroMediaUrl',
+      'whatWeDo',
+      'featuredWork'
+    ],
+    Services: ['services'],
+    Pricing: ['webDesignPackages', 'faqs'],
+    Testimonials: ['googleReviewsEnabled', 'googlePlaceId', 'googleApiKey', 'testimonials'],
+    Payments: ['stripePublishableKey', 'stripeSecretKey', 'stripeWebhookSecret', 'bankName', 'bankAccountLast4', 'payoutInstructions'],
+    Security: ['turnstileSiteKey', 'turnstileSecretKey']
+  }
+
+  const keys = payloadMap[activeTab] || Object.keys(settings)
+  return keys.reduce((payload: any, key) => {
+    payload[key] = (settings as any)[key]
+    return payload
+  }, {})
 }
 
 export default function AdminSettings() {
@@ -212,9 +253,10 @@ export default function AdminSettings() {
     try {
       setError('')
       setMessage('Saving settings...')
-      const payload = await compactSettingsPayload(settings)
+      const activeTabPayload = getActiveTabPayload(settings, activeTab)
+      const payload = await compactSettingsPayload(activeTabPayload)
       await adminAPI.updateSiteSettings(payload)
-      setSettings({ ...emptySettings, ...payload })
+      setSettings(prev => ({ ...prev, ...payload }))
       setMessage('Site settings saved')
       document.title = settings.siteName || 'Creative by Caleb'
     } catch (err: any) {
