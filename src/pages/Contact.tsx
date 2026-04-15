@@ -12,21 +12,29 @@ export default function Contact() {
   })
 
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+    if (isSubmitted) setIsSubmitted(false)
+    if (submitError) setSubmitError('')
     setFormData(prev => ({
       ...prev,
       [name]: value
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically send this data to a backend
-    console.log('Form submitted:', formData)
-    setIsSubmitted(true)
-    setTimeout(() => {
+    setIsSubmitting(true)
+    setIsSubmitted(false)
+    setSubmitError('')
+
+    try {
+      // Here you would typically send this data to a backend
+      console.log('Form submitted:', formData)
+      setIsSubmitted(true)
       setFormData({
         name: '',
         email: '',
@@ -35,8 +43,12 @@ export default function Contact() {
         service: '',
         message: ''
       })
-      setIsSubmitted(false)
-    }, 3000)
+    } catch (error) {
+      console.error('Error sending message:', error)
+      setSubmitError('We could not send your message. Please try again in a moment.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -115,8 +127,14 @@ export default function Contact() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
 
                 {isSubmitted && (
-                  <div className="mb-6 p-4 bg-green-100 border border-green-400 rounded-lg text-green-700">
-                    Thank you for your message! We'll get back to you soon.
+                  <div role="status" className="mb-6 p-4 bg-green-100 border border-green-400 rounded-lg text-green-700">
+                    Message sent. Thank you for reaching out. We will get back to you soon.
+                  </div>
+                )}
+
+                {submitError && (
+                  <div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                    {submitError}
                   </div>
                 )}
 
@@ -222,8 +240,12 @@ export default function Contact() {
                     ></textarea>
                   </div>
 
-                  <button type="submit" className="btn-primary w-full">
-                    Send Message
+                  <button
+                    type="submit"
+                    className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Sending...' : 'Send Message'}
                   </button>
                 </form>
               </div>

@@ -14,6 +14,8 @@ export default function Contact() {
   })
 
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState('')
   const [settings, setSettings] = useState<any>({
     contactEmail: 'hello@creativestudio.com',
@@ -43,6 +45,8 @@ export default function Contact() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+    if (isSubmitted) setIsSubmitted(false)
+    if (submitError) setSubmitError('')
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -51,9 +55,14 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
+    setIsSubmitted(false)
+    setSubmitError('')
+
     try {
       await contactMessagesAPI.createMessage({ ...formData, turnstileToken })
       setIsSubmitted(true)
+      setTurnstileToken('')
       setFormData({
         name: '',
         email: '',
@@ -62,9 +71,11 @@ export default function Contact() {
         service: '',
         message: ''
       })
-      setTimeout(() => setIsSubmitted(false), 3000)
     } catch (error) {
       console.error('Error sending message:', error)
+      setSubmitError('We could not send your message. Please try again in a moment.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -144,8 +155,14 @@ export default function Contact() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
 
                 {isSubmitted && (
-                  <div className="mb-6 p-4 bg-green-100 border border-green-400 rounded-lg text-green-700">
-                    Thank you for your message! We'll get back to you soon.
+                  <div role="status" className="mb-6 p-4 bg-green-100 border border-green-400 rounded-lg text-green-700">
+                    Message sent. Thank you for reaching out. We will get back to you soon.
+                  </div>
+                )}
+
+                {submitError && (
+                  <div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                    {submitError}
                   </div>
                 )}
 
@@ -255,8 +272,12 @@ export default function Contact() {
                     <TurnstileWidget siteKey={settings.turnstileSiteKey} onVerify={setTurnstileToken} />
                   )}
 
-                  <button type="submit" className="btn-primary w-full">
-                    Send Message
+                  <button
+                    type="submit"
+                    className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Sending...' : 'Send Message'}
                   </button>
                 </form>
               </div>
