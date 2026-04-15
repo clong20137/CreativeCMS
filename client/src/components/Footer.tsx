@@ -7,6 +7,7 @@ export default function Footer() {
   const [settings, setSettings] = useState<any>({
     siteName: 'Creative Studio',
     logoUrl: '',
+    logoSize: 40,
     footerDescription: 'Transforming ideas into stunning visual experiences through web design, photography, and videography.',
     contactEmail: 'hello@creativestudio.com'
   })
@@ -35,7 +36,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Company Info */}
           <div>
-            {settings.logoUrl ? <img src={settings.logoUrl} alt={settings.siteName} className="h-12 w-auto object-contain mb-4" /> : <h3 className="text-2xl font-bold mb-4">{settings.siteName}</h3>}
+            {settings.logoUrl ? (
+              <img
+                src={settings.logoUrl}
+                alt={settings.siteName}
+                className="w-auto object-contain mb-4"
+                style={{ height: `${Math.min(Math.max(Number(settings.logoSize) || 40, 24), 96)}px` }}
+              />
+            ) : <h3 className="text-2xl font-bold mb-4">{settings.siteName}</h3>}
             <p className="text-gray-400">
               {settings.footerDescription}
             </p>

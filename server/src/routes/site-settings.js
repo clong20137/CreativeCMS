@@ -17,6 +17,7 @@ function publicSiteSettings(settings) {
     'siteName',
     'faviconUrl',
     'logoUrl',
+    'logoSize',
     'logoText',
     'contactEmail',
     'phone',

@@ -8,6 +8,7 @@ export default function Navigation() {
   const [userRole, setUserRole] = useState<string | null>(localStorage.getItem('userRole'))
   const [siteName, setSiteName] = useState('Creative Studio')
   const [logoUrl, setLogoUrl] = useState('')
+  const [logoSize, setLogoSize] = useState(40)
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path
@@ -24,6 +25,7 @@ export default function Navigation() {
         const settings = await siteSettingsAPI.getSettings()
         setSiteName(settings.siteName || 'Creative Studio')
         setLogoUrl(settings.logoUrl || '')
+        setLogoSize(Number(settings.logoSize) || 40)
       } catch (error) {
         console.error('Error loading site settings:', error)
       }
@@ -35,9 +37,16 @@ export default function Navigation() {
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
       <div className="container">
-        <div className="flex justify-between items-center h-16">
-          <Link to="/" className="text-2xl font-bold text-blue-600">
-            {logoUrl ? <img src={logoUrl} alt={siteName} className="h-10 w-auto object-contain" /> : siteName}
+        <div className="flex justify-between items-center min-h-16 py-2">
+          <Link to="/" className="flex items-center text-2xl font-bold text-blue-600">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={siteName}
+                className="w-auto object-contain"
+                style={{ height: `${Math.min(Math.max(logoSize, 24), 96)}px` }}
+              />
+            ) : siteName}
           </Link>
 
           {/* Desktop Menu */}

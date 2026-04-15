@@ -19,6 +19,10 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.TEXT('long'),
     allowNull: true
   },
+  logoSize: {
+    type: DataTypes.INTEGER,
+    defaultValue: 40
+  },
   contactEmail: {
     type: DataTypes.STRING,
     defaultValue: 'hello@creativestudio.com'

@@ -7,6 +7,7 @@ const emptySettings = {
   siteName: '',
   faviconUrl: '',
   logoUrl: '',
+  logoSize: 40,
   contactEmail: '',
   phone: '',
   hours: '',
@@ -135,6 +136,7 @@ export default function AdminSettings() {
   }, [])
 
   const handleChange = (key: string, value: any) => setSettings(prev => ({ ...prev, [key]: value }))
+  const logoSize = Math.min(Math.max(Number(settings.logoSize) || 40, 24), 96)
 
   const handleUpload = async (key: string, file: File | undefined) => {
     if (!file) return
@@ -229,6 +231,30 @@ export default function AdminSettings() {
                   <input value={settings.faviconUrl || ''} onChange={(e) => handleChange('faviconUrl', e.target.value)} placeholder="Favicon URL" className="px-4 py-2 border rounded-lg" />
                   <input value={settings.logoUrl || ''} onChange={(e) => handleChange('logoUrl', e.target.value)} placeholder="Logo URL" className="px-4 py-2 border rounded-lg" />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_7rem] gap-4 items-end">
+                  <label className="block">
+                    <span className="block text-sm font-semibold text-gray-700 mb-2">Logo size</span>
+                    <input
+                      type="range"
+                      min="24"
+                      max="96"
+                      value={logoSize}
+                      onChange={(e) => handleChange('logoSize', Number(e.target.value))}
+                      className="w-full"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="block text-sm font-semibold text-gray-700 mb-2">Pixels</span>
+                    <input
+                      type="number"
+                      min="24"
+                      max="96"
+                      value={logoSize}
+                      onChange={(e) => handleChange('logoSize', Number(e.target.value))}
+                      className="w-full px-4 py-2 border rounded-lg"
+                    />
+                  </label>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <label className="block">
                     <span className="block text-sm font-semibold text-gray-700 mb-2">Upload logo</span>
@@ -239,7 +265,17 @@ export default function AdminSettings() {
                     <input type="file" accept="image/*" onChange={(e) => handleUpload('faviconUrl', e.target.files?.[0])} className="w-full px-4 py-2 border rounded-lg" />
                   </label>
                 </div>
-                {settings.logoUrl && <img src={settings.logoUrl} alt="Logo preview" className="h-16 w-auto object-contain border rounded p-2" />}
+                {settings.logoUrl && (
+                  <div className="rounded-lg border p-4">
+                    <p className="mb-3 text-sm font-semibold text-gray-700">Logo preview</p>
+                    <img
+                      src={settings.logoUrl}
+                      alt="Logo preview"
+                      className="w-auto object-contain"
+                      style={{ height: `${logoSize}px` }}
+                    />
+                  </div>
+                )}
               </section>
             )}
 
