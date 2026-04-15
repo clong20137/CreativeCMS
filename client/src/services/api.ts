@@ -22,6 +22,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   response => response,
   error => {
+    if (error.response?.status === 413) {
+      return Promise.reject({
+        error: 'This save is too large. Use smaller images or hosted image URLs, then try again.'
+      })
+    }
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken')
       localStorage.removeItem('userId')

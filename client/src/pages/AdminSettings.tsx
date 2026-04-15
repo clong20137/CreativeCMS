@@ -46,10 +46,12 @@ const emptySettings = {
 }
 
 const tabs = ['General', 'Contact', 'Homepage', 'Services', 'Pricing', 'Testimonials', 'Payments', 'Security']
-const MAX_DATA_URL_LENGTH = 900_000
-const MAX_IMAGE_WIDTH = 1920
-const MAX_IMAGE_HEIGHT = 1080
-const IMAGE_QUALITY = 0.82
+const MAX_DATA_URL_LENGTH = 250_000
+const MAX_IMAGE_WIDTH = 1280
+const MAX_IMAGE_HEIGHT = 720
+const IMAGE_QUALITY = 0.72
+const IMAGE_SETTING_KEYS = ['faviconUrl', 'logoUrl', 'heroMediaUrl']
+const IMAGE_LIST_KEYS = ['featuredWork', 'services', 'testimonials']
 
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -67,6 +69,31 @@ function loadImage(src: string) {
     image.onerror = () => reject(new Error('Failed to load image'))
     image.src = src
   })
+}
+
+async function compressImageSource(src: string, maxDataUrlLength = MAX_DATA_URL_LENGTH) {
+  const image = await loadImage(src)
+  let scale = Math.min(1, MAX_IMAGE_WIDTH / image.width, MAX_IMAGE_HEIGHT / image.height)
+  let quality = IMAGE_QUALITY
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(image.width * scale))
+    canvas.height = Math.max(1, Math.round(image.height * scale))
+
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Image compression is not available in this browser.')
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height)
+    const dataUrl = canvas.toDataURL('image/jpeg', quality)
+
+    if (dataUrl.length <= maxDataUrlLength) return dataUrl
+
+    scale *= 0.8
+    quality = Math.max(0.5, quality - 0.08)
+  }
+
+  throw new Error('This image is still too large after compression. Please use a smaller image or paste a hosted image URL.')
 }
 
 async function getUploadDataUrl(file: File) {
@@ -89,24 +116,41 @@ async function getUploadDataUrl(file: File) {
   const objectUrl = URL.createObjectURL(file)
 
   try {
-    const image = await loadImage(objectUrl)
-    const scale = Math.min(1, MAX_IMAGE_WIDTH / image.width, MAX_IMAGE_HEIGHT / image.height)
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.max(1, Math.round(image.width * scale))
-    canvas.height = Math.max(1, Math.round(image.height * scale))
-
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('Image compression is not available in this browser.')
-
-    context.drawImage(image, 0, 0, canvas.width, canvas.height)
-    const dataUrl = canvas.toDataURL('image/jpeg', IMAGE_QUALITY)
-    if (dataUrl.length > MAX_DATA_URL_LENGTH) {
-      throw new Error('This image is still too large after compression. Please use a smaller image or paste a hosted image URL.')
-    }
-    return dataUrl
+    return await compressImageSource(objectUrl)
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
+}
+
+async function compactDataUrl(value: any) {
+  if (typeof value !== 'string' || !value.startsWith('data:image/') || value.length <= MAX_DATA_URL_LENGTH) {
+    return value
+  }
+
+  if (value.startsWith('data:image/svg+xml') || value.startsWith('data:image/gif')) {
+    throw new Error('One of your saved images is too large. Please replace it with a smaller image or a hosted image URL.')
+  }
+
+  return compressImageSource(value)
+}
+
+async function compactSettingsPayload(settings: typeof emptySettings) {
+  const payload: any = { ...settings }
+
+  for (const key of IMAGE_SETTING_KEYS) {
+    payload[key] = await compactDataUrl(payload[key])
+  }
+
+  for (const listKey of IMAGE_LIST_KEYS) {
+    if (!Array.isArray(payload[listKey])) continue
+
+    payload[listKey] = await Promise.all(payload[listKey].map(async (item: any) => ({
+      ...item,
+      image: await compactDataUrl(item?.image)
+    })))
+  }
+
+  return payload
 }
 
 export default function AdminSettings() {
@@ -166,11 +210,16 @@ export default function AdminSettings() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await adminAPI.updateSiteSettings(settings)
+      setError('')
+      setMessage('Saving settings...')
+      const payload = await compactSettingsPayload(settings)
+      await adminAPI.updateSiteSettings(payload)
+      setSettings({ ...emptySettings, ...payload })
       setMessage('Site settings saved')
       document.title = settings.siteName || 'Creative by Caleb'
     } catch (err: any) {
-      setError(err.error || 'Failed to save settings')
+      setMessage('')
+      setError(err.error || err.message || 'Failed to save settings')
     }
   }
 
