@@ -23,7 +23,7 @@ const verifyToken = (req, res, next) => {
 // Get user profile
 router.get('/profile', verifyToken, async (req, res) => {
   try {
-    const user = await User.findByPk(req.userId, { attributes: { exclude: ['password'] } })
+    const user = await User.findByPk(req.userId, { attributes: { exclude: ['password', 'twoFactorCode', 'twoFactorSecret'] } })
     if (!user) return res.status(404).json({ error: 'User not found' })
     
     res.json(user)

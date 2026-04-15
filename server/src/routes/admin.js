@@ -8,6 +8,8 @@ import SubscriptionPlan from '../models/SubscriptionPlan.js'
 import ServicePackage from '../models/ServicePackage.js'
 import PortfolioItem from '../models/PortfolioItem.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
+import crypto from 'crypto'
+import { base32Encode, verifyTotp } from './auth.js'
 
 const router = express.Router()
 
@@ -255,6 +257,45 @@ router.put('/site-settings', async (req, res) => {
   }
 })
 
+router.post('/users/:id/two-factor/setup', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    const secret = base32Encode(crypto.randomBytes(20))
+    await user.update({ twoFactorSecret: secret, twoFactorMethod: 'app' })
+    const label = encodeURIComponent(`Creative Studio:${user.email}`)
+    const issuer = encodeURIComponent('Creative Studio')
+    const otpauthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`
+    res.json({ secret, otpauthUrl })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/users/:id/two-factor/confirm', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id)
+    if (!user) return res.status(404).json({ error: 'User not found' })
+    if (!user.twoFactorSecret) return res.status(400).json({ error: 'Two-factor setup has not been started' })
+    if (!verifyTotp(user.twoFactorSecret, req.body.code)) return res.status(401).json({ error: 'Invalid authenticator code' })
+
+    await user.update({
+      twoFactorEnabled: true,
+      twoFactorMethod: 'app',
+      twoFactorCode: null,
+      twoFactorExpires: null
+    })
+
+    res.json({
+      message: 'Two-factor authentication updated',
+      user: { id: user.id, email: user.email, twoFactorEnabled: user.twoFactorEnabled }
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 router.put('/users/:id/two-factor', async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id)
@@ -262,6 +303,8 @@ router.put('/users/:id/two-factor', async (req, res) => {
 
     await user.update({
       twoFactorEnabled: Boolean(req.body.enabled),
+      twoFactorMethod: req.body.method || user.twoFactorMethod || 'email',
+      twoFactorSecret: req.body.enabled ? user.twoFactorSecret : null,
       twoFactorCode: null,
       twoFactorExpires: null
     })

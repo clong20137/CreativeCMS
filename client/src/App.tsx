@@ -4,6 +4,7 @@ import Navigation from './components/Navigation'
 import Footer from './components/Footer'
 import Home from './pages/Home'
 import Portfolio from './pages/Portfolio'
+import PortfolioDetail from './pages/PortfolioDetail'
 import Services from './pages/Services'
 import Pricing from './pages/Pricing'
 import Contact from './pages/Contact'
@@ -20,6 +21,8 @@ import AdminSubscriptions from './pages/AdminSubscriptions'
 import AdminServices from './pages/AdminServices'
 import AdminPortfolio from './pages/AdminPortfolio'
 import AdminSettings from './pages/AdminSettings'
+import AdminTickets from './pages/AdminTickets'
+import ClientTickets from './pages/ClientTickets'
 import NotFound from './pages/NotFound'
 import { siteSettingsAPI } from './services/api'
 
@@ -55,6 +58,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/portfolio/:id" element={<PortfolioDetail />} />
             <Route path="/services" element={<Services />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/contact" element={<Contact />} />
@@ -63,6 +67,7 @@ function App() {
             <Route path="/client-dashboard/billing" element={<ClientPortalBilling />} />
             <Route path="/client-dashboard/payment-methods" element={<ClientPortalPaymentMethods />} />
             <Route path="/client-dashboard/settings" element={<ClientPortalSettings />} />
+            <Route path="/client-dashboard/tickets" element={<ClientTickets />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/clients" element={<AdminClients />} />
             <Route path="/admin/projects" element={<AdminProjects />} />
@@ -71,6 +76,7 @@ function App() {
             <Route path="/admin/services" element={<AdminServices />} />
             <Route path="/admin/portfolio" element={<AdminPortfolio />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/tickets" element={<AdminTickets />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

@@ -32,10 +32,13 @@ export default function ClientPortalBilling() {
 
   const handlePayInvoice = async (invoiceId: string) => {
     try {
-      await invoicesAPI.payInvoice(invoiceId)
-      fetchData()
-    } catch (error) {
-      console.error('Error paying invoice:', error)
+      const session = await invoicesAPI.createCheckoutSession(invoiceId)
+      if (session.url) {
+        window.location.href = session.url
+      }
+    } catch (error: any) {
+      console.error('Error starting payment:', error)
+      alert(error.error || 'Payment processing is not configured yet')
     }
   }
 

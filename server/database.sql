@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS Users (
   twoFactorEnabled BOOLEAN DEFAULT false,
   twoFactorCode VARCHAR(20),
   twoFactorExpires DATETIME,
+  twoFactorMethod ENUM('email', 'app') DEFAULT 'email',
+  twoFactorSecret VARCHAR(255),
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -127,6 +129,18 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   instagramUrl VARCHAR(500),
   twitterUrl VARCHAR(500),
   linkedinUrl VARCHAR(500),
+  whatWeDo JSON,
+  featuredWork JSON,
+  faqs JSON,
+  testimonials JSON,
+  googleReviewsEnabled BOOLEAN DEFAULT false,
+  googlePlaceId VARCHAR(255),
+  googleApiKey VARCHAR(255),
+  stripePublishableKey VARCHAR(500),
+  stripeSecretKey VARCHAR(500),
+  bankName VARCHAR(255),
+  bankAccountLast4 VARCHAR(20),
+  payoutInstructions LONGTEXT,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

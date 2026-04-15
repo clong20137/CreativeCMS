@@ -20,4 +20,30 @@ router.get('/', async (req, res) => {
   }
 })
 
+router.get('/testimonials', async (req, res) => {
+  try {
+    const settings = await getOrCreateSiteSettings()
+
+    if (settings.googleReviewsEnabled && settings.googlePlaceId && settings.googleApiKey) {
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(settings.googlePlaceId)}&fields=reviews&key=${encodeURIComponent(settings.googleApiKey)}`
+      const response = await fetch(url)
+      const data = await response.json()
+      const reviews = data.result?.reviews || []
+      return res.json(reviews.map(review => ({
+        id: review.time,
+        name: review.author_name,
+        company: 'Google Review',
+        role: `${review.rating} star review`,
+        image: review.profile_photo_url,
+        text: review.text,
+        rating: review.rating
+      })))
+    }
+
+    res.json(settings.testimonials || [])
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 export default router

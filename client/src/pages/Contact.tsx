@@ -20,6 +20,12 @@ export default function Contact() {
     locationLine1: '123 Creative Street',
     locationLine2: 'New York, NY 10001'
   })
+  const socialLinks = [
+    ['Facebook', settings.facebookUrl],
+    ['Instagram', settings.instagramUrl],
+    ['Twitter', settings.twitterUrl],
+    ['LinkedIn', settings.linkedinUrl]
+  ].filter(([, url]) => url)
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -116,12 +122,7 @@ export default function Contact() {
               <div className="pt-8 border-t">
                 <h3 className="font-bold text-gray-900 mb-4">Follow Us</h3>
                 <div className="flex gap-4">
-                  {[
-                    ['Facebook', settings.facebookUrl],
-                    ['Instagram', settings.instagramUrl],
-                    ['Twitter', settings.twitterUrl],
-                    ['LinkedIn', settings.linkedinUrl]
-                  ].map(([social, url], i) => (
+                  {socialLinks.map(([social, url], i) => (
                     <a
                       key={i}
                       href={url || '#'}

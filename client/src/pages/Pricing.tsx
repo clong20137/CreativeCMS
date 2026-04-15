@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FiCheck } from 'react-icons/fi'
-import { servicePackagesAPI } from '../services/api'
+import { servicePackagesAPI, siteSettingsAPI } from '../services/api'
 
 export default function Pricing() {
   const pricingPlans = [
@@ -69,6 +69,25 @@ export default function Pricing() {
     { service: 'Brand Identity', price: 3000, unit: 'project' }
   ]
   const [servicePackages, setServicePackages] = useState<any[]>(fallbackServicePackages)
+  const fallbackFaqs = [
+    {
+      q: 'Do you offer custom quotes?',
+      a: 'Yes, we provide custom quotes for projects outside our standard packages. Contact us to discuss your specific needs.'
+    },
+    {
+      q: 'What is your revisions policy?',
+      a: 'All packages include revision rounds. We work with you until you\'re completely satisfied with the final product.'
+    },
+    {
+      q: 'Do you offer payment plans?',
+      a: 'Yes, we offer flexible payment plans for larger projects. We can discuss options that work best for your budget.'
+    },
+    {
+      q: 'What is your typical turnaround time?',
+      a: 'Turnaround times vary by project complexity, typically ranging from 2-4 weeks. We\'ll provide a specific timeline during consultation.'
+    }
+  ]
+  const [faqs, setFaqs] = useState<any[]>(fallbackFaqs)
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -77,6 +96,8 @@ export default function Pricing() {
         if (services.length > 0) {
           setServicePackages(services)
         }
+        const settings = await siteSettingsAPI.getSettings()
+        if (Array.isArray(settings.faqs) && settings.faqs.length > 0) setFaqs(settings.faqs)
       } catch (error) {
         console.error('Error loading services:', error)
       }
@@ -182,24 +203,7 @@ export default function Pricing() {
         <div className="container max-w-2xl">
           <h2 className="text-3xl font-bold mb-12 text-center text-gray-900">Frequently Asked Questions</h2>
           <div className="space-y-6">
-            {[
-              {
-                q: 'Do you offer custom quotes?',
-                a: 'Yes, we provide custom quotes for projects outside our standard packages. Contact us to discuss your specific needs.'
-              },
-              {
-                q: 'What is your revisions policy?',
-                a: 'All packages include revision rounds. We work with you until you\'re completely satisfied with the final product.'
-              },
-              {
-                q: 'Do you offer payment plans?',
-                a: 'Yes, we offer flexible payment plans for larger projects. We can discuss options that work best for your budget.'
-              },
-              {
-                q: 'What is your typical turnaround time?',
-                a: 'Turnaround times vary by project complexity, typically ranging from 2-4 weeks. We\'ll provide a specific timeline during consultation.'
-              }
-            ].map((faq, i) => (
+            {faqs.map((faq, i) => (
               <div key={i} className="card p-6">
                 <h3 className="font-bold text-lg text-gray-900 mb-3">{faq.q}</h3>
                 <p className="text-gray-600">{faq.a}</p>

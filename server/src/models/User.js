@@ -91,6 +91,14 @@ const User = sequelize.define('User', {
   twoFactorExpires: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  twoFactorMethod: {
+    type: DataTypes.ENUM('email', 'app'),
+    defaultValue: 'email'
+  },
+  twoFactorSecret: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   timestamps: true,

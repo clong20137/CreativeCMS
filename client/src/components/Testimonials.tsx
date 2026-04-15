@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { FiStar } from 'react-icons/fi'
+import { siteSettingsAPI } from '../services/api'
 
 export default function Testimonials() {
-  const testimonials = [
+  const fallbackTestimonials = [
     {
       id: 1,
       name: 'Sarah Anderson',
@@ -27,6 +29,27 @@ export default function Testimonials() {
       text: 'Professional, creative, and results-driven. They delivered our complete brand identity on time and within budget.'
     }
   ]
+  const [testimonials, setTestimonials] = useState<any[]>(fallbackTestimonials)
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const data = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/site-settings/testimonials`)
+        const reviews = await data.json()
+        if (Array.isArray(reviews) && reviews.length > 0) setTestimonials(reviews)
+      } catch (error) {
+        console.error('Error loading testimonials:', error)
+        try {
+          const settings = await siteSettingsAPI.getSettings()
+          if (Array.isArray(settings.testimonials) && settings.testimonials.length > 0) setTestimonials(settings.testimonials)
+        } catch {
+          // Keep fallback testimonials.
+        }
+      }
+    }
+
+    fetchTestimonials()
+  }, [])
 
   const renderStars = () => (
     <div className="flex gap-1">

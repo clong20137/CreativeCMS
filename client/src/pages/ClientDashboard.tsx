@@ -102,6 +102,9 @@ export default function ClientDashboard() {
           <Link to="/client-dashboard/settings" className="card p-4 font-semibold text-blue-600 hover:shadow-lg transition">
             Account Settings
           </Link>
+          <Link to="/client-dashboard/tickets" className="card p-4 font-semibold text-blue-600 hover:shadow-lg transition">
+            Support Tickets
+          </Link>
         </div>
 
         {/* Projects */}

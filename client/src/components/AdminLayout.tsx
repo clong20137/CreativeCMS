@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { FiBarChart, FiCreditCard, FiFileText, FiGrid, FiHome, FiImage, FiLogOut, FiSettings, FiUsers } from 'react-icons/fi'
+import { FiBarChart, FiCreditCard, FiFileText, FiGrid, FiHelpCircle, FiHome, FiImage, FiLogOut, FiSettings, FiUsers } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 
@@ -11,6 +11,7 @@ const adminLinks = [
   { label: 'Subscriptions', path: '/admin/subscriptions', icon: FiCreditCard },
   { label: 'Services', path: '/admin/services', icon: FiGrid },
   { label: 'Portfolio', path: '/admin/portfolio', icon: FiImage },
+  { label: 'Tickets', path: '/admin/tickets', icon: FiHelpCircle },
   { label: 'Settings', path: '/admin/settings', icon: FiSettings }
 ]
 

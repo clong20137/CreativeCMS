@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { FiArrowRight } from 'react-icons/fi'
 import Testimonials from '../components/Testimonials'
+import { siteSettingsAPI } from '../services/api'
 
 export default function Home() {
-  const featuredWorks = [
+  const fallbackFeaturedWorks = [
     {
       id: 1,
       title: 'Modern E-Commerce Platform',
@@ -33,6 +35,28 @@ export default function Home() {
       description: 'Full brand identity package including logo, guidelines, and collateral.'
     }
   ]
+  const fallbackServices = [
+    { title: 'Web Design', desc: 'Modern, responsive websites that convert' },
+    { title: 'Photography', desc: 'Professional visual storytelling' },
+    { title: 'Videography', desc: 'Cinematic quality video production' },
+    { title: 'Brand Building', desc: 'Complete identity and strategy' }
+  ]
+  const [featuredWorks, setFeaturedWorks] = useState<any[]>(fallbackFeaturedWorks)
+  const [whatWeDo, setWhatWeDo] = useState<any[]>(fallbackServices)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await siteSettingsAPI.getSettings()
+        if (Array.isArray(settings.whatWeDo) && settings.whatWeDo.length > 0) setWhatWeDo(settings.whatWeDo)
+        if (Array.isArray(settings.featuredWork) && settings.featuredWork.length > 0) setFeaturedWorks(settings.featuredWork)
+      } catch (error) {
+        console.error('Error loading homepage settings:', error)
+      }
+    }
+
+    fetchSettings()
+  }, [])
 
   return (
     <div>
@@ -63,12 +87,7 @@ export default function Home() {
         <div className="container">
           <h2 className="section-title">What We Do</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { title: 'Web Design', desc: 'Modern, responsive websites that convert' },
-              { title: 'Photography', desc: 'Professional visual storytelling' },
-              { title: 'Videography', desc: 'Cinematic quality video production' },
-              { title: 'Brand Building', desc: 'Complete identity and strategy' }
-            ].map((service, i) => (
+            {whatWeDo.map((service, i) => (
               <div key={i} className="card p-8">
                 <h3 className="text-xl font-bold mb-3 text-gray-900">{service.title}</h3>
                 <p className="text-gray-600">{service.desc}</p>

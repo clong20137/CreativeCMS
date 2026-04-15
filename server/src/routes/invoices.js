@@ -1,7 +1,9 @@
 import express from 'express'
 import nodemailer from 'nodemailer'
+import Stripe from 'stripe'
 import Invoice from '../models/Invoice.js'
 import User from '../models/User.js'
+import { getOrCreateSiteSettings } from './site-settings.js'
 
 const router = express.Router()
 
@@ -114,6 +116,13 @@ async function findInvoiceWithClient(id) {
   })
 }
 
+async function getStripeClient() {
+  const settings = await getOrCreateSiteSettings()
+  const secretKey = settings.stripeSecretKey || process.env.STRIPE_SECRET_KEY
+  if (!secretKey || secretKey.includes('your_key_here')) return null
+  return new Stripe(secretKey)
+}
+
 function createTransporter() {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
     return null
@@ -196,6 +205,44 @@ router.post('/:id/send', async (req, res) => {
 
     await invoice.update({ status: invoice.status === 'draft' ? 'sent' : invoice.status })
     res.json({ message: 'Invoice emailed successfully' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/:id/checkout-session', async (req, res) => {
+  try {
+    const invoice = await findInvoiceWithClient(req.params.id)
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+
+    const stripe = await getStripeClient()
+    if (!stripe) return res.status(400).json({ error: 'Stripe is not configured' })
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      customer_email: invoice.User?.email,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Invoice ${invoice.invoiceNumber}`
+            },
+            unit_amount: Math.round(Number(invoice.total || 0) * 100)
+          }
+        }
+      ],
+      metadata: {
+        invoiceId: String(invoice.id)
+      },
+      success_url: `${frontendUrl}/client-dashboard/billing?payment=success`,
+      cancel_url: `${frontendUrl}/client-dashboard/billing?payment=cancelled`
+    })
+
+    res.json({ url: session.url })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

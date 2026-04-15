@@ -54,6 +54,59 @@ const SiteSetting = sequelize.define('SiteSetting', {
   linkedinUrl: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  whatWeDo: {
+    type: DataTypes.JSON,
+    defaultValue: [
+      { title: 'Web Design', desc: 'Modern, responsive websites that convert' },
+      { title: 'Photography', desc: 'Professional visual storytelling' },
+      { title: 'Videography', desc: 'Cinematic quality video production' },
+      { title: 'Brand Building', desc: 'Complete identity and strategy' }
+    ]
+  },
+  featuredWork: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
+  faqs: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
+  testimonials: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
+  googleReviewsEnabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  googlePlaceId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  googleApiKey: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  stripePublishableKey: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  stripeSecretKey: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  bankName: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  bankAccountLast4: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  payoutInstructions: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   timestamps: true

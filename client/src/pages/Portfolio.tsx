@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { portfolioAPI } from '../services/api'
 
@@ -138,7 +139,7 @@ export default function Portfolio() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="btn-primary">View Details</button>
+                    <Link to={`/portfolio/${item.id}`} className="btn-primary">View Details</Link>
                   </div>
                 </div>
                 <div className="p-4">

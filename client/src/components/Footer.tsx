@@ -9,6 +9,12 @@ export default function Footer() {
     footerDescription: 'Transforming ideas into stunning visual experiences through web design, photography, and videography.',
     contactEmail: 'hello@creativestudio.com'
   })
+  const socialLinks = [
+    { url: settings.facebookUrl, icon: FiFacebook, label: 'Facebook' },
+    { url: settings.instagramUrl, icon: FiInstagram, label: 'Instagram' },
+    { url: settings.twitterUrl, icon: FiTwitter, label: 'Twitter' },
+    { url: settings.linkedinUrl, icon: FiLinkedin, label: 'LinkedIn' }
+  ].filter(link => link.url)
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -61,18 +67,14 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">Connect</h4>
             <p className="text-gray-400 mb-4">{settings.contactEmail}</p>
             <div className="flex space-x-4">
-              <a href={settings.facebookUrl || '#'} className="text-gray-400 hover:text-white transition">
-                <FiFacebook size={20} />
-              </a>
-              <a href={settings.instagramUrl || '#'} className="text-gray-400 hover:text-white transition">
-                <FiInstagram size={20} />
-              </a>
-              <a href={settings.twitterUrl || '#'} className="text-gray-400 hover:text-white transition">
-                <FiTwitter size={20} />
-              </a>
-              <a href={settings.linkedinUrl || '#'} className="text-gray-400 hover:text-white transition">
-                <FiLinkedin size={20} />
-              </a>
+              {socialLinks.map((link) => {
+                const Icon = link.icon
+                return (
+                  <a key={link.label} href={link.url} aria-label={link.label} className="text-gray-400 hover:text-white transition">
+                    <Icon size={20} />
+                  </a>
+                )
+              })}
             </div>
           </div>
         </div>
