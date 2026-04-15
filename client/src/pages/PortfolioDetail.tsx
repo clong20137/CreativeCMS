@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { FiArrowLeft, FiExternalLink } from 'react-icons/fi'
 import { portfolioAPI } from '../services/api'
+import SEO from '../components/SEO'
 
 export default function PortfolioDetail() {
   const { id } = useParams()
@@ -32,6 +33,12 @@ export default function PortfolioDetail() {
 
         {item && (
           <article className="max-w-5xl mx-auto bg-white rounded-lg shadow overflow-hidden">
+            <SEO
+              title={`${item.title} Portfolio Project`}
+              description={item.description || 'A Creative Studio portfolio project for web design, photography, videography, or branding.'}
+              path={`/portfolio/${item.id}`}
+              image={item.image}
+            />
             {item.image && (
               <div className="bg-gray-100 border-b">
                 <img

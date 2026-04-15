@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom'
 import { FiArrowLeft, FiHome } from 'react-icons/fi'
+import SEO from '../components/SEO'
 
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-50 px-4">
+      <SEO
+        title="Page Not Found"
+        description="The page you requested could not be found."
+        path={window.location.pathname}
+        noIndex
+      />
       <div className="text-center">
         {/* 404 Text */}
         <div className="mb-8">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { FiMail, FiPhone, FiMapPin } from 'react-icons/fi'
 import { contactMessagesAPI, siteSettingsAPI } from '../services/api'
 import TurnstileWidget from '../components/TurnstileWidget'
+import SEO, { localBusinessSchema } from '../components/SEO'
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -81,6 +82,12 @@ export default function Contact() {
 
   return (
     <div>
+      <SEO
+        title="Contact an Indianapolis Creative Studio"
+        description="Contact Creative Studio for web design, photography, videography, and branding projects in Indianapolis, Indiana, or anywhere in the United States."
+        path="/contact"
+        structuredData={localBusinessSchema('/contact')}
+      />
       {/* Hero */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">

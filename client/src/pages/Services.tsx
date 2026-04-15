@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FiMonitor, FiCamera, FiVideo, FiPenTool } from 'react-icons/fi'
 import { siteSettingsAPI } from '../services/api'
+import SEO, { localBusinessSchema } from '../components/SEO'
 
 export default function Services() {
   const fallbackServices = [
@@ -80,6 +81,12 @@ export default function Services() {
 
   return (
     <div>
+      <SEO
+        title="Creative Services for Indianapolis and National Businesses"
+        description="Explore web design, photography, videography, and branding services for Indianapolis companies and businesses across the United States."
+        path="/services"
+        structuredData={localBusinessSchema('/services')}
+      />
       {/* Hero */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">

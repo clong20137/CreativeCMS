@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { FiArrowRight } from 'react-icons/fi'
 import Testimonials from '../components/Testimonials'
 import { siteSettingsAPI } from '../services/api'
+import SEO, { localBusinessSchema } from '../components/SEO'
 
 export default function Home() {
   const fallbackFeaturedWorks = [
@@ -71,6 +72,12 @@ export default function Home() {
 
   return (
     <div>
+      <SEO
+        title="Indianapolis Web Design, Photography, Videography, and Branding"
+        description="Creative Studio helps Indianapolis businesses and national clients with responsive web design, brand photography, videography, and visual branding."
+        path="/"
+        structuredData={localBusinessSchema('/')}
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20 md:py-32">
         {hero.heroMediaUrl && hero.heroMediaType === 'image' && (

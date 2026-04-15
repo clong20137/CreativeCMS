@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { portfolioAPI } from '../services/api'
+import SEO from '../components/SEO'
 
 export default function Portfolio() {
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -94,6 +95,11 @@ export default function Portfolio() {
 
   return (
     <div>
+      <SEO
+        title="Creative Portfolio for Web Design, Photo, Video, and Branding"
+        description="View web design, photography, videography, and branding work from Creative Studio, serving Indianapolis and clients throughout the United States."
+        path="/portfolio"
+      />
       {/* Hero */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">

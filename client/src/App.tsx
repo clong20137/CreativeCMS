@@ -32,8 +32,6 @@ function App() {
     const applySettings = async () => {
       try {
         const settings = await siteSettingsAPI.getSettings()
-        document.title = settings.siteName || 'Creative Studio'
-
         if (settings.faviconUrl) {
           let favicon = document.querySelector<HTMLLinkElement>("link[rel='icon']")
           if (!favicon) {

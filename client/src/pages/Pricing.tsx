@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FiCheck } from 'react-icons/fi'
 import { servicePackagesAPI, siteSettingsAPI } from '../services/api'
+import SEO from '../components/SEO'
 
 export default function Pricing() {
   const fallbackPricingPlans = [
@@ -110,6 +111,11 @@ export default function Pricing() {
 
   return (
     <div>
+      <SEO
+        title="Web Design, Photography, Videography, and Branding Pricing"
+        description="Review transparent pricing for web design packages, photography, videography, logo design, and brand identity services."
+        path="/pricing"
+      />
       {/* Hero */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">
