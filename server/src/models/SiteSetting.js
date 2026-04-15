@@ -9,7 +9,7 @@ const SiteSetting = sequelize.define('SiteSetting', {
   },
   siteName: {
     type: DataTypes.STRING,
-    defaultValue: 'Creative Studio'
+    defaultValue: 'Creative by Caleb'
   },
   faviconUrl: {
     type: DataTypes.TEXT,

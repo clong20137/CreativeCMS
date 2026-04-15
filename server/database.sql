@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS PortfolioItems (
 -- Site Settings Table
 CREATE TABLE IF NOT EXISTS SiteSettings (
   id INT PRIMARY KEY DEFAULT 1,
-  siteName VARCHAR(255) DEFAULT 'Creative Studio',
+  siteName VARCHAR(255) DEFAULT 'Creative by Caleb',
   faviconUrl LONGTEXT,
   logoUrl LONGTEXT,
   logoSize INT DEFAULT 40,
@@ -214,5 +214,5 @@ CREATE INDEX idx_portfolio_items_category ON PortfolioItems(category);
 
 -- Sample Admin User (Password: admin123 - hashed with bcryptjs)
 INSERT INTO Users (name, email, password, role, company, isActive)
-VALUES ('Admin', 'admin@creative.com', '$2a$10$YourHashedPasswordHere', 'admin', 'Creative Studio', true)
+VALUES ('Admin', 'admin@creative.com', '$2a$10$YourHashedPasswordHere', 'admin', 'Creative by Caleb', true)
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);

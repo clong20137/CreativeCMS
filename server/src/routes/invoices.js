@@ -66,7 +66,7 @@ function buildInvoiceHtml(invoice, client) {
 <body>
   <div class="top">
     <div>
-      <h1>Creative Studio</h1>
+      <h1>Creative by Caleb</h1>
       <p class="muted">Professional creative services</p>
     </div>
     <div>
@@ -192,7 +192,7 @@ router.post('/:id/send', async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: invoice.User.email,
-      subject: `Invoice ${invoice.invoiceNumber} from Creative Studio`,
+      subject: `Invoice ${invoice.invoiceNumber} from Creative by Caleb`,
       html,
       attachments: [
         {

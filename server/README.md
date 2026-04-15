@@ -1,6 +1,6 @@
 # Backend Server Setup
 
-This is the Express.js backend for the Creative Portfolio website. It uses MySQL through Sequelize, JWT authentication, and REST API routes for admin and client portals.
+This is the Express.js backend for the Creative by Caleb website. It uses MySQL through Sequelize, JWT authentication, and REST API routes for admin and client portals.
 
 ## Prerequisites
 

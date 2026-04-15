@@ -5,7 +5,7 @@ import { siteSettingsAPI } from '../services/api'
 export default function Footer() {
   const currentYear = new Date().getFullYear()
   const [settings, setSettings] = useState<any>({
-    siteName: 'Creative Studio',
+    siteName: 'Creative by Caleb',
     logoUrl: '',
     logoSize: 40,
     footerDescription: 'Transforming ideas into stunning visual experiences through web design, photography, and videography.',

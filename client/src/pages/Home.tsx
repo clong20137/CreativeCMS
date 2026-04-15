@@ -74,7 +74,7 @@ export default function Home() {
     <div>
       <SEO
         title="Indianapolis Web Design, Photography, Videography, and Branding"
-        description="Creative Studio helps Indianapolis businesses and national clients with responsive web design, brand photography, videography, and visual branding."
+        description="Creative by Caleb helps Indianapolis businesses and national clients with responsive web design, brand photography, videography, and visual branding."
         path="/"
         structuredData={localBusinessSchema('/')}
       />

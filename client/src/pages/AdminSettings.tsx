@@ -168,7 +168,7 @@ export default function AdminSettings() {
     try {
       await adminAPI.updateSiteSettings(settings)
       setMessage('Site settings saved')
-      document.title = settings.siteName || 'Creative Studio'
+      document.title = settings.siteName || 'Creative by Caleb'
     } catch (err: any) {
       setError(err.error || 'Failed to save settings')
     }

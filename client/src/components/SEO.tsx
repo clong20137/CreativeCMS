@@ -9,7 +9,7 @@ type SEOProps = {
   structuredData?: Record<string, any> | Record<string, any>[]
 }
 
-const SITE_NAME = 'Creative Studio'
+const SITE_NAME = 'Creative by Caleb'
 const DEFAULT_IMAGE = '/og-image.jpg'
 
 function getSiteUrl() {

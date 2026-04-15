@@ -1,4 +1,4 @@
-# Creative Studio Portfolio
+# Creative by Caleb Portfolio
 
 A full-stack portfolio and client portal for creative businesses. The app includes public marketing pages, client billing/project views, an admin dashboard, JWT login, and a MySQL-backed Express API.
 

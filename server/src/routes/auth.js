@@ -85,7 +85,7 @@ async function sendTwoFactorCode(user, code) {
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: user.email,
-    subject: 'Your Creative Studio sign-in code',
+    subject: 'Your Creative by Caleb sign-in code',
     text: `Your verification code is ${code}. It expires in 10 minutes.`,
     html: `<p>Your verification code is <strong>${code}</strong>.</p><p>It expires in 10 minutes.</p>`
   })
@@ -100,7 +100,7 @@ async function sendPasswordResetCode(user, code) {
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: user.email,
-    subject: 'Reset your Creative Studio password',
+    subject: 'Reset your Creative by Caleb password',
     text: `Your password reset code is ${code}. It expires in 15 minutes.`,
     html: `<p>Your password reset code is <strong>${code}</strong>.</p><p>It expires in 15 minutes.</p>`
   })

@@ -6,7 +6,7 @@ import { siteSettingsAPI } from '../services/api'
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(localStorage.getItem('userRole'))
-  const [siteName, setSiteName] = useState('Creative Studio')
+  const [siteName, setSiteName] = useState('Creative by Caleb')
   const [logoUrl, setLogoUrl] = useState('')
   const [logoSize, setLogoSize] = useState(40)
   const location = useLocation()
@@ -23,7 +23,7 @@ export default function Navigation() {
     const fetchSettings = async () => {
       try {
         const settings = await siteSettingsAPI.getSettings()
-        setSiteName(settings.siteName || 'Creative Studio')
+        setSiteName(settings.siteName || 'Creative by Caleb')
         setLogoUrl(settings.logoUrl || '')
         setLogoSize(Number(settings.logoSize) || 40)
       } catch (error) {

@@ -96,8 +96,8 @@ export default function Portfolio() {
   return (
     <div>
       <SEO
-        title="Creative Portfolio for Web Design, Photo, Video, and Branding"
-        description="View web design, photography, videography, and branding work from Creative Studio, serving Indianapolis and clients throughout the United States."
+        title="Creative by Caleb Portfolio for Web Design, Photo, Video, and Branding"
+        description="View web design, photography, videography, and branding work from Creative by Caleb, serving Indianapolis and clients throughout the United States."
         path="/portfolio"
       />
       {/* Hero */}

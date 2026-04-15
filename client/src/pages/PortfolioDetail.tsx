@@ -35,7 +35,7 @@ export default function PortfolioDetail() {
           <article className="max-w-5xl mx-auto bg-white rounded-lg shadow overflow-hidden">
             <SEO
               title={`${item.title} Portfolio Project`}
-              description={item.description || 'A Creative Studio portfolio project for web design, photography, videography, or branding.'}
+              description={item.description || 'A Creative by Caleb portfolio project for web design, photography, videography, or branding.'}
               path={`/portfolio/${item.id}`}
               image={item.image}
             />

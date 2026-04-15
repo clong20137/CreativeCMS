@@ -83,8 +83,8 @@ export default function Contact() {
   return (
     <div>
       <SEO
-        title="Contact an Indianapolis Creative Studio"
-        description="Contact Creative Studio for web design, photography, videography, and branding projects in Indianapolis, Indiana, or anywhere in the United States."
+        title="Contact Creative by Caleb"
+        description="Contact Creative by Caleb for web design, photography, videography, and branding projects in Indianapolis, Indiana, or anywhere in the United States."
         path="/contact"
         structuredData={localBusinessSchema('/contact')}
       />
