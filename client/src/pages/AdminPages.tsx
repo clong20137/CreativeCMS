@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiArrowDown, FiArrowUp, FiMove, FiTrash2 } from 'react-icons/fi'
+import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiFileText, FiGrid, FiImage, FiLayout, FiMove, FiSidebar, FiTrash2, FiType } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
 import PageSections from '../components/PageSections'
 import { PageSkeleton } from '../components/SkeletonLoaders'
@@ -56,29 +56,38 @@ const pluginOptions = [
 ]
 
 const sectionTypeOptions = [
-  { value: 'hero', label: 'Hero' },
-  { value: 'banner', label: 'Banner' },
-  { value: 'header', label: 'Header' },
-  { value: 'paragraph', label: 'Paragraph' },
-  { value: 'image', label: 'Image' },
-  { value: 'imageOverlay', label: 'Image Overlay' },
-  { value: 'gallery', label: 'Gallery' },
-  { value: 'plugin', label: 'Plugin' },
-  { value: 'section', label: 'Text + Image' },
-  { value: 'testimonials', label: 'Testimonials' },
-  { value: 'portfolio', label: 'Portfolio Items' },
-  { value: 'services', label: 'Services' },
-  { value: 'whatWeDo', label: 'Image + Name Cards' },
-  { value: 'featuredWork', label: 'Featured Work' },
-  { value: 'portfolioGallery', label: 'Portfolio Gallery' },
-  { value: 'servicesList', label: 'Services List' },
-  { value: 'pricingPackages', label: 'Pricing Packages' },
-  { value: 'servicePricing', label: 'A La Carte Pricing' },
-  { value: 'faq', label: 'FAQ' },
-  { value: 'pluginsList', label: 'Plugins List' },
-  { value: 'siteDemos', label: 'Site Demos' },
-  { value: 'contactForm', label: 'Contact Form' },
-  { value: 'cta', label: 'CTA' }
+  { value: 'hero', label: 'Hero', icon: FiLayout },
+  { value: 'banner', label: 'Banner', icon: FiLayout },
+  { value: 'columns', label: 'Columns', icon: FiColumns },
+  { value: 'header', label: 'Header', icon: FiType },
+  { value: 'paragraph', label: 'Paragraph', icon: FiFileText },
+  { value: 'image', label: 'Image', icon: FiImage },
+  { value: 'imageCards', label: 'Image Cards', icon: FiGrid },
+  { value: 'imageOverlay', label: 'Image Overlay', icon: FiImage },
+  { value: 'gallery', label: 'Gallery', icon: FiImage },
+  { value: 'plugin', label: 'Plugin', icon: FiGrid },
+  { value: 'section', label: 'Text + Image', icon: FiColumns },
+  { value: 'testimonials', label: 'Testimonials', icon: FiFileText },
+  { value: 'portfolio', label: 'Portfolio Items', icon: FiImage },
+  { value: 'services', label: 'Services', icon: FiGrid },
+  { value: 'whatWeDo', label: 'Image + Name Cards', icon: FiGrid },
+  { value: 'featuredWork', label: 'Featured Work', icon: FiImage },
+  { value: 'portfolioGallery', label: 'Portfolio Gallery', icon: FiImage },
+  { value: 'servicesList', label: 'Services List', icon: FiGrid },
+  { value: 'pricingPackages', label: 'Pricing Packages', icon: FiGrid },
+  { value: 'servicePricing', label: 'A La Carte Pricing', icon: FiGrid },
+  { value: 'faq', label: 'FAQ', icon: FiFileText },
+  { value: 'pluginsList', label: 'Plugins List', icon: FiGrid },
+  { value: 'siteDemos', label: 'Site Demos', icon: FiGrid },
+  { value: 'contactForm', label: 'Contact Form', icon: FiFileText },
+  { value: 'cta', label: 'CTA', icon: FiLayout }
+]
+
+const nestedBlockOptions = [
+  { value: 'header', label: 'Header', icon: FiType },
+  { value: 'paragraph', label: 'Paragraph', icon: FiFileText },
+  { value: 'image', label: 'Image', icon: FiImage },
+  { value: 'imageCard', label: 'Image Card', icon: FiGrid }
 ]
 
 const MAX_IMAGE_WIDTH = 1200
@@ -177,6 +186,13 @@ function makeSlug(value: string) {
 }
 
 function makePageSection(type: string) {
+  const defaultItems = () => {
+    if (type === 'gallery') return [{ id: crypto.randomUUID(), title: '', description: '', image: '' }]
+    if (type === 'imageCards') return [makeImageCard()]
+    if (type === 'columns') return makeColumns(2)
+    return []
+  }
+
   return {
     id: crypto.randomUUID(),
     type,
@@ -190,16 +206,48 @@ function makePageSection(type: string) {
     buttonUrl: '/contact',
     secondaryButtonLabel: '',
     secondaryButtonUrl: '',
-    items: type === 'gallery' ? [
-      { id: crypto.randomUUID(), title: '', description: '', image: '' }
-    ] : [],
+    items: defaultItems(),
     marginTop: '',
     marginBottom: '',
     paddingTop: '',
     paddingBottom: '',
     itemLimit: type === 'portfolio' ? 8 : 6,
-    columns: type === 'portfolio' ? 4 : 3
+    columns: type === 'portfolio' ? 4 : type === 'columns' ? 2 : 3
   }
+}
+
+function makeImageCard() {
+  return {
+    id: crypto.randomUUID(),
+    category: '',
+    title: '',
+    description: '',
+    image: '',
+    buttonLabel: 'View More',
+    buttonUrl: '/contact'
+  }
+}
+
+function makeNestedBlock(type: string) {
+  return {
+    id: crypto.randomUUID(),
+    type,
+    title: '',
+    body: '',
+    imageUrl: '',
+    alt: '',
+    category: '',
+    description: '',
+    buttonLabel: 'Learn More',
+    buttonUrl: '/contact'
+  }
+}
+
+function makeColumns(count: number, existing: any[] = []) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: existing[index]?.id || crypto.randomUUID(),
+    sections: Array.isArray(existing[index]?.sections) ? existing[index].sections : []
+  }))
 }
 
 function getSectionTitle(section: any, index: number) {
@@ -232,6 +280,7 @@ export default function AdminPages() {
   const [draggingSectionIndex, setDraggingSectionIndex] = useState<number | null>(null)
   const [editingSectionId, setEditingSectionId] = useState('')
   const [sectionsPanelOpen, setSectionsPanelOpen] = useState(true)
+  const [pagesPanelOpen, setPagesPanelOpen] = useState(true)
 
   const activeBuiltInPageKey = publicPages.some(page => page.id === activeTab) ? activeTab : ''
 
@@ -455,6 +504,7 @@ export default function AdminPages() {
       setDraggingSectionIndex(null)
     }
   }
+  const editorGridColumns = `${pagesPanelOpen ? '18rem' : '3.25rem'} minmax(0, 1fr) ${sectionsPanelOpen ? '23rem' : '3.25rem'}`
 
   const saveCustomPage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -496,8 +546,21 @@ export default function AdminPages() {
       {message && <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">{message}</div>}
       {error && <div className="mb-6 p-4 bg-red-100 border border-red-400 rounded-lg text-red-700">{error}</div>}
       {loading ? <PageSkeleton /> : (
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[18rem_minmax(0,1fr)_22rem]">
-          <aside className="card h-fit p-4">
+        <div className="grid grid-cols-1 items-start gap-6 transition-all duration-300 xl:grid-cols-[var(--editor-grid)]" style={{ '--editor-grid': editorGridColumns } as any}>
+          <aside className="card h-fit overflow-hidden p-0 transition-all duration-300">
+            <button
+              type="button"
+              onClick={() => setPagesPanelOpen(!pagesPanelOpen)}
+              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
+              aria-label={pagesPanelOpen ? 'Collapse pages panel' : 'Expand pages panel'}
+            >
+              <span className="inline-flex items-center gap-2 font-bold text-gray-900">
+                <FiSidebar />
+                {pagesPanelOpen && 'Pages'}
+              </span>
+              {pagesPanelOpen ? <FiArrowLeft /> : <FiArrowRight />}
+            </button>
+            {pagesPanelOpen && <div className="border-t p-4">
             <div className="mb-4">
               <h2 className="text-xl font-bold text-gray-900">Pages</h2>
               <p className="text-sm text-gray-600">Pick a page, then edit its sections.</p>
@@ -535,6 +598,7 @@ export default function AdminPages() {
                 ))}
               </div>
             </div>
+            </div>}
           </aside>
 
           <div className="space-y-6">
@@ -1029,6 +1093,22 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
 }
 
 function PageSectionEditor({ title, sections, editingSectionId, draggingSectionIndex, setEditingSectionId, setDraggingSectionIndex, addSection, updateSection, removeSection, moveSection, uploadImageToField, isOpen = true, setIsOpen = () => {} }: any) {
+  if (!isOpen) {
+    return (
+      <section className="card overflow-hidden p-0">
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="flex h-16 w-full items-center justify-center text-gray-900"
+          aria-label="Expand sections panel"
+          title="Expand sections panel"
+        >
+          <FiArrowLeft />
+        </button>
+      </section>
+    )
+  }
+
   return (
     <section className="card p-0">
       <button
@@ -1042,9 +1122,12 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
         </span>
         <span className="text-sm font-bold text-blue-600">{isOpen ? 'Collapse' : 'Expand'}</span>
       </button>
-      {isOpen && <div className="space-y-4 border-t p-4">
-      <div className="flex flex-wrap gap-2">
+      <div className="space-y-4 border-t p-4">
+      <div className="grid grid-cols-2 gap-2">
         {sectionTypeOptions.map(option => (
+          (() => {
+            const Icon = option.icon
+            return (
           <button
             key={option.value}
             type="button"
@@ -1054,10 +1137,13 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
               e.dataTransfer.setData('application/x-section-type', option.value)
               e.dataTransfer.effectAllowed = 'copy'
             }}
-            className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
+            className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border px-3 py-2 text-center text-xs font-semibold hover:bg-gray-50"
           >
+            <Icon size={20} />
             {option.label}
           </button>
+            )
+          })()
         ))}
       </div>
       <div className="space-y-3">
@@ -1144,6 +1230,21 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
               </>
             )}
 
+            {section.type === 'imageCards' && (
+              <>
+                <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="px-4 py-2 border rounded-lg" />
+                  <input type="number" min="1" max="3" value={section.columns || ''} onChange={(e) => updateSection(index, 'columns', Number(e.target.value || 0))} placeholder="Columns" className="px-4 py-2 border rounded-lg" />
+                  <textarea value={section.body || ''} onChange={(e) => updateSection(index, 'body', e.target.value)} placeholder="Section description" rows={3} className="px-4 py-2 border rounded-lg md:col-span-2" />
+                </div>
+                <ImageCardsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} />
+              </>
+            )}
+
+            {section.type === 'columns' && (
+              <ColumnsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} />
+            )}
+
             {section.type === 'services' && (
               <input type="number" min="1" value={section.itemLimit || ''} onChange={(e) => updateSection(index, 'itemLimit', Number(e.target.value || 0))} placeholder="Items to show" className="mb-3 w-full px-4 py-2 border rounded-lg" />
             )}
@@ -1177,8 +1278,127 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
         ))}
       </div>
       {(sections || []).length === 0 && <div className="rounded-lg border border-dashed p-6 text-center text-gray-600">No extra sections yet. Add one above to place reusable content on this page.</div>}
-      </div>}
+      </div>
     </section>
+  )
+}
+
+function ImageCardsEditor({ section, index, updateSection, uploadImageToField }: any) {
+  const items = Array.isArray(section.items) ? section.items : []
+  const updateItem = (itemIndex: number, field: string, value: any) => {
+    updateSection(index, 'items', items.map((item: any, currentIndex: number) => currentIndex === itemIndex ? { ...item, [field]: value } : item))
+  }
+  const addItem = () => updateSection(index, 'items', [...items, makeImageCard()])
+  const removeItem = (itemIndex: number) => updateSection(index, 'items', items.filter((_: any, currentIndex: number) => currentIndex !== itemIndex))
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h4 className="font-bold text-gray-900">Image Cards</h4>
+        <button type="button" onClick={addItem} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Add Card</button>
+      </div>
+      {items.map((item: any, itemIndex: number) => (
+        <div key={item.id || itemIndex} className="grid grid-cols-1 gap-3 rounded-lg border p-3">
+          <input value={item.category || ''} onChange={(e) => updateItem(itemIndex, 'category', e.target.value)} placeholder="Category / small heading" className="px-4 py-2 border rounded-lg" />
+          <input value={item.title || ''} onChange={(e) => updateItem(itemIndex, 'title', e.target.value)} placeholder="Header" className="px-4 py-2 border rounded-lg" />
+          <textarea value={item.description || ''} onChange={(e) => updateItem(itemIndex, 'description', e.target.value)} placeholder="Subtext" rows={2} className="px-4 py-2 border rounded-lg" />
+          <input value={item.image || ''} onChange={(e) => updateItem(itemIndex, 'image', e.target.value)} placeholder="Image URL" className="px-4 py-2 border rounded-lg" />
+          <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateItem(itemIndex, 'image', url), e.target.files?.[0])} className="px-4 py-2 border rounded-lg" />
+          {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || 'Image card'} className="h-36 w-full rounded-lg object-cover" />}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <input value={item.buttonLabel || ''} onChange={(e) => updateItem(itemIndex, 'buttonLabel', e.target.value)} placeholder="Button label" className="px-4 py-2 border rounded-lg" />
+            <input value={item.buttonUrl || ''} onChange={(e) => updateItem(itemIndex, 'buttonUrl', e.target.value)} placeholder="Button URL" className="px-4 py-2 border rounded-lg" />
+          </div>
+          <button type="button" onClick={() => removeItem(itemIndex)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Remove Card</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ColumnsEditor({ section, index, updateSection, uploadImageToField }: any) {
+  const count = Number(section.columns || 2)
+  const columns = makeColumns(count, Array.isArray(section.items) ? section.items : [])
+  const updateColumns = (nextColumns: any[]) => updateSection(index, 'items', nextColumns)
+  const setColumnCount = (nextCount: number) => {
+    updateSection(index, 'columns', nextCount)
+    updateSection(index, 'items', makeColumns(nextCount, columns))
+  }
+  const addBlock = (columnIndex: number, type: string) => {
+    updateColumns(columns.map((column, currentIndex) => currentIndex === columnIndex ? { ...column, sections: [...(column.sections || []), makeNestedBlock(type)] } : column))
+  }
+  const updateBlock = (columnIndex: number, blockIndex: number, field: string, value: any) => {
+    updateColumns(columns.map((column, currentIndex) => currentIndex === columnIndex ? {
+      ...column,
+      sections: (column.sections || []).map((block: any, currentBlockIndex: number) => currentBlockIndex === blockIndex ? { ...block, [field]: value } : block)
+    } : column))
+  }
+  const removeBlock = (columnIndex: number, blockIndex: number) => {
+    updateColumns(columns.map((column, currentIndex) => currentIndex === columnIndex ? {
+      ...column,
+      sections: (column.sections || []).filter((_: any, currentBlockIndex: number) => currentBlockIndex !== blockIndex)
+    } : column))
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-white p-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="px-4 py-2 border rounded-lg" />
+        <select value={count} onChange={(e) => setColumnCount(Number(e.target.value))} className="px-4 py-2 border rounded-lg">
+          <option value={1}>1 column</option>
+          <option value={2}>Split columns</option>
+          <option value={3}>Three columns</option>
+        </select>
+        <textarea value={section.body || ''} onChange={(e) => updateSection(index, 'body', e.target.value)} placeholder="Section description" rows={2} className="px-4 py-2 border rounded-lg md:col-span-2" />
+      </div>
+      {columns.map((column, columnIndex) => (
+        <div key={column.id || columnIndex} className="space-y-3 rounded-lg border p-3">
+          <h4 className="font-bold text-gray-900">Column {columnIndex + 1}</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {nestedBlockOptions.map(option => {
+              const Icon = option.icon
+              return (
+                <button key={option.value} type="button" onClick={() => addBlock(columnIndex, option.value)} className="flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-gray-50">
+                  <Icon size={18} />
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+          {(column.sections || []).map((block: any, blockIndex: number) => (
+            <NestedBlockEditor key={block.id || blockIndex} block={block} columnIndex={columnIndex} blockIndex={blockIndex} updateBlock={updateBlock} removeBlock={removeBlock} uploadImageToField={uploadImageToField} />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, removeBlock, uploadImageToField }: any) {
+  return (
+    <div className="space-y-2 rounded-lg bg-gray-50 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <strong className="text-sm text-gray-900">{block.type}</strong>
+        <button type="button" onClick={() => removeBlock(columnIndex, blockIndex)} className="text-sm font-semibold text-red-600">Remove</button>
+      </div>
+      {(block.type === 'header' || block.type === 'imageCard') && <input value={block.title || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'title', e.target.value)} placeholder="Header" className="w-full px-4 py-2 border rounded-lg" />}
+      {block.type === 'imageCard' && <input value={block.category || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'category', e.target.value)} placeholder="Category / small heading" className="w-full px-4 py-2 border rounded-lg" />}
+      {(block.type === 'paragraph' || block.type === 'header') && <textarea value={block.body || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'body', e.target.value)} placeholder="Text" rows={3} className="w-full px-4 py-2 border rounded-lg" />}
+      {block.type === 'imageCard' && <textarea value={block.description || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'description', e.target.value)} placeholder="Subtext" rows={2} className="w-full px-4 py-2 border rounded-lg" />}
+      {(block.type === 'image' || block.type === 'imageCard') && (
+        <>
+          <input value={block.imageUrl || block.image || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, block.type === 'imageCard' ? 'image' : 'imageUrl', e.target.value)} placeholder="Image URL" className="w-full px-4 py-2 border rounded-lg" />
+          <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateBlock(columnIndex, blockIndex, block.type === 'imageCard' ? 'image' : 'imageUrl', url), e.target.files?.[0])} className="w-full px-4 py-2 border rounded-lg" />
+          {(block.imageUrl || block.image) && <img src={resolveAssetUrl(block.imageUrl || block.image)} alt={block.title || ''} className="h-32 w-full rounded-lg object-cover" />}
+        </>
+      )}
+      {block.type === 'imageCard' && (
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <input value={block.buttonLabel || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonLabel', e.target.value)} placeholder="Button label" className="px-4 py-2 border rounded-lg" />
+          <input value={block.buttonUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonUrl', e.target.value)} placeholder="Button URL" className="px-4 py-2 border rounded-lg" />
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -107,6 +107,8 @@ function PageSection({ section }: { section: any }) {
   if (section.type === 'portfolio') return <PortfolioSection section={section} />
   if (section.type === 'services') return <ServicesSection section={section} />
   if (section.type === 'hero') return <HeroSection section={section} />
+  if (section.type === 'columns') return <ColumnsSection section={section} />
+  if (section.type === 'imageCards') return <ImageCardsSection section={section} />
   if (section.type === 'imageOverlay') return <ImageOverlaySection section={section} />
   if (section.type === 'gallery') return <GallerySection section={section} />
   if (section.type === 'whatWeDo') return <WhatWeDoSection section={section} />
@@ -143,6 +145,84 @@ function PageSection({ section }: { section: any }) {
         <p className="text-lg leading-relaxed text-gray-700 whitespace-pre-line">{section.body}</p>
       </div>
     </section>
+  )
+}
+
+function ColumnsSection({ section }: { section: any }) {
+  const columns = Array.isArray(section.items) ? section.items : []
+  const count = Number(section.columns || columns.length || 2)
+
+  return (
+    <section className="py-16">
+      <div className="container">
+        <SectionHeading section={section} fallbackTitle="" />
+        <div className={`grid grid-cols-1 gap-6 ${columnClasses[count] || columnClasses[2]}`}>
+          {columns.slice(0, count).map((column: any, index: number) => (
+            <div key={column.id || index} className="space-y-5">
+              {(column.sections || []).map((block: any, blockIndex: number) => (
+                <ColumnBlock key={block.id || blockIndex} block={block} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ColumnBlock({ block }: { block: any }) {
+  if (block.type === 'header') {
+    return (
+      <div>
+        {block.title && <h3 className="text-2xl font-bold text-gray-900">{block.title}</h3>}
+        {block.body && <p className="mt-2 text-gray-600 whitespace-pre-line">{block.body}</p>}
+      </div>
+    )
+  }
+
+  if (block.type === 'image') {
+    return block.imageUrl ? <img src={resolveAssetUrl(block.imageUrl)} alt={block.alt || block.title || ''} className="w-full rounded-lg object-cover" /> : null
+  }
+
+  if (block.type === 'imageCard') {
+    return <ImageCard item={block} />
+  }
+
+  return <p className="text-gray-700 whitespace-pre-line">{block.body}</p>
+}
+
+function ImageCardsSection({ section }: { section: any }) {
+  const items = Array.isArray(section.items) ? section.items : []
+
+  return (
+    <section className="py-16">
+      <div className="container">
+        <SectionHeading section={section} fallbackTitle="Image Cards" />
+        <div className={`grid grid-cols-1 gap-8 ${columnClasses[Number(section.columns || 2)] || columnClasses[2]}`}>
+          {items.map((item: any, index: number) => <ImageCard key={item.id || index} item={item} />)}
+          {items.length === 0 && <div className="rounded-lg border p-6 text-center text-gray-600 md:col-span-2">No image cards have been added yet.</div>}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ImageCard({ item }: { item: any }) {
+  return (
+    <article className="card overflow-hidden">
+      {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || ''} className="h-64 w-full object-cover" />}
+      {item.imageUrl && !item.image && <img src={resolveAssetUrl(item.imageUrl)} alt={item.title || ''} className="h-64 w-full object-cover" />}
+      <div className="p-6">
+        {(item.category || item.subtitle) && <p className="text-sm font-semibold text-blue-600">{item.category || item.subtitle}</p>}
+        {item.title && <h3 className="mt-2 text-2xl font-bold text-gray-900">{item.title}</h3>}
+        {(item.description || item.body) && <p className="mt-3 text-gray-600">{item.description || item.body}</p>}
+        {item.buttonLabel && item.buttonUrl && (
+          <Link to={item.buttonUrl} className="mt-5 inline-flex items-center gap-2 font-semibold text-blue-600 hover:text-blue-800">
+            {item.buttonLabel} <FiArrowRight />
+          </Link>
+        )}
+      </div>
+    </article>
   )
 }
 
