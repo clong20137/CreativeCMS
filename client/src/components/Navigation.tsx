@@ -39,7 +39,6 @@ export default function Navigation() {
         setSiteName(settings.siteName || 'Creative by Caleb')
         setLogoUrl(settings.logoUrl || '')
         setLogoSize(Number(settings.logoSize) || 40)
-        document.documentElement.dataset.websiteTheme = settings.websiteTheme || 'studio'
         if (Array.isArray(settings.navigationItems) && settings.navigationItems.length) {
           setNavigationItems(settings.navigationItems)
         }

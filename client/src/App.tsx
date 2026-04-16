@@ -41,7 +41,7 @@ function AppRoutes() {
   const isAdminRoute = location.pathname.startsWith('/admin')
 
   return (
-    <div className={`flex flex-col min-h-screen ${isAdminRoute ? 'admin-shell' : 'public-shell'}`}>
+    <div className="flex flex-col min-h-screen">
       {!isAdminRoute && <Navigation />}
       <main className="flex-grow">
         <Routes>
@@ -98,7 +98,6 @@ function App() {
           }
           favicon.href = settings.faviconUrl
         }
-        document.documentElement.dataset.websiteTheme = settings.websiteTheme || 'studio'
       } catch (error) {
         console.error('Error loading site settings:', error)
       }

@@ -23,10 +23,6 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.INTEGER,
     defaultValue: 40
   },
-  websiteTheme: {
-    type: DataTypes.STRING,
-    defaultValue: 'studio'
-  },
   contactEmail: {
     type: DataTypes.STRING,
     defaultValue: 'hello@creativestudio.com'

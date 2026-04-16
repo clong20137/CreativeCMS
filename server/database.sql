@@ -212,7 +212,6 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   faviconUrl LONGTEXT,
   logoUrl LONGTEXT,
   logoSize INT DEFAULT 40,
-  websiteTheme VARCHAR(255) DEFAULT 'studio',
   contactEmail VARCHAR(255) DEFAULT 'hello@creativestudio.com',
   phone VARCHAR(255) DEFAULT '+1 (555) 123-4567',
   hours VARCHAR(255) DEFAULT 'Mon-Fri, 9am-6pm EST',

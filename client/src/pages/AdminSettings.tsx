@@ -8,7 +8,6 @@ const emptySettings = {
   faviconUrl: '',
   logoUrl: '',
   logoSize: 40,
-  websiteTheme: 'studio',
   contactEmail: '',
   phone: '',
   hours: '',
@@ -69,28 +68,6 @@ const emptySettings = {
 }
 
 const tabs = ['General', 'Contact', 'Payments', 'Security']
-const websiteThemes = [
-  {
-    value: 'studio',
-    label: 'Studio Blue',
-    description: 'Clean creative agency styling with blue accents.'
-  },
-  {
-    value: 'editorial',
-    label: 'Editorial',
-    description: 'Crisp black and white styling for a polished portfolio feel.'
-  },
-  {
-    value: 'growth',
-    label: 'Growth',
-    description: 'Fresh green accents for service businesses and consultants.'
-  },
-  {
-    value: 'neon',
-    label: 'Neon',
-    description: 'High contrast cyan styling for modern tech-forward sites.'
-  }
-]
 const pageHeaderLabels: Record<string, string> = {
   portfolio: 'Portfolio',
   services: 'Services',
@@ -216,7 +193,7 @@ async function compactSettingsPayload(settings: Record<string, any>) {
 
 function getActiveTabPayload(settings: typeof emptySettings, activeTab: string) {
   const payloadMap: Record<string, string[]> = {
-    General: ['siteName', 'faviconUrl', 'logoUrl', 'logoSize', 'websiteTheme'],
+    General: ['siteName', 'faviconUrl', 'logoUrl', 'logoSize'],
     Contact: [
       'contactEmail',
       'phone',
@@ -443,31 +420,6 @@ export default function AdminSettings() {
                     />
                   </div>
                 )}
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Website Theme</h3>
-                    <p className="text-gray-600">Choose the public website template style. This does not change the admin portal.</p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-                    {websiteThemes.map(theme => (
-                      <label
-                        key={theme.value}
-                        className={`block cursor-pointer rounded-lg border p-4 transition ${settings.websiteTheme === theme.value ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-300'}`}
-                      >
-                        <input
-                          type="radio"
-                          name="websiteTheme"
-                          value={theme.value}
-                          checked={settings.websiteTheme === theme.value}
-                          onChange={(e) => handleChange('websiteTheme', e.target.value)}
-                          className="sr-only"
-                        />
-                        <span className="block text-lg font-bold text-gray-900">{theme.label}</span>
-                        <span className="mt-1 block text-sm text-gray-600">{theme.description}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
               </section>
             )}
 
