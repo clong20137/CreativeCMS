@@ -253,6 +253,21 @@ CREATE TABLE IF NOT EXISTS ProtectedContentPurchases (
   FOREIGN KEY (contentItemId) REFERENCES ProtectedContentItems(id) ON DELETE CASCADE
 );
 
+-- Site Demos Table
+CREATE TABLE IF NOT EXISTS SiteDemos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(255) DEFAULT 'Business',
+  description LONGTEXT,
+  previewImage LONGTEXT,
+  demoUrl VARCHAR(500) NOT NULL,
+  isActive BOOLEAN DEFAULT true,
+  sortOrder INT DEFAULT 0,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- Site Settings Table
 CREATE TABLE IF NOT EXISTS SiteSettings (
   id INT PRIMARY KEY DEFAULT 1,
@@ -386,6 +401,8 @@ CREATE INDEX idx_protected_content_active ON ProtectedContentItems(isActive);
 CREATE INDEX idx_protected_content_type ON ProtectedContentItems(contentType);
 CREATE INDEX idx_protected_content_purchase_client ON ProtectedContentPurchases(clientId);
 CREATE INDEX idx_protected_content_purchase_item ON ProtectedContentPurchases(contentItemId);
+CREATE INDEX idx_site_demos_active ON SiteDemos(isActive);
+CREATE INDEX idx_site_demos_slug ON SiteDemos(slug);
 
 -- Sample Admin User (Password: admin123 - hashed with bcryptjs)
 INSERT INTO Users (name, email, password, role, company, isActive)
@@ -454,5 +471,18 @@ VALUES (
   true,
   true,
   '/plugins/protected-content'
+)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO SiteDemos (slug, name, category, description, previewImage, demoUrl, isActive, sortOrder)
+VALUES (
+  'restaurant',
+  'Restaurant Demo',
+  'Restaurant',
+  'A polished restaurant website demo powered by the editable Menu plugin.',
+  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
+  '/site-demos/restaurant',
+  true,
+  10
 )
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);

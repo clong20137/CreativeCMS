@@ -28,12 +28,29 @@ export default function PageSections({ sections }: { sections?: any[] }) {
   if (visibleSections.length === 0) return null
 
   return (
-    <div className="space-y-10">
+    <div>
       {visibleSections.map((section, index) => (
-        <PageSection key={section.id || index} section={section} />
+        <div key={section.id || index} style={getSectionSpacingStyle(section)}>
+          <PageSection section={section} />
+        </div>
       ))}
     </div>
   )
+}
+
+function getSectionSpacingStyle(section: any) {
+  const toPixels = (value: any) => {
+    if (value === '' || value === null || value === undefined) return undefined
+    const number = Number(value)
+    return Number.isFinite(number) ? `${number}px` : undefined
+  }
+
+  return {
+    marginTop: toPixels(section.marginTop),
+    marginBottom: toPixels(section.marginBottom),
+    paddingTop: toPixels(section.paddingTop),
+    paddingBottom: toPixels(section.paddingBottom)
+  }
 }
 
 function PageSection({ section }: { section: any }) {

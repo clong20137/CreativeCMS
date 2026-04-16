@@ -158,6 +158,11 @@ export const pluginsAPI = {
   createProtectedContentCheckoutSession: (id: string) => unwrap<{ url: string }>(api.post(`/plugins/protected-content/items/${id}/checkout-session`))
 }
 
+export const siteDemosAPI = {
+  getDemos: () => unwrap<any[]>(api.get('/site-demos')),
+  getDemo: (slug: string) => unwrap(api.get(`/site-demos/${slug}`))
+}
+
 // Admin API
 export const adminAPI = {
   getStats: () => unwrap(api.get('/admin/stats')),
@@ -185,6 +190,8 @@ export const adminAPI = {
   deletePortfolioItem: (id: string) => unwrap(api.delete(`/admin/portfolio-items/${id}`)),
   getPlugins: () => unwrap<any[]>(api.get('/admin/plugins')),
   updatePlugin: (slug: string, data: any) => unwrap(api.put(`/admin/plugins/${slug}`, data)),
+  getSiteDemos: () => unwrap<any[]>(api.get('/admin/site-demos')),
+  updateSiteDemo: (slug: string, data: any) => unwrap(api.put(`/admin/site-demos/${slug}`, data)),
   getRestaurantMenuItems: () => unwrap<any[]>(api.get('/admin/plugins/restaurant/menu')),
   createRestaurantMenuItem: (data: any) => unwrap(api.post('/admin/plugins/restaurant/menu', data)),
   updateRestaurantMenuItem: (id: string, data: any) => unwrap(api.put(`/admin/plugins/restaurant/menu/${id}`, data)),

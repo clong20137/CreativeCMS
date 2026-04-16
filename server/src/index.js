@@ -24,6 +24,7 @@ import BookingAppointment from './models/BookingAppointment.js'
 import EventItem from './models/EventItem.js'
 import ProtectedContentItem from './models/ProtectedContentItem.js'
 import ProtectedContentPurchase from './models/ProtectedContentPurchase.js'
+import SiteDemo from './models/SiteDemo.js'
 
 // Import routes
 import authRoutes from './routes/auth.js'
@@ -40,6 +41,7 @@ import contactMessageRoutes from './routes/contact-messages.js'
 import stripeWebhookRoutes from './routes/stripe-webhooks.js'
 import pluginRoutes from './routes/plugins.js'
 import pageRoutes from './routes/pages.js'
+import siteDemoRoutes from './routes/site-demos.js'
 
 dotenv.config()
 
@@ -150,6 +152,7 @@ app.use('/api/site-settings', siteSettingsRoutes)
 app.use('/api/tickets', ticketRoutes)
 app.use('/api/contact-messages', contactMessageRoutes)
 app.use('/api/plugins', pluginRoutes)
+app.use('/api/site-demos', siteDemoRoutes)
 app.use('/api/pages', pageRoutes)
 
 // Health check

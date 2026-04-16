@@ -33,7 +33,8 @@ const adminGroups = [
     links: [
       { label: 'Services', path: '/admin/services', icon: FiGrid },
       { label: 'Portfolio', path: '/admin/portfolio', icon: FiImage },
-      { label: 'Plugins', path: '/admin/plugins', icon: FiGrid }
+      { label: 'Plugins', path: '/admin/plugins', icon: FiGrid },
+      { label: 'Site Demos', path: '/admin/site-demos', icon: FiImage }
     ]
   },
   {

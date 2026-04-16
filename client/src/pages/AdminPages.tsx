@@ -188,6 +188,10 @@ function makePageSection(type: string) {
     secondaryButtonLabel: '',
     secondaryButtonUrl: '',
     items: [],
+    marginTop: '',
+    marginBottom: '',
+    paddingTop: '',
+    paddingBottom: '',
     itemLimit: type === 'portfolio' ? 8 : 6,
     columns: type === 'portfolio' ? 4 : 3
   }
@@ -638,6 +642,8 @@ export default function AdminPages() {
                           </div>
                         </div>
 
+                        <SectionSpacingControls section={section} index={index} updateSection={updatePageSection} />
+
                         {(section.type === 'banner' || section.type === 'hero' || section.type === 'cta') && (
                           <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                             <input value={section.title || ''} onChange={(e) => updatePageSection(index, 'title', e.target.value)} placeholder="Heading" className="px-4 py-2 border rounded-lg md:col-span-2" />
@@ -937,6 +943,8 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
               </div>
             </div>
 
+            <SectionSpacingControls section={section} index={index} updateSection={updateSection} />
+
             {(section.type === 'banner' || section.type === 'hero' || section.type === 'cta') && (
               <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                 <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Heading" className="px-4 py-2 border rounded-lg md:col-span-2" />
@@ -991,6 +999,20 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
       </div>
       {(sections || []).length === 0 && <div className="rounded-lg border border-dashed p-6 text-center text-gray-600">No extra sections yet. Add one above to place reusable content on this page.</div>}
     </section>
+  )
+}
+
+function SectionSpacingControls({ section, index, updateSection }: any) {
+  return (
+    <details className="mb-3 rounded-lg border bg-white p-3">
+      <summary className="cursor-pointer text-sm font-bold text-gray-800">Spacing</summary>
+      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+        <input type="number" min="0" value={section.marginTop ?? ''} onChange={(e) => updateSection(index, 'marginTop', e.target.value)} placeholder="Margin top px" className="px-4 py-2 border rounded-lg" />
+        <input type="number" min="0" value={section.marginBottom ?? ''} onChange={(e) => updateSection(index, 'marginBottom', e.target.value)} placeholder="Margin bottom px" className="px-4 py-2 border rounded-lg" />
+        <input type="number" min="0" value={section.paddingTop ?? ''} onChange={(e) => updateSection(index, 'paddingTop', e.target.value)} placeholder="Padding top px" className="px-4 py-2 border rounded-lg" />
+        <input type="number" min="0" value={section.paddingBottom ?? ''} onChange={(e) => updateSection(index, 'paddingBottom', e.target.value)} placeholder="Padding bottom px" className="px-4 py-2 border rounded-lg" />
+      </div>
+    </details>
   )
 }
 

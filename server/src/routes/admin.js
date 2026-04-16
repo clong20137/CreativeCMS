@@ -21,8 +21,10 @@ import BookingAppointment from '../models/BookingAppointment.js'
 import EventItem from '../models/EventItem.js'
 import ProtectedContentItem from '../models/ProtectedContentItem.js'
 import CustomPage from '../models/CustomPage.js'
+import SiteDemo from '../models/SiteDemo.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
 import { ensureDemoPlugins, getOrCreateBookingPlugin, getOrCreateEventsPlugin, getOrCreateProtectedContentPlugin, getOrCreateRestaurantPlugin, getOrCreateRealEstatePlugin } from './plugins.js'
+import { ensureSiteDemos } from './site-demos.js'
 import crypto from 'crypto'
 import { base32Encode, verifyTotp } from './auth.js'
 import jwt from 'jsonwebtoken'
@@ -168,6 +170,37 @@ router.put('/plugins/:slug', async (req, res) => {
       isPurchased: req.body.isPurchased === undefined ? plugin.isPurchased : Boolean(req.body.isPurchased)
     })
     res.json(plugin)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/site-demos', async (req, res) => {
+  try {
+    await ensureSiteDemos()
+    const demos = await SiteDemo.findAll({ order: [['sortOrder', 'ASC'], ['name', 'ASC']] })
+    res.json(demos)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/site-demos/:slug', async (req, res) => {
+  try {
+    await ensureSiteDemos()
+    const demo = await SiteDemo.findOne({ where: { slug: req.params.slug } })
+    if (!demo) return res.status(404).json({ error: 'Site demo not found' })
+
+    await demo.update({
+      name: req.body.name || demo.name,
+      category: req.body.category || demo.category,
+      description: req.body.description || '',
+      previewImage: req.body.previewImage || '',
+      demoUrl: req.body.demoUrl || demo.demoUrl,
+      isActive: req.body.isActive === undefined ? demo.isActive : Boolean(req.body.isActive),
+      sortOrder: Number(req.body.sortOrder || 0)
+    })
+    res.json(demo)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

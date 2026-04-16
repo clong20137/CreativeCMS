@@ -15,6 +15,7 @@ import RealEstateListingDetail from './pages/RealEstateListingDetail'
 import BookingPluginDemo from './pages/BookingPluginDemo'
 import EventsPluginDemo from './pages/EventsPluginDemo'
 import ProtectedContentPluginDemo from './pages/ProtectedContentPluginDemo'
+import RestaurantSiteDemo from './pages/RestaurantSiteDemo'
 import Login from './pages/Login'
 import ClientDashboard from './pages/ClientDashboard'
 import ClientPortalBilling from './pages/ClientPortalBilling'
@@ -33,6 +34,7 @@ import AdminTickets from './pages/AdminTickets'
 import AdminMessages from './pages/AdminMessages'
 import AdminPlugins from './pages/AdminPlugins'
 import AdminPluginDetail from './pages/AdminPluginDetail'
+import AdminSiteDemos from './pages/AdminSiteDemos'
 import ClientTickets from './pages/ClientTickets'
 import CustomPage from './pages/CustomPage'
 import NotFound from './pages/NotFound'
@@ -59,6 +61,7 @@ function AppRoutes() {
           <Route path="/plugins/booking" element={<BookingPluginDemo />} />
           <Route path="/plugins/events" element={<EventsPluginDemo />} />
           <Route path="/plugins/protected-content" element={<ProtectedContentPluginDemo />} />
+          <Route path="/site-demos/restaurant" element={<RestaurantSiteDemo />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/client-dashboard" element={<ClientDashboard />} />
@@ -79,6 +82,7 @@ function AppRoutes() {
           <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/admin/plugins" element={<AdminPlugins />} />
           <Route path="/admin/plugins/:slug" element={<AdminPluginDetail />} />
+          <Route path="/admin/site-demos" element={<AdminSiteDemos />} />
           <Route path="/:slug" element={<CustomPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
