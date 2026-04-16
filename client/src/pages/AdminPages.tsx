@@ -591,7 +591,7 @@ export default function AdminPages() {
       {loading ? <PageSkeleton /> : (
         <div className="grid min-h-[calc(100vh-12rem)] grid-cols-1 items-start gap-4 transition-all duration-300 xl:grid-cols-[var(--editor-grid)]" style={{ '--editor-grid': editorGridColumns } as any}>
           <div className="space-y-6 px-1">
-            <section className="rounded-lg border bg-white p-4 shadow-sm">
+            <section className="sticky top-0 z-20 rounded-lg border bg-white p-4 shadow-sm">
               <SectionBlockLibrary addSection={addActiveSection} />
             </section>
 
@@ -1082,12 +1082,14 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
 
 function SectionBlockLibrary({ addSection }: any) {
   return (
-    <div>
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-gray-900">Sections</h2>
-        <p className="text-sm text-gray-600">Drag a block into the preview or click to add it.</p>
+    <div className="min-w-0">
+      <div className="mb-3 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Sections</h2>
+          <p className="text-sm text-gray-600">Drag into the preview or click to add.</p>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="no-scrollbar flex gap-3 overflow-x-auto overscroll-x-contain pb-1">
         {sectionTypeOptions.map(option => {
           const Icon = option.icon
           return (
@@ -1100,10 +1102,10 @@ function SectionBlockLibrary({ addSection }: any) {
                 e.dataTransfer.setData('application/x-section-type', option.value)
                 e.dataTransfer.effectAllowed = 'copy'
               }}
-              className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border px-3 py-2 text-center text-xs font-semibold hover:bg-gray-50"
+              className="flex min-h-20 w-24 shrink-0 flex-col items-center justify-center gap-2 rounded-lg border px-3 py-2 text-center text-xs font-semibold transition hover:bg-gray-50 hover:text-blue-700"
             >
               <Icon size={20} />
-              {option.label}
+              <span className="leading-tight">{option.label}</span>
             </button>
           )
         })}

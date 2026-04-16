@@ -126,6 +126,15 @@ main {
   animation: fadeInUp 0.5s ease-out;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .container {
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
 }

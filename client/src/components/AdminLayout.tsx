@@ -203,7 +203,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                   </div>
 
                   {group.label === 'Pages' && (
-                    <>
+                    <div className="space-y-1 border-l border-gray-200 ml-4 pl-3">
                       {builtInPageLinks.map(link => (
                         <Link
                           key={link.page}
@@ -243,7 +243,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                         <FiFileText size={16} />
                         Add New Page
                       </Link>
-                    </>
+                    </div>
                   )}
 
                   {group.links.map((link) => {
