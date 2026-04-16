@@ -146,6 +146,7 @@ export default function AdminPages() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [draggingSectionIndex, setDraggingSectionIndex] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -274,6 +275,18 @@ export default function AdminPages() {
     setPageDraft((current: any) => ({ ...current, sections: (current.sections || []).filter((_: any, i: number) => i !== index) }))
   }
 
+  const movePageSection = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || toIndex < 0) return
+
+    setPageDraft((current: any) => {
+      const sections = [...(current.sections || [])]
+      if (fromIndex < 0 || fromIndex >= sections.length || toIndex >= sections.length) return current
+      const [movedSection] = sections.splice(fromIndex, 1)
+      sections.splice(toIndex, 0, movedSection)
+      return { ...current, sections }
+    })
+  }
+
   const saveCustomPage = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -362,16 +375,44 @@ export default function AdminPages() {
                   </div>
                   <div className="space-y-3">
                     {(pageDraft.sections || []).map((section: any, index: number) => (
-                      <div key={section.id || index} className="rounded-lg border bg-gray-50 p-4">
+                      <div
+                        key={section.id || index}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => {
+                          if (draggingSectionIndex !== null) movePageSection(draggingSectionIndex, index)
+                          setDraggingSectionIndex(null)
+                        }}
+                        className={`rounded-lg border bg-gray-50 p-4 transition ${draggingSectionIndex === index ? 'opacity-60 ring-2 ring-blue-500' : ''}`}
+                      >
                         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                          <select value={section.type || 'paragraph'} onChange={(e) => updatePageSection(index, 'type', e.target.value)} className="px-4 py-2 border rounded-lg">
-                            <option value="header">Header</option>
-                            <option value="paragraph">Paragraph</option>
-                            <option value="image">Image</option>
-                            <option value="plugin">Plugin</option>
-                            <option value="section">Section</option>
-                          </select>
-                          <button type="button" onClick={() => removePageSection(index)} className="px-3 py-2 border rounded-lg text-red-600 hover:bg-red-50">Remove Section</button>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              draggable
+                              onDragStart={(e) => {
+                                setDraggingSectionIndex(index)
+                                e.dataTransfer.effectAllowed = 'move'
+                              }}
+                              onDragEnd={() => setDraggingSectionIndex(null)}
+                              className="cursor-grab rounded-lg border bg-white px-3 py-2 text-sm font-semibold text-gray-700 active:cursor-grabbing"
+                              title="Drag to reorder"
+                            >
+                              Drag
+                            </button>
+                            <select value={section.type || 'paragraph'} onChange={(e) => updatePageSection(index, 'type', e.target.value)} className="px-4 py-2 border rounded-lg">
+                              <option value="header">Header</option>
+                              <option value="paragraph">Paragraph</option>
+                              <option value="image">Image</option>
+                              <option value="plugin">Plugin</option>
+                              <option value="section">Section</option>
+                            </select>
+                            <span className="text-sm font-semibold text-gray-500">#{index + 1}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button type="button" onClick={() => movePageSection(index, index - 1)} disabled={index === 0} className="px-3 py-2 border rounded-lg text-gray-700 hover:bg-white disabled:opacity-40">Up</button>
+                            <button type="button" onClick={() => movePageSection(index, index + 1)} disabled={index === (pageDraft.sections || []).length - 1} className="px-3 py-2 border rounded-lg text-gray-700 hover:bg-white disabled:opacity-40">Down</button>
+                            <button type="button" onClick={() => removePageSection(index)} className="px-3 py-2 border rounded-lg text-red-600 hover:bg-red-50">Remove Section</button>
+                          </div>
                         </div>
 
                         {(section.type === 'header' || section.type === 'section' || section.type === 'plugin') && (
