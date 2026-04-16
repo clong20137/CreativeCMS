@@ -22,6 +22,28 @@ const emptySettings = {
   heroSecondaryUrl: '',
   heroMediaType: 'none',
   heroMediaUrl: '',
+  pageHeaders: {
+    portfolio: {
+      title: 'Our Portfolio',
+      subtitle: 'Showcase of our latest creative projects and client work'
+    },
+    services: {
+      title: 'Our Services',
+      subtitle: 'Comprehensive creative solutions for your business'
+    },
+    pricing: {
+      title: 'Transparent Pricing',
+      subtitle: 'Flexible packages tailored to your needs'
+    },
+    plugins: {
+      title: 'Website Plugins',
+      subtitle: 'Add the features your business needs when you need them.'
+    },
+    contact: {
+      title: 'Get in Touch',
+      subtitle: "Have a project in mind? Let's talk about how we can help."
+    }
+  } as Record<string, { title: string; subtitle: string }>,
   facebookUrl: '',
   instagramUrl: '',
   twitterUrl: '',
@@ -45,7 +67,14 @@ const emptySettings = {
   turnstileSecretKey: ''
 }
 
-const tabs = ['General', 'Contact', 'Homepage', 'Services', 'Pricing', 'Testimonials', 'Payments', 'Security']
+const tabs = ['General', 'Contact', 'Homepage', 'Page Headers', 'Services', 'Pricing', 'Testimonials', 'Payments', 'Security']
+const pageHeaderLabels: Record<string, string> = {
+  portfolio: 'Portfolio',
+  services: 'Services',
+  pricing: 'Pricing',
+  plugins: 'Plugins',
+  contact: 'Contact'
+}
 const MAX_DATA_URL_LENGTH = 80_000
 const MAX_IMAGE_WIDTH = 900
 const MAX_IMAGE_HEIGHT = 600
@@ -189,6 +218,7 @@ function getActiveTabPayload(settings: typeof emptySettings, activeTab: string) 
       'whatWeDo',
       'featuredWork'
     ],
+    'Page Headers': ['pageHeaders'],
     Services: ['services'],
     Pricing: ['webDesignPackages', 'faqs'],
     Testimonials: ['googleReviewsEnabled', 'googlePlaceId', 'googleApiKey', 'testimonials'],
@@ -257,6 +287,18 @@ export default function AdminSettings() {
 
   const addListItem = (key: string, item: any) => setSettings(prev => ({ ...prev, [key]: [...((prev as any)[key] || []), item] }))
   const removeListItem = (key: string, index: number) => setSettings(prev => ({ ...prev, [key]: ((prev as any)[key] || []).filter((_: any, i: number) => i !== index) }))
+  const updatePageHeader = (page: string, field: 'title' | 'subtitle', value: string) => {
+    setSettings(prev => ({
+      ...prev,
+      pageHeaders: {
+        ...(prev.pageHeaders || {}),
+        [page]: {
+          ...(prev.pageHeaders?.[page] || {}),
+          [field]: value
+        }
+      }
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -431,6 +473,40 @@ export default function AdminSettings() {
               <section className="space-y-6">
                 <ListEditor title="Web Design Packages" listKey="webDesignPackages" items={settings.webDesignPackages} fields={['name', 'description', 'price', 'billingPeriod', 'features']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} setError={setError} />
                 <ListEditor title="FAQ" listKey="faqs" items={settings.faqs} fields={['q', 'a']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} setError={setError} />
+              </section>
+            )}
+
+            {activeTab === 'Page Headers' && (
+              <section className="space-y-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Public Page Headers</h2>
+                  <p className="text-gray-600">Edit the main title and subtitle shown at the top of each public page.</p>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  {Object.entries(pageHeaderLabels).map(([page, label]) => {
+                    const header = settings.pageHeaders?.[page] || { title: '', subtitle: '' }
+                    return (
+                      <div key={page} className="rounded-lg border p-4">
+                        <h3 className="mb-3 text-lg font-bold text-gray-900">{label}</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                          <input
+                            value={header.title || ''}
+                            onChange={(e) => updatePageHeader(page, 'title', e.target.value)}
+                            placeholder={`${label} title`}
+                            className="px-4 py-2 border rounded-lg"
+                          />
+                          <textarea
+                            value={header.subtitle || ''}
+                            onChange={(e) => updatePageHeader(page, 'subtitle', e.target.value)}
+                            placeholder={`${label} subtitle`}
+                            rows={2}
+                            className="px-4 py-2 border rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </section>
             )}
 

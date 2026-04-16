@@ -32,6 +32,7 @@ function publicSiteSettings(settings) {
     'heroSecondaryUrl',
     'heroMediaType',
     'heroMediaUrl',
+    'pageHeaders',
     'facebookUrl',
     'instagramUrl',
     'twitterUrl',

@@ -1,10 +1,16 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { portfolioAPI } from '../services/api'
+import { portfolioAPI, siteSettingsAPI } from '../services/api'
 import SEO from '../components/SEO'
+
+const fallbackHeader = {
+  title: 'Our Portfolio',
+  subtitle: 'Showcase of our latest creative projects and client work'
+}
 
 export default function Portfolio() {
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [pageHeader, setPageHeader] = useState(fallbackHeader)
 
   const fallbackPortfolioItems = [
     {
@@ -69,10 +75,14 @@ export default function Portfolio() {
   useEffect(() => {
     const fetchPortfolio = async () => {
       try {
-        const items = await portfolioAPI.getPortfolio()
+        const [items, settings] = await Promise.all([
+          portfolioAPI.getPortfolio(),
+          siteSettingsAPI.getSettings()
+        ])
         if (items.length > 0) {
           setPortfolioItems(items)
         }
+        setPageHeader({ ...fallbackHeader, ...(settings.pageHeaders?.portfolio || {}) })
       } catch (error) {
         console.error('Error loading portfolio:', error)
       }
@@ -103,8 +113,8 @@ export default function Portfolio() {
       {/* Hero */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Portfolio</h1>
-          <p className="text-xl text-blue-100">Showcase of our latest creative projects and client work</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">{pageHeader.title}</h1>
+          <p className="text-xl text-blue-100">{pageHeader.subtitle}</p>
         </div>
       </section>
 

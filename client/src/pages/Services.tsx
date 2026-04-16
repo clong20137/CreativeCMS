@@ -3,6 +3,11 @@ import { FiMonitor, FiCamera, FiVideo, FiPenTool } from 'react-icons/fi'
 import { siteSettingsAPI } from '../services/api'
 import SEO, { localBusinessSchema } from '../components/SEO'
 
+const fallbackHeader = {
+  title: 'Our Services',
+  subtitle: 'Comprehensive creative solutions for your business'
+}
+
 export default function Services() {
   const fallbackServices = [
     {
@@ -63,6 +68,7 @@ export default function Services() {
     }
   ]
   const [services, setServices] = useState<any[]>(fallbackServices)
+  const [pageHeader, setPageHeader] = useState(fallbackHeader)
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -71,6 +77,7 @@ export default function Services() {
         if (Array.isArray(settings.services) && settings.services.length > 0) {
           setServices(settings.services)
         }
+        setPageHeader({ ...fallbackHeader, ...(settings.pageHeaders?.services || {}) })
       } catch (error) {
         console.error('Error loading services:', error)
       }
@@ -90,8 +97,8 @@ export default function Services() {
       {/* Hero */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Services</h1>
-          <p className="text-xl text-blue-100">Comprehensive creative solutions for your business</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">{pageHeader.title}</h1>
+          <p className="text-xl text-blue-100">{pageHeader.subtitle}</p>
         </div>
       </section>
 

@@ -79,6 +79,10 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.TEXT('long'),
     allowNull: true
   },
+  pageHeaders: {
+    type: DataTypes.JSON,
+    defaultValue: {}
+  },
   facebookUrl: {
     type: DataTypes.STRING,
     allowNull: true

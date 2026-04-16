@@ -226,6 +226,7 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   heroSecondaryUrl VARCHAR(500) DEFAULT '/portfolio',
   heroMediaType ENUM('none', 'image', 'video') DEFAULT 'none',
   heroMediaUrl LONGTEXT,
+  pageHeaders JSON,
   facebookUrl VARCHAR(500),
   instagramUrl VARCHAR(500),
   twitterUrl VARCHAR(500),

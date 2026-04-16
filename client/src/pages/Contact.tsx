@@ -4,6 +4,11 @@ import { contactMessagesAPI, siteSettingsAPI } from '../services/api'
 import TurnstileWidget from '../components/TurnstileWidget'
 import SEO, { localBusinessSchema } from '../components/SEO'
 
+const fallbackHeader = {
+  title: 'Get in Touch',
+  subtitle: "Have a project in mind? Let's talk about how we can help."
+}
+
 export default function Contact() {
   const [formData, setFormData] = useState({
     name: '',
@@ -25,6 +30,7 @@ export default function Contact() {
     locationLine1: '123 Creative Street',
     locationLine2: 'New York, NY 10001'
   })
+  const [pageHeader, setPageHeader] = useState(fallbackHeader)
   const socialLinks = [
     ['Facebook', settings.facebookUrl],
     ['Instagram', settings.instagramUrl],
@@ -35,7 +41,9 @@ export default function Contact() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        setSettings(await siteSettingsAPI.getSettings())
+        const data = await siteSettingsAPI.getSettings()
+        setSettings(data)
+        setPageHeader({ ...fallbackHeader, ...(data.pageHeaders?.contact || {}) })
       } catch (error) {
         console.error('Error loading contact settings:', error)
       }
@@ -91,8 +99,8 @@ export default function Contact() {
       {/* Hero */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Get in Touch</h1>
-          <p className="text-xl text-blue-100">Have a project in mind? Let's talk about how we can help.</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">{pageHeader.title}</h1>
+          <p className="text-xl text-blue-100">{pageHeader.subtitle}</p>
         </div>
       </section>
 

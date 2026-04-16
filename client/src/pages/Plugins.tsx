@@ -2,16 +2,27 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import { PageSkeleton } from '../components/SkeletonLoaders'
-import { pluginsAPI } from '../services/api'
+import { pluginsAPI, siteSettingsAPI } from '../services/api'
+
+const fallbackHeader = {
+  title: 'Website Plugins',
+  subtitle: 'Add the features your business needs when you need them.'
+}
 
 export default function Plugins() {
   const [plugins, setPlugins] = useState<any[]>([])
+  const [pageHeader, setPageHeader] = useState(fallbackHeader)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchPlugins = async () => {
       try {
-        setPlugins(await pluginsAPI.getPlugins())
+        const [pluginData, settings] = await Promise.all([
+          pluginsAPI.getPlugins(),
+          siteSettingsAPI.getSettings()
+        ])
+        setPlugins(pluginData)
+        setPageHeader({ ...fallbackHeader, ...(settings.pageHeaders?.plugins || {}) })
       } catch (error) {
         console.error('Error loading plugins:', error)
       } finally {
@@ -32,8 +43,8 @@ export default function Plugins() {
 
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Website Plugins</h1>
-          <p className="text-xl text-blue-100">Add the features your business needs when you need them.</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">{pageHeader.title}</h1>
+          <p className="text-xl text-blue-100">{pageHeader.subtitle}</p>
         </div>
       </section>
 

@@ -3,6 +3,11 @@ import { FiCheck } from 'react-icons/fi'
 import { servicePackagesAPI, siteSettingsAPI } from '../services/api'
 import SEO from '../components/SEO'
 
+const fallbackHeader = {
+  title: 'Transparent Pricing',
+  subtitle: 'Flexible packages tailored to your needs'
+}
+
 export default function Pricing() {
   const fallbackPricingPlans = [
     {
@@ -90,6 +95,7 @@ export default function Pricing() {
     }
   ]
   const [faqs, setFaqs] = useState<any[]>(fallbackFaqs)
+  const [pageHeader, setPageHeader] = useState(fallbackHeader)
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -101,6 +107,7 @@ export default function Pricing() {
         const settings = await siteSettingsAPI.getSettings()
         if (Array.isArray(settings.webDesignPackages) && settings.webDesignPackages.length > 0) setPricingPlans(settings.webDesignPackages)
         if (Array.isArray(settings.faqs) && settings.faqs.length > 0) setFaqs(settings.faqs)
+        setPageHeader({ ...fallbackHeader, ...(settings.pageHeaders?.pricing || {}) })
       } catch (error) {
         console.error('Error loading services:', error)
       }
@@ -119,8 +126,8 @@ export default function Pricing() {
       {/* Hero */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
         <div className="container">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Transparent Pricing</h1>
-          <p className="text-xl text-blue-100">Flexible packages tailored to your needs</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">{pageHeader.title}</h1>
+          <p className="text-xl text-blue-100">{pageHeader.subtitle}</p>
         </div>
       </section>
 
