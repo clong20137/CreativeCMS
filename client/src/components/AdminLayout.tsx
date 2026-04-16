@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { FiBarChart, FiBell, FiChevronDown, FiCreditCard, FiFileText, FiGrid, FiHelpCircle, FiHome, FiImage, FiInbox, FiLogOut, FiMoon, FiSettings, FiSun, FiUsers } from 'react-icons/fi'
+import { FiBarChart, FiBell, FiCreditCard, FiFileText, FiGrid, FiHelpCircle, FiHome, FiImage, FiInbox, FiLogOut, FiMoon, FiSettings, FiSun, FiUsers } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { adminAPI } from '../services/api'
@@ -113,25 +113,134 @@ export default function AdminLayout({ title, children }: { title: string; childr
     return 0
   }
 
+  const sidebarLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+      isActive
+        ? 'bg-blue-600 text-white'
+        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+    }`
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm">
-        <div className="container py-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <Link to="/" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
-                Back to Main Site
-              </Link>
-              <span className="mx-2 text-gray-400">/</span>
-              <Link to="/admin/dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
-                Admin Panel
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+    <div className="min-h-screen bg-gray-50 lg:flex">
+      <aside className="flex bg-white shadow-sm lg:sticky lg:top-0 lg:h-screen lg:w-72 lg:shrink-0 lg:flex-col">
+        <div className="flex w-full flex-col border-b border-gray-200 lg:h-full lg:border-b-0 lg:border-r">
+          <div className="border-b border-gray-200 p-5">
+            <Link to="/admin/dashboard" className="inline-flex items-center gap-2 text-lg font-black text-gray-900">
+              <FiGrid className="text-blue-600" />
+              Admin Portal
+            </Link>
+          </div>
+
+          <nav className="flex-1 space-y-5 overflow-auto p-4">
+            <div className="space-y-1">
+              {primaryLinks.map((link) => {
+                const Icon = link.icon
+                return (
+                  <NavLink key={link.path} to={link.path} className={sidebarLinkClass}>
+                    <span className="inline-flex items-center gap-2">
+                      <Icon size={16} />
+                      {link.label}
+                    </span>
+                  </NavLink>
+                )
+              })}
             </div>
-            <div className="flex items-center gap-3">
+
+            {adminGroups.map((group) => {
+              const GroupIcon = group.icon
+              const groupActive = isGroupActive(group.links)
+
+              return (
+                <div key={group.label} className="space-y-1">
+                  <div className={`flex items-center justify-between px-3 text-xs font-bold uppercase tracking-wide ${groupActive ? 'text-blue-600' : 'text-gray-500'}`}>
+                    <span className="inline-flex items-center gap-2">
+                      <GroupIcon size={14} />
+                      {group.label}
+                    </span>
+                    {group.label === 'Support' && notifications.total > 0 && (
+                      <span className="min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center justify-center">
+                        {notifications.total > 99 ? '99+' : notifications.total}
+                      </span>
+                    )}
+                  </div>
+
+                  {group.links.map((link) => {
+                    const Icon = link.icon
+                    const badgeCount = getBadgeCount('badgeKey' in link ? link.badgeKey : undefined)
+                    return (
+                      <NavLink key={link.path} to={link.path} className={sidebarLinkClass}>
+                        <span className="inline-flex items-center gap-2">
+                          <Icon size={16} />
+                          {link.label}
+                        </span>
+                        {badgeCount > 0 && (
+                          <span className="min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center justify-center">
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                          </span>
+                        )}
+                      </NavLink>
+                    )
+                  })}
+                </div>
+              )
+            })}
+
+            <div className="space-y-1">
+              {utilityLinks.map((link) => {
+                const Icon = link.icon
+                return (
+                  <NavLink key={link.path} to={link.path} className={sidebarLinkClass}>
+                    <span className="inline-flex items-center gap-2">
+                      <Icon size={16} />
+                      {link.label}
+                    </span>
+                  </NavLink>
+                )
+              })}
+            </div>
+          </nav>
+
+          <div className="mt-auto space-y-2 border-t border-gray-200 p-4">
+            <Link
+              to="/"
+              className="flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+              <FiHome />
+              Back to Website
+            </Link>
+            <button
+              onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? <FiSun /> : <FiMoon />}
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+            >
+              <FiLogOut />
+              Logout
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <main className="min-w-0 flex-1">
+        <div className="border-b border-gray-200 bg-white">
+          <div className={isPageEditor ? 'px-4 py-5' : 'container py-5'}>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Link to="/admin/dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
+                  Admin Panel
+                </Link>
+                <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+              </div>
               <Link
                 to={notifications.newMessages > 0 ? '/admin/messages' : '/admin/tickets'}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition"
+                className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
                 aria-label={`${notifications.total} new admin notifications`}
                 title={`${notifications.newMessages} new messages, ${notifications.newTickets} new tickets`}
               >
@@ -142,127 +251,12 @@ export default function AdminLayout({ title, children }: { title: string; childr
                   </span>
                 )}
               </Link>
-              <button
-                onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition"
-                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              >
-                {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
-              </button>
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                <FiLogOut /> Logout
-              </button>
             </div>
           </div>
-
-          <nav className="mt-5 flex flex-wrap items-center gap-2">
-            {primaryLinks.map((link) => {
-              const Icon = link.icon
-              return (
-                <NavLink
-                  key={link.path}
-                  to={link.path}
-                  className={({ isActive }) =>
-                    `inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                      isActive
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-                    }`
-                  }
-                >
-                  <Icon size={16} />
-                  {link.label}
-                </NavLink>
-              )
-            })}
-
-            {adminGroups.map((group) => {
-              const GroupIcon = group.icon
-              const groupActive = isGroupActive(group.links)
-
-              return (
-                <div key={group.label} className="relative group">
-                  <button
-                    type="button"
-                    className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                      groupActive
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-                    }`}
-                  >
-                    <GroupIcon size={16} />
-                    {group.label}
-                    {group.label === 'Support' && notifications.total > 0 && (
-                      <span className="min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center justify-center">
-                        {notifications.total > 99 ? '99+' : notifications.total}
-                      </span>
-                    )}
-                    <FiChevronDown size={14} />
-                  </button>
-
-                  <div className="absolute left-0 top-full z-50 hidden min-w-56 pt-2 group-hover:block group-focus-within:block">
-                    <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                      {group.links.map((link) => {
-                        const Icon = link.icon
-                        const badgeCount = getBadgeCount('badgeKey' in link ? link.badgeKey : undefined)
-                        return (
-                          <NavLink
-                            key={link.path}
-                            to={link.path}
-                            className={({ isActive }) =>
-                              `flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                                isActive
-                                  ? 'bg-blue-600 text-white'
-                                  : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-                              }`
-                            }
-                          >
-                            <span className="inline-flex items-center gap-2">
-                              <Icon size={16} />
-                              {link.label}
-                            </span>
-                            {badgeCount > 0 && (
-                              <span className="min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center justify-center">
-                                {badgeCount > 99 ? '99+' : badgeCount}
-                              </span>
-                            )}
-                          </NavLink>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-
-            {utilityLinks.map((link) => {
-              const Icon = link.icon
-              return (
-                <NavLink
-                  key={link.path}
-                  to={link.path}
-                  className={({ isActive }) =>
-                    `inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition ${
-                      isActive
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700'
-                    }`
-                  }
-                >
-                  <Icon size={16} />
-                  {link.label}
-                </NavLink>
-              )
-            })}
-          </nav>
         </div>
-      </div>
 
-      <div className={isPageEditor ? 'w-full py-6' : 'container py-8'}>{children}</div>
+        <div className={isPageEditor ? 'w-full px-4 py-6' : 'container py-8'}>{children}</div>
+      </main>
     </div>
   )
 }
