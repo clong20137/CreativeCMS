@@ -44,6 +44,8 @@ export default function Home() {
   ]
   const [featuredWorks, setFeaturedWorks] = useState<any[]>(fallbackFeaturedWorks)
   const [whatWeDo, setWhatWeDo] = useState<any[]>(fallbackServices)
+  const [whatWeDoHeader, setWhatWeDoHeader] = useState({ title: 'What We Do', subtitle: '' })
+  const [whatWeDoEnabled, setWhatWeDoEnabled] = useState(true)
   const [hero, setHero] = useState<any>({
     heroTitle: 'Transform Your Vision Into Reality',
     heroSubtitle: 'Professional web design, photography, videography, and branding services that elevate your creative presence.',
@@ -61,6 +63,8 @@ export default function Home() {
         const settings = await siteSettingsAPI.getSettings()
         setHero((prev: any) => ({ ...prev, ...settings }))
         if (Array.isArray(settings.whatWeDo) && settings.whatWeDo.length > 0) setWhatWeDo(settings.whatWeDo)
+        if (settings.whatWeDoHeader) setWhatWeDoHeader({ title: 'What We Do', subtitle: '', ...settings.whatWeDoHeader })
+        setWhatWeDoEnabled(settings.whatWeDoEnabled !== false)
         if (Array.isArray(settings.featuredWork) && settings.featuredWork.length > 0) setFeaturedWorks(settings.featuredWork)
       } catch (error) {
         console.error('Error loading homepage settings:', error)
@@ -108,19 +112,21 @@ export default function Home() {
       </section>
 
       {/* Services Preview */}
-      <section className="py-16 bg-gray-50">
+      {whatWeDoEnabled && <section className="py-16 bg-gray-50">
         <div className="container">
-          <h2 className="section-title">What We Do</h2>
+          <h2 className="section-title">{whatWeDoHeader.title || 'What We Do'}</h2>
+          {whatWeDoHeader.subtitle && <p className="mx-auto -mt-8 mb-12 max-w-2xl text-center text-gray-600">{whatWeDoHeader.subtitle}</p>}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {whatWeDo.map((service, i) => (
               <div key={i} className="card p-8">
+                {service.image && <img src={resolveAssetUrl(service.image)} alt={service.title} className="mb-4 h-32 w-full rounded-lg object-cover" />}
                 <h3 className="text-xl font-bold mb-3 text-gray-900">{service.title}</h3>
                 <p className="text-gray-600">{service.desc}</p>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Featured Work */}
       <section className="py-16">

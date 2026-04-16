@@ -233,6 +233,8 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   twitterUrl VARCHAR(500),
   linkedinUrl VARCHAR(500),
   whatWeDo JSON,
+  whatWeDoHeader JSON,
+  whatWeDoEnabled BOOLEAN DEFAULT true,
   webDesignPackages JSON,
   services JSON,
   featuredWork JSON,

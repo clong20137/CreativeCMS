@@ -112,6 +112,17 @@ const SiteSetting = sequelize.define('SiteSetting', {
       { title: 'Brand Building', desc: 'Complete identity and strategy' }
     ]
   },
+  whatWeDoHeader: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      title: 'What We Do',
+      subtitle: ''
+    }
+  },
+  whatWeDoEnabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
   webDesignPackages: {
     type: DataTypes.JSON,
     defaultValue: []

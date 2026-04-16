@@ -24,6 +24,8 @@ const emptySettings = {
   heroMediaType: 'none',
   heroMediaUrl: '',
   pageHeaders: {} as Record<string, { title: string; subtitle: string }>,
+  whatWeDoHeader: { title: 'What We Do', subtitle: '' },
+  whatWeDoEnabled: true,
   whatWeDo: [] as any[],
   featuredWork: [] as any[],
   services: [] as any[],
@@ -112,6 +114,8 @@ function getActivePayload(settings: typeof emptySettings, activeTab: string) {
       'heroSecondaryUrl',
       'heroMediaType',
       'heroMediaUrl',
+      'whatWeDoHeader',
+      'whatWeDoEnabled',
       'whatWeDo',
       'featuredWork'
     ],
@@ -140,6 +144,8 @@ export default function AdminPages() {
   const [selectedHeaderPage, setSelectedHeaderPage] = useState('portfolio')
   const [settings, setSettings] = useState(emptySettings)
   const [pages, setPages] = useState<any[]>([])
+  const [portfolioItems, setPortfolioItems] = useState<any[]>([])
+  const [servicePackages, setServicePackages] = useState<any[]>([])
   const [selectedPageId, setSelectedPageId] = useState<string>('new')
   const [pageDraft, setPageDraft] = useState<any>({
     title: '',
@@ -165,6 +171,12 @@ export default function AdminPages() {
         const [settingsData, pagesData] = await Promise.all([adminAPI.getSiteSettings(), adminAPI.getPages()])
         setSettings({ ...emptySettings, ...settingsData })
         setPages(pagesData)
+        const [portfolioData, serviceData] = await Promise.all([
+          adminAPI.getPortfolioItems(),
+          adminAPI.getServicePackages()
+        ])
+        setPortfolioItems(portfolioData)
+        setServicePackages(serviceData)
       } catch (err: any) {
         setError(err.error || 'Failed to load pages')
       } finally {
@@ -360,7 +372,7 @@ export default function AdminPages() {
                   ? activeTab === 'Homepage'
                   : page.id === 'Testimonials'
                     ? activeTab === 'Testimonials'
-                    : selectedHeaderPage === page.id && activeTab !== 'Custom Pages'
+                    : selectedHeaderPage === page.id && !['Homepage', 'Testimonials', 'Custom Pages'].includes(activeTab)
                 return (
                   <button
                     key={page.id}
@@ -611,7 +623,23 @@ export default function AdminPages() {
                         />
                       )}
                     </div>
-                    <ListEditor title="What We Do" listKey="whatWeDo" items={settings.whatWeDo} fields={['title', 'desc']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} uploadImageToField={uploadImageToField} />
+                    <section className="rounded-lg border p-4">
+                      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">What We Do Header</h3>
+                          <p className="text-gray-600">Editable heading for the image and name cards section.</p>
+                        </div>
+                        <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
+                          <input type="checkbox" checked={settings.whatWeDoEnabled !== false} onChange={(e) => handleChange('whatWeDoEnabled', e.target.checked)} />
+                          Show section
+                        </label>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <input value={settings.whatWeDoHeader?.title || ''} onChange={(e) => handleChange('whatWeDoHeader', { ...(settings.whatWeDoHeader || {}), title: e.target.value })} placeholder="Section title" className="px-4 py-2 border rounded-lg" />
+                        <input value={settings.whatWeDoHeader?.subtitle || ''} onChange={(e) => handleChange('whatWeDoHeader', { ...(settings.whatWeDoHeader || {}), subtitle: e.target.value })} placeholder="Section subtitle" className="px-4 py-2 border rounded-lg" />
+                      </div>
+                    </section>
+                    <ListEditor title="Image and Name Cards" listKey="whatWeDo" items={settings.whatWeDo} fields={['title', 'desc', 'image']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} uploadImageToField={uploadImageToField} />
                     <ListEditor title="Featured Work" listKey="featuredWork" items={settings.featuredWork} fields={['title', 'category', 'image', 'description']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} uploadImageToField={uploadImageToField} />
                   </section>
                 )}
@@ -624,6 +652,27 @@ export default function AdminPages() {
                       header={settings.pageHeaders?.[selectedHeaderPage] || { title: '', subtitle: '' }}
                       updatePageHeader={updatePageHeader}
                     />
+                    {selectedHeaderPage === 'portfolio' && (
+                      <SimpleCollectionEditor
+                        title="Portfolio Items"
+                        items={portfolioItems}
+                        fields={['title', 'category', 'image', 'description', 'projectUrl', 'sortOrder']}
+                        emptyItem={{ title: '', category: 'web-design', image: '', description: '', projectUrl: '', sortOrder: 0, isPublished: true }}
+                        onCreate={async (item: any) => {
+                          await adminAPI.createPortfolioItem({ ...item, sortOrder: Number(item.sortOrder || 0) })
+                          setPortfolioItems(await adminAPI.getPortfolioItems())
+                        }}
+                        onUpdate={async (item: any) => {
+                          await adminAPI.updatePortfolioItem(String(item.id), { ...item, sortOrder: Number(item.sortOrder || 0) })
+                          setPortfolioItems(await adminAPI.getPortfolioItems())
+                        }}
+                        onDelete={async (item: any) => {
+                          await adminAPI.deletePortfolioItem(String(item.id))
+                          setPortfolioItems(await adminAPI.getPortfolioItems())
+                        }}
+                        uploadImageToField={uploadImageToField}
+                      />
+                    )}
                   </section>
                 )}
 
@@ -647,6 +696,25 @@ export default function AdminPages() {
                       updatePageHeader={updatePageHeader}
                     />
                     <ListEditor title="Web Design Packages" listKey="webDesignPackages" items={settings.webDesignPackages} fields={['name', 'description', 'price', 'billingPeriod', 'features']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} uploadImageToField={uploadImageToField} />
+                    <SimpleCollectionEditor
+                      title="A La Carte Services"
+                      items={servicePackages}
+                      fields={['service', 'description', 'price', 'unit', 'sortOrder']}
+                      emptyItem={{ service: '', description: '', price: '', unit: 'project', sortOrder: 0, isActive: true }}
+                      onCreate={async (item: any) => {
+                        await adminAPI.createServicePackage({ ...item, price: Number(item.price || 0), sortOrder: Number(item.sortOrder || 0) })
+                        setServicePackages(await adminAPI.getServicePackages())
+                      }}
+                      onUpdate={async (item: any) => {
+                        await adminAPI.updateServicePackage(String(item.id), { ...item, price: Number(item.price || 0), sortOrder: Number(item.sortOrder || 0) })
+                        setServicePackages(await adminAPI.getServicePackages())
+                      }}
+                      onDelete={async (item: any) => {
+                        await adminAPI.deleteServicePackage(String(item.id))
+                        setServicePackages(await adminAPI.getServicePackages())
+                      }}
+                      uploadImageToField={uploadImageToField}
+                    />
                     <ListEditor title="FAQ" listKey="faqs" items={settings.faqs} fields={['q', 'a']} updateListItem={updateListItem} addListItem={addListItem} removeListItem={removeListItem} uploadImageToField={uploadImageToField} />
                   </section>
                 )}
@@ -692,6 +760,80 @@ function PageHeaderEditor({ page, label, header, updatePageHeader }: any) {
           rows={2}
           className="px-4 py-2 border rounded-lg"
         />
+      </div>
+    </section>
+  )
+}
+
+function SimpleCollectionEditor({ title, items, fields, emptyItem, onCreate, onUpdate, onDelete, uploadImageToField }: any) {
+  const [drafts, setDrafts] = useState<any[]>([])
+
+  useEffect(() => {
+    setDrafts(items || [])
+  }, [items])
+
+  const updateDraft = (index: number, field: string, value: any) => {
+    setDrafts(current => {
+      const next = [...current]
+      next[index] = { ...next[index], [field]: value }
+      return next
+    })
+  }
+
+  const addDraft = () => setDrafts(current => [...current, { ...emptyItem }])
+
+  return (
+    <section>
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
+          <p className="text-gray-600">Add, edit, or remove items for this page section.</p>
+        </div>
+        <button type="button" onClick={addDraft} className="btn-secondary">Add Item</button>
+      </div>
+      <div className="space-y-3">
+        {drafts.map((item, index) => (
+          <div key={item.id || index} className="grid grid-cols-1 gap-3 rounded-lg border p-4 md:grid-cols-2">
+            {fields.map((field: string) => (
+              <div key={field} className={field === 'description' ? 'md:col-span-2' : ''}>
+                <textarea
+                  value={item[field] || ''}
+                  onChange={(e) => updateDraft(index, field, e.target.value)}
+                  placeholder={field}
+                  rows={field === 'description' ? 3 : 1}
+                  className="w-full px-4 py-2 border rounded-lg"
+                />
+                {field === 'image' && (
+                  <div className="mt-2 space-y-2">
+                    <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateDraft(index, 'image', url), e.target.files?.[0])} className="w-full px-3 py-2 border rounded-lg" />
+                    {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || item.service || title} className="h-32 w-full rounded-lg object-cover" />}
+                  </div>
+                )}
+              </div>
+            ))}
+            {'isPublished' in item && (
+              <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
+                <input type="checkbox" checked={item.isPublished !== false} onChange={(e) => updateDraft(index, 'isPublished', e.target.checked)} />
+                Published
+              </label>
+            )}
+            {'isActive' in item && (
+              <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
+                <input type="checkbox" checked={item.isActive !== false} onChange={(e) => updateDraft(index, 'isActive', e.target.checked)} />
+                Active
+              </label>
+            )}
+            <div className="flex flex-wrap gap-2 md:col-span-2">
+              <button type="button" onClick={() => item.id ? onUpdate(item) : onCreate(item)} className="btn-primary">{item.id ? 'Save Item' : 'Create Item'}</button>
+              {item.id ? (
+                <button type="button" onClick={() => onDelete(item)} className="btn-secondary text-red-600">Delete</button>
+              ) : (
+                <button type="button" onClick={() => setDrafts(current => current.filter((_, i) => i !== index))} className="btn-secondary text-red-600">Remove Draft</button>
+              )}
+            </div>
+          </div>
+        ))}
+        {drafts.length === 0 && <div className="rounded-lg border p-6 text-center text-gray-600">No items yet.</div>}
       </div>
     </section>
   )

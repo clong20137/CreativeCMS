@@ -39,6 +39,8 @@ function publicSiteSettings(settings) {
     'twitterUrl',
     'linkedinUrl',
     'whatWeDo',
+    'whatWeDoHeader',
+    'whatWeDoEnabled',
     'featuredWork',
     'webDesignPackages',
     'services',
