@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { FiArrowRight, FiCamera, FiCheck, FiMail, FiMapPin, FiMonitor, FiPenTool, FiPhone, FiVideo } from 'react-icons/fi'
 import Testimonials from './Testimonials'
@@ -30,7 +31,7 @@ export default function PageSections({ sections }: { sections?: any[] }) {
   return (
     <div>
       {visibleSections.map((section, index) => (
-        <div key={section.id || index} style={getSectionSpacingStyle(section)}>
+        <div key={section.id || index} className="page-section-render" style={getSectionSpacingStyle(section)}>
           <PageSection section={section} />
         </div>
       ))}
@@ -53,8 +54,14 @@ function getSectionSpacingStyle(section: any) {
     paddingTop: toPixels(section.paddingTop),
     paddingRight: toPixels(section.paddingRight),
     paddingBottom: toPixels(section.paddingBottom),
-    paddingLeft: toPixels(section.paddingLeft)
-  }
+    paddingLeft: toPixels(section.paddingLeft),
+    backgroundColor: section.backgroundColor || undefined,
+    color: section.textColor || undefined,
+    '--section-heading-color': section.headingColor || undefined,
+    '--section-text-color': section.textColor || undefined,
+    '--section-button-bg': section.buttonBackgroundColor || undefined,
+    '--section-button-text': section.buttonTextColor || undefined
+  } as CSSProperties
 }
 
 function PageSection({ section }: { section: any }) {

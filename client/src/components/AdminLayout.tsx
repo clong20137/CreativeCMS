@@ -2,7 +2,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiArrowRight, FiBarChart, FiBell, FiChevronDown, FiChevronRight, FiCreditCard, FiFileText, FiGrid, FiHelpCircle, FiHome, FiImage, FiInbox, FiLogOut, FiMoon, FiSearch, FiSettings, FiSun, FiUsers } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
-import { adminAPI } from '../services/api'
+import { adminAPI, ticketsAPI } from '../services/api'
 
 const primaryLinks = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: FiHome },
@@ -68,6 +68,9 @@ export default function AdminLayout({ title, children }: { title: string; childr
   const [theme, setTheme] = useState(() => localStorage.getItem('siteTheme') || 'light')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [menuSearch, setMenuSearch] = useState('')
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notificationItems, setNotificationItems] = useState<any[]>([])
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     Pages: true,
     Revenue: true,
@@ -160,13 +163,13 @@ export default function AdminLayout({ title, children }: { title: string; childr
   }
 
   const sidebarLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+    `flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ease-in-out ${
       isActive
         ? 'bg-blue-600 text-white'
         : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
     }`
   const collapsedLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex h-10 items-center justify-center rounded-lg transition ${
+    `flex h-10 items-center justify-center rounded-lg transition-all duration-200 ease-in-out ${
       isActive
         ? 'bg-blue-600 text-white'
         : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
@@ -174,6 +177,42 @@ export default function AdminLayout({ title, children }: { title: string; childr
   const searchTerm = menuSearch.trim().toLowerCase()
   const matchesSearch = (label: string) => !searchTerm || label.toLowerCase().includes(searchTerm)
   const toggleGroup = (label: string) => setOpenGroups(current => ({ ...current, [label]: !(current[label] ?? true) }))
+  const openNotifications = async () => {
+    const nextOpen = !notificationsOpen
+    setNotificationsOpen(nextOpen)
+    if (!nextOpen) return
+
+    try {
+      setNotificationsLoading(true)
+      const [messages, tickets] = await Promise.all([
+        adminAPI.getContactMessages(),
+        ticketsAPI.getAdminTickets()
+      ])
+      const messageItems = (messages || [])
+        .filter((message: any) => message.status === 'new')
+        .slice(0, 5)
+        .map((message: any) => ({
+          id: `message-${message.id}`,
+          title: message.name ? `New message from ${message.name}` : 'New contact message',
+          body: message.subject || message.message || message.email || 'Contact message waiting for review.',
+          to: '/admin/messages'
+        }))
+      const ticketItems = (tickets || [])
+        .filter((ticket: any) => ticket.status === 'pending')
+        .slice(0, 5)
+        .map((ticket: any) => ({
+          id: `ticket-${ticket.id}`,
+          title: ticket.subject || 'Pending support ticket',
+          body: ticket.client?.name || ticket.message || 'Support ticket waiting for review.',
+          to: '/admin/tickets'
+        }))
+      setNotificationItems([...messageItems, ...ticketItems])
+    } catch (error) {
+      setNotificationItems([])
+    } finally {
+      setNotificationsLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
@@ -244,7 +283,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                   <button
                     type="button"
                     onClick={() => sidebarOpen ? toggleGroup(group.label) : setSidebarOpen(true)}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wide transition ${groupActive ? 'text-blue-600' : 'text-gray-500'} ${sidebarOpen ? 'hover:bg-gray-100' : 'justify-center hover:bg-blue-50 hover:text-blue-700'}`}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wide transition-all duration-200 ease-in-out ${groupActive ? 'text-blue-600' : 'text-gray-500'} ${sidebarOpen ? 'hover:bg-gray-100' : 'justify-center hover:bg-blue-50 hover:text-blue-700'}`}
                     aria-expanded={groupExpanded}
                     title={group.label}
                   >
@@ -260,8 +299,10 @@ export default function AdminLayout({ title, children }: { title: string; childr
                     {sidebarOpen && (groupExpanded ? <FiChevronDown size={14} /> : <FiChevronRight size={14} />)}
                   </button>
 
-                  {groupExpanded && group.label === 'Pages' && (
-                    <div className="space-y-1 border-l border-gray-200 ml-4 pl-3">
+                  {sidebarOpen && (
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${groupExpanded ? 'max-h-[44rem] opacity-100' : 'max-h-0 opacity-0'}`}>
+                  {group.label === 'Pages' && (
+                    <div className="ml-4 space-y-1 border-l border-gray-200 pl-3">
                       {filteredPageLinks.map(link => (
                         <Link
                           key={link.path}
@@ -279,7 +320,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                     </div>
                   )}
 
-                  {groupExpanded && filteredGroupLinks.map((link) => {
+                  {filteredGroupLinks.map((link) => {
                     const Icon = link.icon
                     const badgeCount = getBadgeCount('badgeKey' in link ? (link as any).badgeKey : undefined)
                     return (
@@ -296,6 +337,8 @@ export default function AdminLayout({ title, children }: { title: string; childr
                       </NavLink>
                     )
                   })}
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -354,19 +397,45 @@ export default function AdminLayout({ title, children }: { title: string; childr
                 </Link>
                 <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
               </div>
-              <Link
-                to={notifications.newMessages > 0 ? '/admin/messages' : '/admin/tickets'}
-                className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-                aria-label={`${notifications.total} new admin notifications`}
-                title={`${notifications.newMessages} new messages, ${notifications.newTickets} new tickets`}
-              >
-                <FiBell size={20} />
-                {notifications.total > 0 && (
-                  <span className="absolute -right-2 -top-2 min-w-6 h-6 px-1 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center ring-2 ring-white">
-                    {notifications.total > 99 ? '99+' : notifications.total}
-                  </span>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={openNotifications}
+                  className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                  aria-label={`${notifications.total} new admin notifications`}
+                  title={`${notifications.newMessages} new messages, ${notifications.newTickets} new tickets`}
+                >
+                  <FiBell size={20} />
+                  {notifications.total > 0 && (
+                    <span className="absolute -right-2 -top-2 min-w-6 h-6 px-1 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center ring-2 ring-white">
+                      {notifications.total > 99 ? '99+' : notifications.total}
+                    </span>
+                  )}
+                </button>
+                {notificationsOpen && (
+                  <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-lg border bg-white shadow-xl">
+                    <div className="border-b p-4">
+                      <h2 className="font-bold text-gray-900">Notifications</h2>
+                      <p className="text-sm text-gray-600">{notifications.total} item{notifications.total === 1 ? '' : 's'} need attention</p>
+                    </div>
+                    <div className="max-h-96 overflow-auto p-2">
+                      {notificationsLoading && <div className="p-3 text-sm text-gray-600">Loading notifications...</div>}
+                      {!notificationsLoading && notificationItems.length === 0 && <div className="p-3 text-sm text-gray-600">No new notifications.</div>}
+                      {!notificationsLoading && notificationItems.map(item => (
+                        <Link
+                          key={item.id}
+                          to={item.to}
+                          onClick={() => setNotificationsOpen(false)}
+                          className="block rounded-lg p-3 transition hover:bg-blue-50"
+                        >
+                          <span className="block text-sm font-bold text-gray-900">{item.title}</span>
+                          <span className="mt-1 line-clamp-2 block text-xs text-gray-600">{item.body}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </Link>
+              </div>
             </div>
           </div>
         </div>

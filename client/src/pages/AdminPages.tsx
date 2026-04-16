@@ -216,6 +216,11 @@ function makePageSection(type: string) {
     paddingRight: '',
     paddingBottom: '',
     paddingLeft: '',
+    backgroundColor: '',
+    headingColor: '',
+    textColor: '',
+    buttonBackgroundColor: '',
+    buttonTextColor: '',
     itemLimit: type === 'portfolio' ? 8 : 6,
     columns: type === 'portfolio' ? 4 : type === 'columns' ? 2 : 3
   }
@@ -541,6 +546,18 @@ export default function AdminPages() {
   const selectedSection = selectedSectionIndex >= 0 ? activeSections[selectedSectionIndex] : null
   const saveActivePage = () => activeTab === 'Custom Pages' ? saveCustomPageEdits() : saveBuiltInPageEdits()
   const editorGridColumns = `minmax(0, 1fr) ${sectionsPanelOpen ? '23rem' : '3.25rem'}`
+  const pageSettingsEditor = activeTab === 'Custom Pages' ? (
+    <CustomPageSettingsEditor pageDraft={pageDraft} updatePageDraft={updatePageDraft} />
+  ) : activeBuiltInPageKey ? (
+    <PageMetadataEditor
+      page={activeBuiltInPageKey}
+      fallback={publicPages.find(page => page.id === activeBuiltInPageKey)}
+      metadata={settings.pageMetadata?.[activeBuiltInPageKey] || {}}
+      legacyHeader={settings.pageHeaders?.[activeBuiltInPageKey] || {}}
+      updatePageMetadata={updatePageMetadata}
+      updatePageHeader={updatePageHeader}
+    />
+  ) : null
 
   const saveCustomPage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -649,11 +666,11 @@ export default function AdminPages() {
               </div>
 
               <form onSubmit={saveCustomPage} className="card p-6 space-y-6">
-                <div>
+                <div className="hidden">
                   <h2 className="text-2xl font-bold text-gray-900">General Settings</h2>
                   <p className="text-gray-600">Set the page basics before arranging the live preview.</p>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="hidden grid-cols-1 gap-4 md:grid-cols-2">
                   <input value={pageDraft.title || ''} onChange={(e) => updatePageDraft('title', e.target.value)} placeholder="Page title" className="px-4 py-2 border rounded-lg" required />
                   <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', makeSlug(e.target.value))} placeholder="page-url" className="px-4 py-2 border rounded-lg" required />
                   <input value={pageDraft.headerTitle || ''} onChange={(e) => updatePageDraft('headerTitle', e.target.value)} placeholder="Header title" className="px-4 py-2 border rounded-lg" />
@@ -817,6 +834,7 @@ export default function AdminPages() {
                   setDraggingSectionIndex={setDraggingSectionIndex}
                   moveSection={moveActiveSection}
                   setEditingSectionId={setEditingSectionId}
+                  clearSelection={() => setEditingSectionId('')}
                   onDrop={handlePreviewDrop}
                   emptyText={pageDraft.content || 'Drag a section from the right panel into the preview.'}
                 />
@@ -833,11 +851,11 @@ export default function AdminPages() {
           ) : (
             <form onSubmit={saveSettingsTab} className="space-y-6">
               <div className="card p-6 space-y-6">
-                <div>
+                <div className="hidden">
                   <h2 className="text-2xl font-bold text-gray-900">General Settings</h2>
                   <p className="text-gray-600">Manage page titles, URLs, headers, and SEO fields.</p>
                 </div>
-                {activeBuiltInPageKey && (
+                {false && activeBuiltInPageKey && (
                   <PageMetadataEditor
                     page={activeBuiltInPageKey}
                     fallback={publicPages.find(page => page.id === activeBuiltInPageKey)}
@@ -997,6 +1015,7 @@ export default function AdminPages() {
                     setDraggingSectionIndex={setDraggingSectionIndex}
                     moveSection={moveActiveSection}
                     setEditingSectionId={setEditingSectionId}
+                    clearSelection={() => setEditingSectionId('')}
                     onDrop={handlePreviewDrop}
                     emptyText="Drag a section from the right panel into the preview."
                   />
@@ -1008,17 +1027,32 @@ export default function AdminPages() {
           </div>
 
           <aside className="h-[calc(100vh-12rem)] overflow-auto rounded-none border border-r-0 bg-white shadow transition-all duration-300 xl:sticky xl:top-4">
-            <SectionInspector
-              title="Section Settings"
-              section={selectedSection}
-              index={selectedSectionIndex}
-              updateSection={updateActiveSection}
-              removeSection={removeActiveSection}
-              uploadImageToField={uploadImageToField}
-              savePage={saveActivePage}
-              isOpen={sectionsPanelOpen}
-              setIsOpen={setSectionsPanelOpen}
-            />
+            {selectedSection ? (
+              <SectionInspector
+                title="Section Settings"
+                section={selectedSection}
+                index={selectedSectionIndex}
+                updateSection={updateActiveSection}
+                removeSection={removeActiveSection}
+                uploadImageToField={uploadImageToField}
+                savePage={saveActivePage}
+                isOpen={sectionsPanelOpen}
+                setIsOpen={setSectionsPanelOpen}
+              />
+            ) : (
+              <PageSettingsInspector
+                title="General Settings"
+                editor={pageSettingsEditor}
+                isCustomPage={activeTab === 'Custom Pages'}
+                isSavedCustomPage={activeTab === 'Custom Pages' && selectedPageId !== 'new'}
+                isPublished={Boolean(pageDraft.isPublished)}
+                updatePublished={(value: boolean) => updatePageDraft('isPublished', value)}
+                deletePage={deleteCustomPage}
+                savePage={saveActivePage}
+                isOpen={sectionsPanelOpen}
+                setIsOpen={setSectionsPanelOpen}
+              />
+            )}
           </aside>
         </div>
       )}
@@ -1026,7 +1060,7 @@ export default function AdminPages() {
   )
 }
 
-function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, onDrop, emptyText }: any) {
+function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, onDrop, emptyText }: any) {
   return (
     <section className="card p-6 space-y-6">
       <div>
@@ -1036,6 +1070,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
+        onClick={() => clearSelection?.()}
         className="min-h-[calc(100vh-24rem)] overflow-auto rounded-lg border bg-white"
       >
         {(sections || []).length > 0 ? (
@@ -1045,7 +1080,10 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                 key={section.id || index}
                 id={`preview-section-${section.id || index}`}
                 draggable
-                onClick={() => setEditingSectionId(section.id || String(index))}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setEditingSectionId(section.id || String(index))
+                }}
                 onDragStart={(e) => {
                   setDraggingSectionIndex(index)
                   e.dataTransfer.effectAllowed = 'move'
@@ -1143,6 +1181,51 @@ function SectionBlockLibrary({ addSection }: any) {
   )
 }
 
+function PageSettingsInspector({ title, editor, isCustomPage, isSavedCustomPage, isPublished, updatePublished, deletePage, savePage, isOpen = true, setIsOpen = () => {} }: any) {
+  if (!isOpen) {
+    return (
+      <section className="h-full overflow-hidden bg-white">
+        <button type="button" onClick={() => setIsOpen(true)} className="flex h-16 w-full items-center justify-center text-gray-900" aria-label="Expand general settings" title="Expand general settings">
+          <FiArrowLeft />
+        </button>
+      </section>
+    )
+  }
+
+  return (
+    <section className="flex h-full flex-col bg-white">
+      <button type="button" onClick={() => setIsOpen(false)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left" aria-label="Collapse general settings" title="Collapse general settings">
+        <span>
+          <span className="block text-xl font-bold text-gray-900">{title}</span>
+          <span className="block text-sm text-gray-600">Page details appear here until you select a section.</span>
+        </span>
+        <FiArrowRight className="text-blue-600" />
+      </button>
+      <div className="min-h-0 flex-1 space-y-4 overflow-auto border-t p-4 pb-8">
+        {editor}
+        {isCustomPage && (
+          <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
+            <input type="checkbox" checked={isPublished} onChange={(e) => updatePublished(e.target.checked)} />
+            Publish this page
+          </label>
+        )}
+      </div>
+      <div className="flex shrink-0 gap-3 border-t bg-white p-4">
+        {isSavedCustomPage && (
+          <button type="button" onClick={deletePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700">
+            <FiTrash2 />
+            Delete
+          </button>
+        )}
+        <button type="button" onClick={savePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700">
+          <FiSave />
+          Save
+        </button>
+      </div>
+    </section>
+  )
+}
+
 function SectionInspector({ title, section, index, updateSection, removeSection, uploadImageToField, savePage, isOpen = true, setIsOpen = () => {} }: any) {
   if (!isOpen) {
     return (
@@ -1188,6 +1271,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
         </div>
 
         <SectionSpacingControls section={section} index={index} updateSection={updateSection} />
+        <SectionColorControls section={section} index={index} updateSection={updateSection} />
 
         {(section.type === 'banner' || section.type === 'hero' || section.type === 'cta' || section.type === 'imageOverlay') && (
           <div className="space-y-3">
@@ -1687,6 +1771,60 @@ function SectionSpacingControls({ section, index, updateSection }: any) {
         ))}
       </div>
     </details>
+  )
+}
+
+function SectionColorControls({ section, index, updateSection }: any) {
+  const colorFields = [
+    { key: 'backgroundColor', label: 'Background' },
+    { key: 'headingColor', label: 'Headings' },
+    { key: 'textColor', label: 'Text' },
+    { key: 'buttonBackgroundColor', label: 'Button background' },
+    { key: 'buttonTextColor', label: 'Button text' }
+  ]
+  const colorValue = (value: string) => /^#[0-9A-F]{6}$/i.test(value || '') ? value : '#000000'
+
+  return (
+    <details className="mb-3 rounded-lg border bg-white p-3">
+      <summary className="cursor-pointer text-sm font-bold text-gray-800">Colors</summary>
+      <div className="mt-3 space-y-3">
+        {colorFields.map(field => (
+          <label key={field.key} className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
+            <span className="font-semibold">{field.label}</span>
+            <input
+              type="color"
+              value={colorValue(section[field.key])}
+              onChange={(e) => updateSection(index, field.key, e.target.value)}
+              className="h-10 w-12 rounded border p-1"
+            />
+            <input
+              value={section[field.key] || ''}
+              onChange={(e) => updateSection(index, field.key, e.target.value)}
+              placeholder="#000000"
+              className="w-full rounded-lg border px-2 py-1"
+            />
+          </label>
+        ))}
+      </div>
+    </details>
+  )
+}
+
+function CustomPageSettingsEditor({ pageDraft, updatePageDraft }: any) {
+  return (
+    <section className="rounded-lg border p-4">
+      <h3 className="mb-4 text-xl font-bold text-gray-900">Page Settings</h3>
+      <div className="grid grid-cols-1 gap-3">
+        <input value={pageDraft.title || ''} onChange={(e) => updatePageDraft('title', e.target.value)} placeholder="Page title" className="px-4 py-2 border rounded-lg" required />
+        <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', makeSlug(e.target.value))} placeholder="page-url" className="px-4 py-2 border rounded-lg" required />
+        <input value={pageDraft.headerTitle || ''} onChange={(e) => updatePageDraft('headerTitle', e.target.value)} placeholder="Header title" className="px-4 py-2 border rounded-lg" />
+        <input type="number" value={pageDraft.sortOrder ?? 0} onChange={(e) => updatePageDraft('sortOrder', Number(e.target.value))} placeholder="Sort order" className="px-4 py-2 border rounded-lg" />
+        <textarea value={pageDraft.headerSubtitle || ''} onChange={(e) => updatePageDraft('headerSubtitle', e.target.value)} placeholder="Header subtitle" rows={2} className="px-4 py-2 border rounded-lg" />
+        <input value={pageDraft.metaTitle || ''} onChange={(e) => updatePageDraft('metaTitle', e.target.value)} placeholder="SEO title" className="px-4 py-2 border rounded-lg" />
+        <input value={pageDraft.metaDescription || ''} onChange={(e) => updatePageDraft('metaDescription', e.target.value)} placeholder="SEO description" className="px-4 py-2 border rounded-lg" />
+        <textarea value={pageDraft.content || ''} onChange={(e) => updatePageDraft('content', e.target.value)} placeholder="Fallback page content" rows={5} className="px-4 py-2 border rounded-lg" />
+      </div>
+    </section>
   )
 }
 

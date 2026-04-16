@@ -135,6 +135,24 @@ main {
   display: none;
 }
 
+.page-section-render [class*="text-gray-900"],
+.page-section-render [class*="text-blue-600"] {
+  color: var(--section-heading-color, inherit) !important;
+}
+
+.page-section-render p,
+.page-section-render [class*="text-gray-600"],
+.page-section-render [class*="text-gray-700"],
+.page-section-render [class*="text-blue-100"],
+.page-section-render [class*="text-gray-100"] {
+  color: var(--section-text-color, inherit) !important;
+}
+
+.page-section-render .btn-primary {
+  background-color: var(--section-button-bg, #2563eb) !important;
+  color: var(--section-button-text, #ffffff) !important;
+}
+
 .container {
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
 }
