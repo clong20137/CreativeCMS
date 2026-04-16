@@ -493,9 +493,22 @@ VALUES (
   'Towing & Heavy Transport Demo',
   'Transportation',
   'A 24/7 towing, recovery, crane, and heavy transport website demo for service companies.',
-  'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=80',
+  'https://unsplash.com/photos/qlx6GLKvgHw/download?force=true',
   '/site-demos/towing-transport',
   true,
   20
+)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO SiteDemos (slug, name, category, description, previewImage, demoUrl, isActive, sortOrder)
+VALUES (
+  'barbershop',
+  'Barbershop Demo',
+  'Barbershop',
+  'A modern barbershop website demo for cuts, beard trims, memberships, and booking.',
+  'https://unsplash.com/photos/k6RsU8om2UE/download?force=true',
+  '/site-demos/barbershop',
+  true,
+  30
 )
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);

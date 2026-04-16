@@ -29,7 +29,7 @@ export async function getOrCreateTowingTransportSiteDemo() {
       name: 'Towing & Heavy Transport Demo',
       category: 'Transportation',
       description: 'A 24/7 towing, recovery, crane, and heavy transport website demo for service companies.',
-      previewImage: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=80',
+      previewImage: 'https://unsplash.com/photos/qlx6GLKvgHw/download?force=true',
       demoUrl: '/site-demos/towing-transport',
       isActive: true,
       sortOrder: 20
@@ -39,9 +39,28 @@ export async function getOrCreateTowingTransportSiteDemo() {
   return demo
 }
 
+export async function getOrCreateBarbershopSiteDemo() {
+  const [demo] = await SiteDemo.findOrCreate({
+    where: { slug: 'barbershop' },
+    defaults: {
+      slug: 'barbershop',
+      name: 'Barbershop Demo',
+      category: 'Barbershop',
+      description: 'A modern barbershop website demo for cuts, beard trims, memberships, and booking.',
+      previewImage: 'https://unsplash.com/photos/k6RsU8om2UE/download?force=true',
+      demoUrl: '/site-demos/barbershop',
+      isActive: true,
+      sortOrder: 30
+    }
+  })
+
+  return demo
+}
+
 export async function ensureSiteDemos() {
   await getOrCreateRestaurantSiteDemo()
   await getOrCreateTowingTransportSiteDemo()
+  await getOrCreateBarbershopSiteDemo()
 }
 
 router.get('/', async (req, res) => {

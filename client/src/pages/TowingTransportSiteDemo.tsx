@@ -7,19 +7,19 @@ import { resolveAssetUrl, siteDemosAPI } from '../services/api'
 import NotFound from './NotFound'
 
 const images = {
-  hero: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1800&q=80',
-  lowboy: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80',
-  crane: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=1200&q=80',
-  heavyTruck: 'https://images.unsplash.com/photo-1566576721346-d4a3b4eaeb55?auto=format&fit=crop&w=1200&q=80',
-  equipment: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80',
-  highway: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=80',
-  workshop: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?auto=format&fit=crop&w=1200&q=80'
+  hero: 'https://unsplash.com/photos/qlx6GLKvgHw/download?force=true',
+  flatbed: 'https://unsplash.com/photos/dF6Sh8krxd4/download?force=true',
+  recovery: 'https://unsplash.com/photos/IW9QDmpmZUY/download?force=true',
+  loadedFlatbed: 'https://unsplash.com/photos/Q7shv9IN7cc/download?force=true',
+  heavyTruck: 'https://unsplash.com/photos/qlx6GLKvgHw/download?force=true',
+  equipment: 'https://unsplash.com/photos/dF6Sh8krxd4/download?force=true',
+  dispatch: 'https://unsplash.com/photos/IW9QDmpmZUY/download?force=true'
 }
 
 const services = [
   ['Heavy-Duty Towing', images.heavyTruck, 'Tractors, box trucks, buses, RVs, and commercial fleets.'],
-  ['Heavy Transport', images.lowboy, 'Lowboy hauling for machinery, forklifts, lifts, and job-site equipment.'],
-  ['Crane & Recovery', images.crane, 'Lift support, load shifts, winching, rollovers, and controlled recovery.'],
+  ['Flatbed Towing', images.flatbed, 'Clean roadside pickup, secure loading, and damage-aware delivery.'],
+  ['Recovery Dispatch', images.recovery, 'Winching, disabled vehicles, accident scenes, and urgent calls.'],
   ['Equipment Moves', images.equipment, 'Construction, industrial, farm, and specialty equipment relocation.']
 ]
 
@@ -32,11 +32,11 @@ const process = [
 
 const gallery = [
   ['Fleet Ready', images.hero],
-  ['Lowboy Transport', images.lowboy],
-  ['Crane Support', images.crane],
-  ['Heavy Equipment', images.equipment],
-  ['Long-Haul Logistics', images.highway],
-  ['Maintenance Bay', images.workshop]
+  ['Flatbed Truck', images.flatbed],
+  ['Emergency Wrecker', images.recovery],
+  ['Loaded Flatbed', images.loadedFlatbed],
+  ['Roadside Dispatch', images.dispatch],
+  ['Heavy Tow Ready', images.heavyTruck]
 ]
 
 export default function TowingTransportSiteDemo() {
@@ -143,7 +143,7 @@ export default function TowingTransportSiteDemo() {
               A quote form can collect what is being moved, pickup and dropoff points, urgency, dimensions, photos, and extra dispatch notes.
             </p>
             <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {['Heavy haul', 'Crane lift', 'Accident recovery', 'Forklift transport', 'Construction equipment', 'Fleet towing'].map(item => (
+              {['Heavy tow', 'Flatbed tow', 'Accident recovery', 'Winch-out service', 'Equipment relocation', 'Fleet towing'].map(item => (
                 <div key={item} className="flex items-center gap-3 rounded-lg bg-white p-4 font-bold shadow-sm">
                   <FiCheck className="text-yellow-600" /> {item}
                 </div>
@@ -164,7 +164,7 @@ export default function TowingTransportSiteDemo() {
       </section>
 
       <section className="relative overflow-hidden py-20 text-white">
-        <img src={resolveAssetUrl(images.crane)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={resolveAssetUrl(images.recovery)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-black/65"></div>
         <div className="container relative max-w-4xl">
           <p className="mb-3 text-sm font-black uppercase tracking-widest text-yellow-300">Why Choose Us</p>
