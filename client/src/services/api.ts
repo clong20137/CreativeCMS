@@ -8,19 +8,27 @@ export function resolveAssetUrl(url?: string | null) {
   const value = String(url)
   if (value.startsWith('data:') || value.startsWith('blob:')) return value
 
-  if (value.startsWith('/uploads/')) {
+  if (value.startsWith('/api/uploads/')) {
     return `${ASSET_BASE_URL}${value}`
   }
 
-  if (value.startsWith('uploads/')) {
+  if (value.startsWith('api/uploads/')) {
     return `${ASSET_BASE_URL}/${value}`
+  }
+
+  if (value.startsWith('/uploads/')) {
+    return `${API_URL}${value}`
+  }
+
+  if (value.startsWith('uploads/')) {
+    return `${API_URL}/${value}`
   }
 
   try {
     const parsed = new URL(value)
     const isLocalUpload = ['localhost', '127.0.0.1', '0.0.0.0'].includes(parsed.hostname) && parsed.pathname.startsWith('/uploads/')
     if (isLocalUpload) {
-      return `${ASSET_BASE_URL}${parsed.pathname}`
+      return `${API_URL}${parsed.pathname}`
     }
   } catch (error) {
     return value

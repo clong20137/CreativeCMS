@@ -394,10 +394,12 @@ router.post('/uploads', async (req, res) => {
 
     await fs.mkdir(uploadsDir, { recursive: true })
     const filename = `${randomUUID()}.${extension}`
-    await fs.writeFile(path.join(uploadsDir, filename), buffer)
+    const filePath = path.join(uploadsDir, filename)
+    await fs.writeFile(filePath, buffer)
+    await fs.access(filePath)
 
     res.status(201).json({
-      url: `/uploads/${filename}`
+      url: `/api/uploads/${filename}`
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
