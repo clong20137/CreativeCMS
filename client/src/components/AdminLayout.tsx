@@ -46,7 +46,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
   const navigate = useNavigate()
   const location = useLocation()
   const [notifications, setNotifications] = useState({ newMessages: 0, newTickets: 0, total: 0 })
-  const [theme, setTheme] = useState(() => localStorage.getItem('adminTheme') || 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem('siteTheme') || 'light')
 
   useEffect(() => {
     if (localStorage.getItem('userRole') !== 'admin') {
@@ -55,12 +55,8 @@ export default function AdminLayout({ title, children }: { title: string; childr
   }, [navigate])
 
   useEffect(() => {
-    document.documentElement.classList.toggle('admin-dark', theme === 'dark')
-    localStorage.setItem('adminTheme', theme)
-
-    return () => {
-      document.documentElement.classList.remove('admin-dark')
-    }
+    document.documentElement.classList.toggle('dark-mode', theme === 'dark')
+    localStorage.setItem('siteTheme', theme)
   }, [theme])
 
   useEffect(() => {
@@ -113,6 +109,10 @@ export default function AdminLayout({ title, children }: { title: string; childr
         <div className="container py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
+              <Link to="/" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
+                Back to Main Site
+              </Link>
+              <span className="mx-2 text-gray-400">/</span>
               <Link to="/admin/dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
                 Admin Panel
               </Link>

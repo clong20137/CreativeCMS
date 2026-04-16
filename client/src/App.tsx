@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import Navigation from './components/Navigation'
 import Footer from './components/Footer'
@@ -33,6 +33,51 @@ import ClientTickets from './pages/ClientTickets'
 import NotFound from './pages/NotFound'
 import { siteSettingsAPI } from './services/api'
 
+function AppRoutes() {
+  const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {!isAdminRoute && <Navigation />}
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/portfolio/:id" element={<PortfolioDetail />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/plugins" element={<Plugins />} />
+          <Route path="/plugins/restaurant" element={<RestaurantPluginDemo />} />
+          <Route path="/plugins/real-estate" element={<RealEstatePluginDemo />} />
+          <Route path="/plugins/real-estate/:id" element={<RealEstateListingDetail />} />
+          <Route path="/plugins/booking" element={<BookingPluginDemo />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/client-dashboard" element={<ClientDashboard />} />
+          <Route path="/client-dashboard/billing" element={<ClientPortalBilling />} />
+          <Route path="/client-dashboard/settings" element={<ClientPortalSettings />} />
+          <Route path="/client-dashboard/tickets" element={<ClientTickets />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/clients" element={<AdminClients />} />
+          <Route path="/admin/projects" element={<AdminProjects />} />
+          <Route path="/admin/invoices" element={<AdminInvoices />} />
+          <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+          <Route path="/admin/services" element={<AdminServices />} />
+          <Route path="/admin/portfolio" element={<AdminPortfolio />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/tickets" element={<AdminTickets />} />
+          <Route path="/admin/messages" element={<AdminMessages />} />
+          <Route path="/admin/plugins" element={<AdminPlugins />} />
+          <Route path="/admin/plugins/:slug" element={<AdminPluginDetail />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+      {!isAdminRoute && <Footer />}
+    </div>
+  )
+}
+
 function App() {
   useEffect(() => {
     const applySettings = async () => {
@@ -57,43 +102,7 @@ function App() {
 
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
-        <Navigation />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/portfolio" element={<Portfolio />} />
-            <Route path="/portfolio/:id" element={<PortfolioDetail />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/plugins" element={<Plugins />} />
-            <Route path="/plugins/restaurant" element={<RestaurantPluginDemo />} />
-            <Route path="/plugins/real-estate" element={<RealEstatePluginDemo />} />
-            <Route path="/plugins/real-estate/:id" element={<RealEstateListingDetail />} />
-            <Route path="/plugins/booking" element={<BookingPluginDemo />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/client-dashboard" element={<ClientDashboard />} />
-            <Route path="/client-dashboard/billing" element={<ClientPortalBilling />} />
-            <Route path="/client-dashboard/settings" element={<ClientPortalSettings />} />
-            <Route path="/client-dashboard/tickets" element={<ClientTickets />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/clients" element={<AdminClients />} />
-            <Route path="/admin/projects" element={<AdminProjects />} />
-            <Route path="/admin/invoices" element={<AdminInvoices />} />
-            <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
-            <Route path="/admin/services" element={<AdminServices />} />
-            <Route path="/admin/portfolio" element={<AdminPortfolio />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
-            <Route path="/admin/tickets" element={<AdminTickets />} />
-            <Route path="/admin/messages" element={<AdminMessages />} />
-            <Route path="/admin/plugins" element={<AdminPlugins />} />
-            <Route path="/admin/plugins/:slug" element={<AdminPluginDetail />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+      <AppRoutes />
     </Router>
   )
 }

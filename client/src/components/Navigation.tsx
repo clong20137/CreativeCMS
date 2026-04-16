@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { FiMenu, FiX } from 'react-icons/fi'
+import { FiMenu, FiMoon, FiSun, FiX } from 'react-icons/fi'
 import { pluginsAPI, siteSettingsAPI } from '../services/api'
 
 export default function Navigation() {
@@ -10,6 +10,7 @@ export default function Navigation() {
   const [logoUrl, setLogoUrl] = useState('')
   const [logoSize, setLogoSize] = useState(40)
   const [hasActivePlugins, setHasActivePlugins] = useState(false)
+  const [theme, setTheme] = useState(() => localStorage.getItem('siteTheme') || 'light')
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path
@@ -48,6 +49,11 @@ export default function Navigation() {
 
     fetchPlugins()
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark-mode', theme === 'dark')
+    localStorage.setItem('siteTheme', theme)
+  }, [theme])
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
@@ -110,6 +116,14 @@ export default function Navigation() {
             >
               {userRole ? 'Dashboard' : 'Client Login'}
             </Link>
+            <button
+              onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition"
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -147,6 +161,12 @@ export default function Navigation() {
             <Link to={userRole ? dashboardPath : '/login'} className="block py-2 btn-secondary w-full text-left">
               {userRole ? 'Dashboard' : 'Client Login'}
             </Link>
+            <button
+              onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+              className="block py-2 text-gray-700 hover:text-blue-600"
+            >
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
           </div>
         )}
       </div>

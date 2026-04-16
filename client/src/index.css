@@ -14,54 +14,60 @@ body {
   background: #FFFFFF;
 }
 
-html.admin-dark body {
+html.dark-mode body {
   color: #E5E7EB;
   background: #111827;
 }
 
-html.admin-dark .bg-gray-50 {
+html.dark-mode .bg-gray-50 {
   background-color: #111827 !important;
 }
 
-html.admin-dark .bg-white,
-html.admin-dark .card {
+html.dark-mode .bg-white,
+html.dark-mode .card {
   background-color: #1F2937 !important;
 }
 
-html.admin-dark .bg-gray-100,
-html.admin-dark .bg-gray-200 {
+html.dark-mode .bg-gray-100,
+html.dark-mode .bg-gray-200 {
   background-color: #374151 !important;
 }
 
-html.admin-dark .text-gray-900,
-html.admin-dark .text-gray-800,
-html.admin-dark .text-gray-700 {
+html.dark-mode .text-gray-900,
+html.dark-mode .text-gray-800,
+html.dark-mode .text-gray-700 {
   color: #F9FAFB !important;
 }
 
-html.admin-dark .text-gray-600,
-html.admin-dark .text-gray-500,
-html.admin-dark .text-gray-400 {
+html.dark-mode .text-gray-600,
+html.dark-mode .text-gray-500,
+html.dark-mode .text-gray-400 {
   color: #D1D5DB !important;
 }
 
-html.admin-dark .border,
-html.admin-dark .border-gray-200,
-html.admin-dark .border-gray-400 {
+html.dark-mode .border,
+html.dark-mode .border-gray-200,
+html.dark-mode .border-gray-400 {
   border-color: #4B5563 !important;
 }
 
-html.admin-dark input,
-html.admin-dark select,
-html.admin-dark textarea {
+html.dark-mode input,
+html.dark-mode select,
+html.dark-mode textarea {
   background-color: #111827;
   color: #F9FAFB;
   border-color: #4B5563;
 }
 
-html.admin-dark input::placeholder,
-html.admin-dark textarea::placeholder {
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder {
   color: #9CA3AF;
+}
+
+html.dark-mode .shadow-lg,
+html.dark-mode .shadow-xl,
+html.dark-mode .shadow-sm {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
 }
 
 /* Smooth Page Transition */
