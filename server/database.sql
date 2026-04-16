@@ -486,3 +486,16 @@ VALUES (
   10
 )
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO SiteDemos (slug, name, category, description, previewImage, demoUrl, isActive, sortOrder)
+VALUES (
+  'towing-transport',
+  'Towing & Heavy Transport Demo',
+  'Transportation',
+  'A 24/7 towing, recovery, crane, and heavy transport website demo for service companies.',
+  'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=80',
+  '/site-demos/towing-transport',
+  true,
+  20
+)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);

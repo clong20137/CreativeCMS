@@ -21,8 +21,27 @@ export async function getOrCreateRestaurantSiteDemo() {
   return demo
 }
 
+export async function getOrCreateTowingTransportSiteDemo() {
+  const [demo] = await SiteDemo.findOrCreate({
+    where: { slug: 'towing-transport' },
+    defaults: {
+      slug: 'towing-transport',
+      name: 'Towing & Heavy Transport Demo',
+      category: 'Transportation',
+      description: 'A 24/7 towing, recovery, crane, and heavy transport website demo for service companies.',
+      previewImage: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=80',
+      demoUrl: '/site-demos/towing-transport',
+      isActive: true,
+      sortOrder: 20
+    }
+  })
+
+  return demo
+}
+
 export async function ensureSiteDemos() {
   await getOrCreateRestaurantSiteDemo()
+  await getOrCreateTowingTransportSiteDemo()
 }
 
 router.get('/', async (req, res) => {
