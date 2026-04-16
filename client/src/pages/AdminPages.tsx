@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiFileText, FiGrid, FiImage, FiLayout, FiMove, FiSave, FiSearch, FiTrash2, FiType } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
@@ -221,6 +221,14 @@ function makePageSection(type: string) {
     textColor: '',
     buttonBackgroundColor: '',
     buttonTextColor: '',
+    boxShadow: '',
+    borderWidth: '',
+    borderColor: '',
+    borderStyle: 'solid',
+    borderTopLeftRadius: '',
+    borderTopRightRadius: '',
+    borderBottomRightRadius: '',
+    borderBottomLeftRadius: '',
     itemLimit: type === 'portfolio' ? 8 : 6,
     columns: type === 'portfolio' ? 4 : type === 'columns' ? 2 : 3
   }
@@ -291,7 +299,10 @@ export default function AdminPages() {
   const [error, setError] = useState('')
   const [draggingSectionIndex, setDraggingSectionIndex] = useState<number | null>(null)
   const [editingSectionId, setEditingSectionId] = useState('')
+  const [highlightedSectionId, setHighlightedSectionId] = useState('')
   const [sectionsPanelOpen, setSectionsPanelOpen] = useState(true)
+  const [savedSnapshot, setSavedSnapshot] = useState('')
+  const [unsavedPrompt, setUnsavedPrompt] = useState<{ open: boolean; href?: string; action?: () => void }>({ open: false })
 
   const activeBuiltInPageKey = publicPages.some(page => page.id === activeTab) ? activeTab : ''
 
@@ -357,6 +368,15 @@ export default function AdminPages() {
     }))
   }
 
+  const markNewSection = (sectionId: string) => {
+    setEditingSectionId(sectionId)
+    setHighlightedSectionId(sectionId)
+    window.setTimeout(() => {
+      document.getElementById(`preview-section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 80)
+    window.setTimeout(() => setHighlightedSectionId(current => current === sectionId ? '' : current), 1800)
+  }
+
   const saveSettingsTab = async (e: React.FormEvent) => {
     e.preventDefault()
     await saveBuiltInPageEdits()
@@ -368,6 +388,7 @@ export default function AdminPages() {
       setMessage('Saving page edits...')
       const payload = getActivePayload(settings, activeTab)
       await adminAPI.updateSiteSettings(payload)
+      setSavedSnapshot(JSON.stringify(payload))
       setMessage('Page edits saved')
     } catch (err: any) {
       setMessage('')
@@ -449,7 +470,7 @@ export default function AdminPages() {
   const addPageSection = (type: string) => {
     const baseSection: any = makePageSection(type)
     setPageDraft((current: any) => ({ ...current, sections: [...(current.sections || []), baseSection] }))
-    setEditingSectionId(baseSection.id)
+    markNewSection(baseSection.id)
   }
 
   const updatePageSection = (index: number, field: string, value: any) => {
@@ -493,7 +514,7 @@ export default function AdminPages() {
   const addBuiltInSection = (pageKey: string, type: string) => {
     const section = makePageSection(type)
     updateBuiltInSections(pageKey, [...getBuiltInSections(pageKey), section])
-    setEditingSectionId(section.id)
+    markNewSection(section.id)
   }
 
   const updateBuiltInSection = (pageKey: string, index: number, field: string, value: any) => {
@@ -546,6 +567,8 @@ export default function AdminPages() {
   const selectedSection = selectedSectionIndex >= 0 ? activeSections[selectedSectionIndex] : null
   const saveActivePage = () => activeTab === 'Custom Pages' ? saveCustomPageEdits() : saveBuiltInPageEdits()
   const editorGridColumns = `minmax(0, 1fr) ${sectionsPanelOpen ? '23rem' : '3.25rem'}`
+  const activePageSnapshot = useMemo(() => JSON.stringify(activeTab === 'Custom Pages' ? pageDraft : getActivePayload(settings, activeTab)), [activeTab, pageDraft, settings])
+  const hasUnsavedChanges = Boolean(savedSnapshot) && savedSnapshot !== activePageSnapshot
   const pageSettingsEditor = activeTab === 'Custom Pages' ? (
     <CustomPageSettingsEditor pageDraft={pageDraft} updatePageDraft={updatePageDraft} />
   ) : activeBuiltInPageKey ? (
@@ -564,6 +587,61 @@ export default function AdminPages() {
     await saveCustomPageEdits()
   }
 
+  useEffect(() => {
+    if (!loading) setSavedSnapshot(activePageSnapshot)
+  }, [loading, activeTab, selectedPageId])
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
+
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (!hasUnsavedChanges || unsavedPrompt.open) return
+      const target = event.target as HTMLElement | null
+      const link = target?.closest('a[href]') as HTMLAnchorElement | null
+      if (!link) return
+      const href = link.getAttribute('href') || ''
+      if (!href || href.startsWith('#') || link.target === '_blank') return
+      const nextUrl = new URL(link.href)
+      if (nextUrl.origin !== window.location.origin) return
+      const currentPath = `${location.pathname}${location.search}`
+      const nextPath = `${nextUrl.pathname}${nextUrl.search}`
+      if (currentPath === nextPath) return
+      event.preventDefault()
+      event.stopPropagation()
+      setUnsavedPrompt({ open: true, href: nextPath })
+    }
+
+    document.addEventListener('click', handleDocumentClick, true)
+    return () => document.removeEventListener('click', handleDocumentClick, true)
+  }, [hasUnsavedChanges, location.pathname, location.search, unsavedPrompt.open])
+
+  const closeUnsavedPrompt = () => setUnsavedPrompt({ open: false })
+
+  const leaveWithUnsavedChanges = () => {
+    const prompt = unsavedPrompt
+    setSavedSnapshot(activePageSnapshot)
+    setUnsavedPrompt({ open: false })
+    if (prompt.href) navigate(prompt.href)
+    prompt.action?.()
+  }
+
+  const saveFromUnsavedPrompt = async () => {
+    await saveActivePage()
+    const prompt = unsavedPrompt
+    setUnsavedPrompt({ open: false })
+    if (prompt.href) navigate(prompt.href)
+    prompt.action?.()
+  }
+
   const saveCustomPageEdits = async () => {
     try {
       setError('')
@@ -578,6 +656,7 @@ export default function AdminPages() {
       })
       setSelectedPageId(String(savedPage.id))
       setPageDraft(savedPage)
+      setSavedSnapshot(JSON.stringify(savedPage))
       navigate(`/admin/pages?custom=${savedPage.id}`)
       window.dispatchEvent(new Event('admin-pages-refresh'))
       setMessage('Custom page saved')
@@ -835,6 +914,7 @@ export default function AdminPages() {
                   moveSection={moveActiveSection}
                   setEditingSectionId={setEditingSectionId}
                   clearSelection={() => setEditingSectionId('')}
+                  highlightedSectionId={highlightedSectionId}
                   onDrop={handlePreviewDrop}
                   emptyText={pageDraft.content || 'Drag a section from the right panel into the preview.'}
                 />
@@ -1016,6 +1096,7 @@ export default function AdminPages() {
                     moveSection={moveActiveSection}
                     setEditingSectionId={setEditingSectionId}
                     clearSelection={() => setEditingSectionId('')}
+                    highlightedSectionId={highlightedSectionId}
                     onDrop={handlePreviewDrop}
                     emptyText="Drag a section from the right panel into the preview."
                   />
@@ -1056,11 +1137,31 @@ export default function AdminPages() {
           </aside>
         </div>
       )}
+      {unsavedPrompt.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h2 className="text-2xl font-bold text-gray-900">Unsaved changes</h2>
+            <p className="mt-3 text-gray-600">You have unsaved page changes. Save before leaving, or leave anyway and discard them.</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button type="button" onClick={saveFromUnsavedPrompt} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700">
+                <FiSave />
+                Save
+              </button>
+              <button type="button" onClick={leaveWithUnsavedChanges} className="inline-flex flex-1 items-center justify-center rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700">
+                Leave anyway
+              </button>
+              <button type="button" onClick={closeUnsavedPrompt} className="w-full rounded-lg border px-4 py-3 font-bold text-gray-700 transition hover:bg-gray-50">
+                Stay here
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   )
 }
 
-function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, onDrop, emptyText }: any) {
+function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, highlightedSectionId, onDrop, emptyText }: any) {
   return (
     <section className="card p-6 space-y-6">
       <div>
@@ -1095,7 +1196,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                   setDraggingSectionIndex(null)
                 }}
                 onDragEnd={() => setDraggingSectionIndex(null)}
-                className={`relative cursor-pointer transition ${draggingSectionIndex === index ? 'scale-[0.99] opacity-60 ring-2 ring-blue-500' : 'hover:ring-2 hover:ring-blue-300'}`}
+                className={`relative cursor-pointer transition ${draggingSectionIndex === index ? 'scale-[0.99] opacity-60 ring-2 ring-blue-500' : highlightedSectionId === (section.id || String(index)) ? 'animate-pulse ring-4 ring-blue-500 ring-offset-2' : 'hover:ring-2 hover:ring-blue-300'}`}
                 title={`Edit ${getSectionTitle(section, index)}`}
               >
                 <div className="absolute left-3 top-3 z-10 rounded bg-blue-600 px-2 py-1 text-xs font-bold text-white shadow">
@@ -1783,11 +1884,29 @@ function SectionColorControls({ section, index, updateSection }: any) {
     { key: 'buttonTextColor', label: 'Button text' }
   ]
   const colorValue = (value: string) => /^#[0-9A-F]{6}$/i.test(value || '') ? value : '#000000'
+  const radiusFields = [
+    { key: 'borderTopLeftRadius', label: 'Top left' },
+    { key: 'borderTopRightRadius', label: 'Top right' },
+    { key: 'borderBottomRightRadius', label: 'Bottom right' },
+    { key: 'borderBottomLeftRadius', label: 'Bottom left' }
+  ]
+  const getNumericValue = (key: string) => {
+    const value = Number(section[key] || 0)
+    return Number.isFinite(value) ? value : 0
+  }
+  const shadowPresets = [
+    { label: 'No shadow', value: '' },
+    { label: 'Soft', value: '0 10px 25px rgba(15, 23, 42, 0.12)' },
+    { label: 'Medium', value: '0 18px 40px rgba(15, 23, 42, 0.18)' },
+    { label: 'Large', value: '0 28px 70px rgba(15, 23, 42, 0.24)' },
+    { label: 'Inner', value: 'inset 0 2px 14px rgba(15, 23, 42, 0.16)' }
+  ]
 
   return (
     <details className="mb-3 rounded-lg border bg-white p-3">
       <summary className="cursor-pointer text-sm font-bold text-gray-800">Colors</summary>
-      <div className="mt-3 space-y-3">
+      <div className="mt-3 space-y-5">
+        <div className="space-y-3">
         {colorFields.map(field => (
           <label key={field.key} className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
             <span className="font-semibold">{field.label}</span>
@@ -1805,6 +1924,49 @@ function SectionColorControls({ section, index, updateSection }: any) {
             />
           </label>
         ))}
+        </div>
+        <div className="space-y-3 border-t pt-4">
+          <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">Additional CSS</h4>
+          <label className="block text-sm font-semibold text-gray-700">
+            Box shadow
+            <select value={section.boxShadow || ''} onChange={(e) => updateSection(index, 'boxShadow', e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+              {shadowPresets.map(preset => <option key={preset.label} value={preset.value}>{preset.label}</option>)}
+            </select>
+          </label>
+          <input value={section.boxShadow || ''} onChange={(e) => updateSection(index, 'boxShadow', e.target.value)} placeholder="Custom box-shadow" className="w-full rounded-lg border px-3 py-2 text-sm" />
+          <div className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
+            <span className="font-semibold">Border color</span>
+            <input type="color" value={colorValue(section.borderColor)} onChange={(e) => updateSection(index, 'borderColor', e.target.value)} className="h-10 w-12 rounded border p-1" />
+            <input value={section.borderColor || ''} onChange={(e) => updateSection(index, 'borderColor', e.target.value)} placeholder="#000000" className="w-full rounded-lg border px-2 py-1" />
+          </div>
+          <label className="block text-sm font-semibold text-gray-700">
+            Border style
+            <select value={section.borderStyle || 'solid'} onChange={(e) => updateSection(index, 'borderStyle', e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+              <option value="solid">Solid</option>
+              <option value="dashed">Dashed</option>
+              <option value="dotted">Dotted</option>
+              <option value="double">Double</option>
+            </select>
+          </label>
+          <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+            <span className="font-semibold">Border</span>
+            <input type="range" min="0" max="24" step="1" value={getNumericValue('borderWidth')} onChange={(e) => updateSection(index, 'borderWidth', e.target.value)} className="w-full accent-blue-600" />
+            <div className="flex items-center gap-1">
+              <input type="number" min="0" max="80" value={section.borderWidth ?? ''} onChange={(e) => updateSection(index, 'borderWidth', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+              <span className="text-xs text-gray-500">px</span>
+            </div>
+          </label>
+          {radiusFields.map(field => (
+            <label key={field.key} className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">{field.label}</span>
+              <input type="range" min="0" max="80" step="1" value={getNumericValue(field.key)} onChange={(e) => updateSection(index, field.key, e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" max="240" value={section[field.key] ?? ''} onChange={(e) => updateSection(index, field.key, e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </label>
+          ))}
+        </div>
       </div>
     </details>
   )
