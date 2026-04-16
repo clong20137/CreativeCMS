@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { FiBarChart, FiBell, FiChevronDown, FiCreditCard, FiFileText, FiGrid, FiHelpCircle, FiHome, FiImage, FiInbox, FiLogOut, FiSettings, FiUsers } from 'react-icons/fi'
+import { FiBarChart, FiBell, FiChevronDown, FiCreditCard, FiFileText, FiGrid, FiHelpCircle, FiHome, FiImage, FiInbox, FiLogOut, FiMoon, FiSettings, FiSun, FiUsers } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { adminAPI } from '../services/api'
@@ -46,12 +46,22 @@ export default function AdminLayout({ title, children }: { title: string; childr
   const navigate = useNavigate()
   const location = useLocation()
   const [notifications, setNotifications] = useState({ newMessages: 0, newTickets: 0, total: 0 })
+  const [theme, setTheme] = useState(() => localStorage.getItem('adminTheme') || 'light')
 
   useEffect(() => {
     if (localStorage.getItem('userRole') !== 'admin') {
       navigate('/login')
     }
   }, [navigate])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('admin-dark', theme === 'dark')
+    localStorage.setItem('adminTheme', theme)
+
+    return () => {
+      document.documentElement.classList.remove('admin-dark')
+    }
+  }, [theme])
 
   useEffect(() => {
     let isMounted = true
@@ -122,6 +132,14 @@ export default function AdminLayout({ title, children }: { title: string; childr
                   </span>
                 )}
               </Link>
+              <button
+                onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition"
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
+              </button>
               <button
                 onClick={handleLogout}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
