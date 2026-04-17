@@ -41,6 +41,7 @@ const privateUploadsDir = path.resolve(__dirname, '../../private-uploads')
 let mediaAssetsSchemaReady = false
 let protectedContentSchemaReady = false
 let googleAccessTokenCache = { token: '', expiresAt: 0 }
+const seoDashboardCache = new Map()
 const mediaMimeExtensions = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
@@ -73,6 +74,12 @@ function getIsoDate(daysAgo = 0) {
   const date = new Date()
   date.setDate(date.getDate() - daysAgo)
   return date.toISOString().slice(0, 10)
+}
+
+function normalizeSearchConsoleProperty(value) {
+  const property = String(value || '').trim()
+  if (!property || property.startsWith('sc-domain:')) return property
+  return property.endsWith('/') ? property : `${property}/`
 }
 
 function safeNumber(value, fallback = 0) {
@@ -138,7 +145,7 @@ async function getGoogleAccessToken(settings) {
 }
 
 async function fetchSearchConsoleRows(settings, dimensions) {
-  const siteUrl = settings.googleSearchConsoleProperty || process.env.GOOGLE_SEARCH_CONSOLE_PROPERTY || ''
+  const siteUrl = normalizeSearchConsoleProperty(settings.googleSearchConsoleProperty || process.env.GOOGLE_SEARCH_CONSOLE_PROPERTY || '')
   if (!siteUrl) {
     const error = new Error('Google Search Console property is not configured')
     error.statusCode = 400
@@ -437,15 +444,27 @@ router.get('/seo-dashboard', async (req, res) => {
   try {
     const settings = await getOrCreateSiteSettings()
     const configured = Boolean(settings.googleSearchConsoleProperty && (settings.googleSearchConsoleServiceAccountJson || process.env.GOOGLE_SEARCH_CONSOLE_SERVICE_ACCOUNT_JSON))
-    const pageSpeedUrl = settings.pageSpeedUrl || process.env.PAGESPEED_URL || (!String(settings.googleSearchConsoleProperty || '').startsWith('sc-domain:') ? settings.googleSearchConsoleProperty : '')
+    const normalizedProperty = normalizeSearchConsoleProperty(settings.googleSearchConsoleProperty || process.env.GOOGLE_SEARCH_CONSOLE_PROPERTY || '')
+    const pageSpeedUrl = settings.pageSpeedUrl || process.env.PAGESPEED_URL || (!String(normalizedProperty || '').startsWith('sc-domain:') ? normalizedProperty : '')
     const pageSpeedApiKey = settings.pageSpeedApiKey || process.env.PAGESPEED_API_KEY || settings.googleApiKey || ''
+    const cacheKey = JSON.stringify({
+      property: normalizedProperty,
+      pageSpeedUrl,
+      hasSearchConsoleCredentials: configured,
+      hasPageSpeedApiKey: Boolean(pageSpeedApiKey)
+    })
+    const cached = seoDashboardCache.get(cacheKey)
+    if (cached && cached.expiresAt > Date.now()) {
+      return res.json({ ...cached.data, cached: true })
+    }
 
     const result = {
       configured,
-      property: settings.googleSearchConsoleProperty || '',
+      property: normalizedProperty,
       dateRange: { startDate: getIsoDate(28), endDate: getIsoDate(2) },
       searchConsole: null,
       pageSpeed: null,
+      cached: false,
       errors: []
     }
 
@@ -497,6 +516,11 @@ router.get('/seo-dashboard', async (req, res) => {
         result.errors.push(`PageSpeed: ${error.message}`)
       }
     }
+
+    seoDashboardCache.set(cacheKey, {
+      data: result,
+      expiresAt: Date.now() + 6 * 60 * 60 * 1000
+    })
 
     res.json(result)
   } catch (error) {
