@@ -47,6 +47,10 @@ const MediaAsset = sequelize.define('MediaAsset', {
   tags: {
     type: DataTypes.JSON,
     allowNull: true
+  },
+  visibility: {
+    type: DataTypes.ENUM('public', 'private'),
+    defaultValue: 'public'
   }
 }, {
   timestamps: true

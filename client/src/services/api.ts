@@ -192,7 +192,7 @@ export const adminAPI = {
   updatePlugin: (slug: string, data: any) => unwrap(api.put(`/admin/plugins/${slug}`, data)),
   getSiteDemos: () => unwrap<any[]>(api.get('/admin/site-demos')),
   updateSiteDemo: (slug: string, data: any) => unwrap(api.put(`/admin/site-demos/${slug}`, data)),
-  getMedia: (type = 'all') => unwrap<any[]>(api.get(`/admin/media?type=${encodeURIComponent(type)}`)),
+  getMedia: (type = 'all', visibility = 'all') => unwrap<any[]>(api.get(`/admin/media?type=${encodeURIComponent(type)}&visibility=${encodeURIComponent(visibility)}`)),
   uploadMedia: (data: any) => unwrap(api.post('/admin/media', data)),
   updateMedia: (id: string, data: any) => unwrap(api.put(`/admin/media/${id}`, data)),
   deleteMedia: (id: string) => unwrap(api.delete(`/admin/media/${id}`)),

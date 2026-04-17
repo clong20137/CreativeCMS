@@ -32,12 +32,20 @@ function normalizeTags(value: any) {
   return String(value || '').split(',').map(tag => tag.trim()).filter(Boolean)
 }
 
-export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image' }: { isOpen: boolean; onClose: () => void; onSelect: (url: string, asset?: any) => void; type?: string }) {
+function getPreviewUrl(asset: any) {
+  const url = resolveAssetUrl(asset.url)
+  if (asset.visibility !== 'private') return url
+  const token = localStorage.getItem('authToken') || ''
+  return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+}
+
+export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image', visibility = 'all' }: { isOpen: boolean; onClose: () => void; onSelect: (url: string, asset?: any) => void; type?: string; visibility?: string }) {
   const [assets, setAssets] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState(type || 'all')
+  const [visibilityFilter, setVisibilityFilter] = useState(visibility || 'all')
   const [folderFilter, setFolderFilter] = useState('all')
   const [tagFilter, setTagFilter] = useState('all')
   const [uploadFolder, setUploadFolder] = useState('Uncategorized')
@@ -48,7 +56,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image' 
     try {
       setError('')
       setLoading(true)
-      setAssets(await adminAPI.getMedia(typeFilter))
+      setAssets(await adminAPI.getMedia(typeFilter, visibilityFilter))
     } catch (err: any) {
       setError(err.error || 'Failed to load media')
     } finally {
@@ -59,11 +67,12 @@ export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image' 
   useEffect(() => {
     if (!isOpen) return
     setTypeFilter(type || 'all')
-  }, [isOpen, type])
+    setVisibilityFilter(visibility || 'all')
+  }, [isOpen, type, visibility])
 
   useEffect(() => {
     if (isOpen) fetchAssets()
-  }, [isOpen, typeFilter])
+  }, [isOpen, typeFilter, visibilityFilter])
 
   const filteredAssets = useMemo(() => {
     const term = query.trim().toLowerCase()
@@ -97,7 +106,8 @@ export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image' 
           originalName: file.name,
           title: file.name,
           folder: uploadFolder || 'Uncategorized',
-          tags: normalizeTags(uploadTags)
+          tags: normalizeTags(uploadTags),
+          visibility: visibilityFilter === 'private' ? 'private' : 'public'
         })
       }
       await fetchAssets()
@@ -128,13 +138,18 @@ export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image' 
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 border-b bg-gray-50 p-4 lg:grid-cols-[10rem_10rem_10rem_1fr_auto]">
+        <div className="grid grid-cols-1 gap-3 border-b bg-gray-50 p-4 lg:grid-cols-[10rem_10rem_10rem_10rem_1fr_auto]">
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-lg border bg-white px-4 py-2">
             <option value="all">All media</option>
             <option value="image">Images</option>
             <option value="video">Videos</option>
             <option value="document">Documents</option>
             <option value="other">Other</option>
+          </select>
+          <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="rounded-lg border bg-white px-4 py-2">
+            <option value="all">All access</option>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
           </select>
           <select value={folderFilter} onChange={(e) => setFolderFilter(e.target.value)} className="rounded-lg border bg-white px-4 py-2">
             <option value="all">All folders</option>
@@ -163,7 +178,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image' 
               }}
             />
           </label>
-          <div className="grid grid-cols-1 gap-3 lg:col-span-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 lg:col-span-6 lg:grid-cols-2">
             <input value={uploadFolder} onChange={(e) => setUploadFolder(e.target.value)} placeholder="Upload folder" className="rounded-lg border bg-white px-4 py-2" />
             <input value={uploadTags} onChange={(e) => setUploadTags(e.target.value)} placeholder="Upload tags, comma separated" className="rounded-lg border bg-white px-4 py-2" />
           </div>
@@ -187,9 +202,9 @@ export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image' 
                 >
                   <div className="flex h-40 items-center justify-center bg-gray-100">
                     {asset.mediaType === 'image' ? (
-                      <img src={resolveAssetUrl(asset.url)} alt={asset.altText || asset.title || ''} className="h-full w-full object-cover" />
+                      <img src={getPreviewUrl(asset)} alt={asset.altText || asset.title || ''} className="h-full w-full object-cover" />
                     ) : asset.mediaType === 'video' ? (
-                      <video src={resolveAssetUrl(asset.url)} className="h-full w-full object-cover" muted />
+                      <video src={getPreviewUrl(asset)} className="h-full w-full object-cover" muted />
                     ) : (
                       <div className="text-3xl text-gray-500"><MediaIcon type={asset.mediaType} /></div>
                     )}
@@ -197,6 +212,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect, type = 'image' 
                   <div className="space-y-1 p-3">
                     <p className="truncate text-sm font-bold text-gray-900">{asset.title || asset.originalName || asset.filename}</p>
                     <p className="text-xs font-semibold uppercase text-blue-600">{asset.mediaType} / {formatBytes(Number(asset.size || 0))}</p>
+                    <p className={`text-xs font-bold uppercase ${asset.visibility === 'private' ? 'text-red-600' : 'text-green-700'}`}>{asset.visibility || 'public'}</p>
                     <p className="truncate text-xs font-semibold text-gray-600">{asset.folder || 'Uncategorized'}</p>
                     <p className="truncate text-xs text-gray-500">{asset.url}</p>
                   </div>

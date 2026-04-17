@@ -228,6 +228,7 @@ CREATE TABLE IF NOT EXISTS ProtectedContentItems (
   contentType ENUM('image', 'video', 'document') DEFAULT 'video',
   previewImage LONGTEXT,
   contentUrl LONGTEXT NOT NULL,
+  mediaAssetId INT,
   price DECIMAL(10, 2) DEFAULT 0,
   buttonLabel VARCHAR(255) DEFAULT 'Unlock Access',
   isActive BOOLEAN DEFAULT true,
@@ -280,6 +281,7 @@ CREATE TABLE IF NOT EXISTS MediaAssets (
   title VARCHAR(255),
   folder VARCHAR(255) DEFAULT 'Uncategorized',
   tags JSON,
+  visibility ENUM('public', 'private') DEFAULT 'public',
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

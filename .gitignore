@@ -12,6 +12,8 @@ dist
 dist-ssr
 server/uploads/*
 !server/uploads/.gitkeep
+server/private-uploads/*
+!server/private-uploads/.gitkeep
 *.local
 *.tsbuildinfo
 vite.config.js

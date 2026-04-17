@@ -52,6 +52,7 @@ const emptyProtectedContentItem = {
   contentType: 'video',
   previewImage: '',
   contentUrl: '',
+  mediaAssetId: '',
   price: '',
   buttonLabel: 'Unlock Access',
   isActive: true,
@@ -133,7 +134,7 @@ export default function AdminPluginDetail() {
   const [imageUploading, setImageUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
+  const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; visibility: string; onSelect: null | ((url: string, asset?: any) => void) }>({ open: false, type: 'image', visibility: 'all', onSelect: null })
 
   const fetchData = async () => {
     try {
@@ -208,11 +209,28 @@ export default function AdminPluginDetail() {
     }
   }
 
-  const openMediaPicker = (setter: React.Dispatch<React.SetStateAction<any>>, field = 'image', type = 'image') => {
+  const openMediaPicker = (setter: React.Dispatch<React.SetStateAction<any>>, field = 'image', type = 'image', visibility = 'all') => {
     setMediaPicker({
       open: true,
       type,
+      visibility,
       onSelect: (url: string) => setter((current: any) => ({ ...current, [field]: url }))
+    })
+  }
+
+  const openProtectedMediaPicker = () => {
+    setMediaPicker({
+      open: true,
+      type: protectedContentForm.contentType || 'all',
+      visibility: 'private',
+      onSelect: (url: string, asset?: any) => {
+        setProtectedContentForm(current => ({
+          ...current,
+          contentUrl: url,
+          mediaAssetId: asset?.id ? String(asset.id) : '',
+          contentType: asset?.mediaType && ['image', 'video', 'document'].includes(asset.mediaType) ? asset.mediaType : current.contentType
+        }))
+      }
     })
   }
 
@@ -461,6 +479,7 @@ export default function AdminPluginDetail() {
       contentType: item.contentType || 'video',
       previewImage: item.previewImage || '',
       contentUrl: item.contentUrl || '',
+      mediaAssetId: item.mediaAssetId ? String(item.mediaAssetId) : '',
       price: String(item.price || ''),
       buttonLabel: item.buttonLabel || 'Unlock Access',
       isActive: item.isActive !== false,
@@ -820,7 +839,16 @@ export default function AdminPluginDetail() {
                   </div>
                   <textarea placeholder="Description" value={protectedContentForm.description} onChange={(e) => setProtectedContentForm({ ...protectedContentForm, description: e.target.value })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" rows={4} />
                   <div className="grid grid-cols-1 gap-4">
-                    <input type="text" placeholder="Private content URL, returned only after purchase" value={protectedContentForm.contentUrl} onChange={(e) => setProtectedContentForm({ ...protectedContentForm, contentUrl: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
+                      Public upload URLs can be copied. Use a private media asset here for paid videos, images, and documents.
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+                      <input type="text" placeholder="Private content URL, returned only after purchase" value={protectedContentForm.contentUrl} onChange={(e) => setProtectedContentForm({ ...protectedContentForm, contentUrl: e.target.value, mediaAssetId: '' })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                      <button type="button" onClick={openProtectedMediaPicker} className="inline-flex items-center justify-center gap-2 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">
+                        <FiImage /> Choose Private Media
+                      </button>
+                    </div>
+                    {protectedContentForm.mediaAssetId && <p className="text-sm font-semibold text-green-700">Private media asset #{protectedContentForm.mediaAssetId} selected.</p>}
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
                       <input type="text" placeholder="Preview image URL" value={protectedContentForm.previewImage} onChange={(e) => setProtectedContentForm({ ...protectedContentForm, previewImage: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
                       <button type="button" onClick={() => openMediaPicker(setProtectedContentForm, 'previewImage')} className="inline-flex items-center justify-center gap-2 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">
@@ -869,9 +897,10 @@ export default function AdminPluginDetail() {
       <MediaPicker
         isOpen={mediaPicker.open}
         type={mediaPicker.type}
-        onClose={() => setMediaPicker({ open: false, type: 'image', onSelect: null })}
-        onSelect={(url) => {
-          mediaPicker.onSelect?.(url)
+        visibility={mediaPicker.visibility}
+        onClose={() => setMediaPicker({ open: false, type: 'image', visibility: 'all', onSelect: null })}
+        onSelect={(url, asset) => {
+          mediaPicker.onSelect?.(url, asset)
           setMessage('Media selected')
         }}
       />

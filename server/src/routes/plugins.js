@@ -1,6 +1,7 @@
 import express from 'express'
 import Stripe from 'stripe'
 import jwt from 'jsonwebtoken'
+import { DataTypes } from 'sequelize'
 import Plugin from '../models/Plugin.js'
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
 import RealEstateListing from '../models/RealEstateListing.js'
@@ -14,6 +15,24 @@ import { getOrCreateSiteSettings } from './site-settings.js'
 
 const router = express.Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+let protectedContentSchemaReady = false
+
+async function ensureProtectedContentSchema() {
+  if (protectedContentSchemaReady) return
+
+  const queryInterface = ProtectedContentItem.sequelize.getQueryInterface()
+  const table = await queryInterface.describeTable('ProtectedContentItems').catch(() => null)
+  if (table && !table.mediaAssetId) {
+    await queryInterface.addColumn('ProtectedContentItems', 'mediaAssetId', {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    }).catch(error => {
+      if (!String(error?.message || '').includes('Duplicate column')) throw error
+    })
+  }
+
+  protectedContentSchemaReady = true
+}
 
 function verifyClient(req, res, next) {
   try {
@@ -239,6 +258,7 @@ export async function getOrCreateEventsPlugin() {
 }
 
 export async function getOrCreateProtectedContentPlugin() {
+  await ensureProtectedContentSchema()
   const [plugin] = await Plugin.findOrCreate({
     where: { slug: 'protected-content' },
     defaults: {
@@ -388,6 +408,7 @@ router.post('/:slug/checkout-session', verifyClient, async (req, res) => {
 
 router.post('/protected-content/items/:id/checkout-session', verifyClient, async (req, res) => {
   try {
+    await ensureProtectedContentSchema()
     const plugin = await getOrCreateProtectedContentPlugin()
     const item = await ProtectedContentItem.findOne({
       where: { id: req.params.id, isActive: true }
@@ -524,6 +545,7 @@ router.get('/events', async (req, res) => {
 
 router.get('/protected-content/items', optionalClient, async (req, res) => {
   try {
+    await ensureProtectedContentSchema()
     const plugin = await getOrCreateProtectedContentPlugin()
     const items = await ProtectedContentItem.findAll({
       where: { isActive: true },
@@ -544,6 +566,7 @@ router.get('/protected-content/items', optionalClient, async (req, res) => {
         description: item.description,
         contentType: item.contentType,
         previewImage: item.previewImage,
+        mediaAssetId: item.mediaAssetId,
         price: item.price,
         buttonLabel: item.buttonLabel,
         isUnlocked: purchasedIds.has(item.id)
@@ -556,6 +579,7 @@ router.get('/protected-content/items', optionalClient, async (req, res) => {
 
 router.get('/protected-content/items/:id', verifyClient, async (req, res) => {
   try {
+    await ensureProtectedContentSchema()
     await getOrCreateProtectedContentPlugin()
     const item = await ProtectedContentItem.findOne({
       where: { id: req.params.id, isActive: true }
@@ -567,7 +591,11 @@ router.get('/protected-content/items/:id', verifyClient, async (req, res) => {
     })
     if (!purchase) return res.status(403).json({ error: 'Purchase required to view this content' })
 
-    res.json(item)
+    const data = item.toJSON()
+    if (item.mediaAssetId) {
+      data.contentUrl = `/api/protected-media/${item.mediaAssetId}`
+    }
+    res.json(data)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

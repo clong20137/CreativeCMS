@@ -34,11 +34,19 @@ function normalizeTags(value: any) {
   return String(value || '').split(',').map(tag => tag.trim()).filter(Boolean)
 }
 
+function getPreviewUrl(asset: any) {
+  const url = resolveAssetUrl(asset.url)
+  if (asset.visibility !== 'private') return url
+  const token = localStorage.getItem('authToken') || ''
+  return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+}
+
 export default function AdminMediaLibrary() {
   const [assets, setAssets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [typeFilter, setTypeFilter] = useState('all')
+  const [visibilityFilter, setVisibilityFilter] = useState('all')
   const [folderFilter, setFolderFilter] = useState('all')
   const [tagFilter, setTagFilter] = useState('all')
   const [uploadFolder, setUploadFolder] = useState('Uncategorized')
@@ -54,7 +62,7 @@ export default function AdminMediaLibrary() {
   const fetchAssets = async () => {
     try {
       setLoading(true)
-      setAssets(await adminAPI.getMedia(typeFilter))
+      setAssets(await adminAPI.getMedia(typeFilter, visibilityFilter))
     } catch (err: any) {
       setError(err.error || 'Failed to load media')
     } finally {
@@ -64,7 +72,7 @@ export default function AdminMediaLibrary() {
 
   useEffect(() => {
     fetchAssets()
-  }, [typeFilter])
+  }, [typeFilter, visibilityFilter])
 
   const filteredAssets = useMemo(() => {
     const term = query.trim().toLowerCase()
@@ -111,7 +119,8 @@ export default function AdminMediaLibrary() {
           originalName: file.name,
           title: file.name,
           folder: uploadFolder || 'Uncategorized',
-          tags: normalizeTags(uploadTags)
+          tags: normalizeTags(uploadTags),
+          visibility: visibilityFilter === 'private' ? 'private' : 'public'
         })
       }
       setMessage(`${files.length} media file${files.length === 1 ? '' : 's'} uploaded`)
@@ -226,13 +235,18 @@ export default function AdminMediaLibrary() {
             />
           </label>
         </div>
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_12rem_1fr]">
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_12rem_12rem_1fr]">
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-lg border px-4 py-2">
             <option value="all">All media</option>
             <option value="image">Images</option>
             <option value="video">Videos</option>
             <option value="document">Documents</option>
             <option value="other">Other</option>
+          </select>
+          <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="rounded-lg border px-4 py-2">
+            <option value="all">All access</option>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
           </select>
           <select value={folderFilter} onChange={(e) => setFolderFilter(e.target.value)} className="rounded-lg border px-4 py-2">
             <option value="all">All folders</option>
@@ -294,9 +308,9 @@ export default function AdminMediaLibrary() {
               </label>
               <div className="flex h-56 items-center justify-center bg-gray-100">
                 {asset.mediaType === 'image' ? (
-                  <img src={resolveAssetUrl(asset.url)} alt={asset.altText || asset.title || ''} className="h-full w-full object-cover" />
+                  <img src={getPreviewUrl(asset)} alt={asset.altText || asset.title || ''} className="h-full w-full object-cover" />
                 ) : asset.mediaType === 'video' ? (
-                  <video src={resolveAssetUrl(asset.url)} className="h-full w-full object-cover" controls />
+                  <video src={getPreviewUrl(asset)} className="h-full w-full object-cover" controls />
                 ) : (
                   <div className="text-center text-gray-600">
                     <MediaIcon type={asset.mediaType} />
@@ -308,6 +322,7 @@ export default function AdminMediaLibrary() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase text-blue-600">{asset.mediaType} / {formatBytes(Number(asset.size || 0))}</p>
+                    <p className={`text-xs font-bold uppercase ${asset.visibility === 'private' ? 'text-red-600' : 'text-green-700'}`}>{asset.visibility || 'public'}</p>
                     <h3 className="mt-1 break-words text-lg font-bold text-gray-900">{asset.title || asset.originalName || asset.filename}</h3>
                   </div>
                   <MediaIcon type={asset.mediaType} />
@@ -318,6 +333,10 @@ export default function AdminMediaLibrary() {
                   <input defaultValue={asset.folder || 'Uncategorized'} onBlur={(e) => updateAsset(asset, { folder: e.target.value || 'Uncategorized' })} placeholder="Folder" className="w-full rounded-lg border px-3 py-2" />
                   <input defaultValue={normalizeTags(asset.tags).join(', ')} onBlur={(e) => updateAsset(asset, { tags: normalizeTags(e.target.value) })} placeholder="Tags" className="w-full rounded-lg border px-3 py-2" />
                 </div>
+                <select defaultValue={asset.visibility || 'public'} onChange={(e) => updateAsset(asset, { visibility: e.target.value })} className="w-full rounded-lg border px-3 py-2">
+                  <option value="public">Public media</option>
+                  <option value="private">Private media</option>
+                </select>
                 <div className="flex flex-wrap gap-2">
                   <span className="rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-700">{asset.folder || 'Uncategorized'}</span>
                   {normalizeTags(asset.tags).map(tag => <span key={tag} className="rounded bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{tag}</span>)}
@@ -325,7 +344,7 @@ export default function AdminMediaLibrary() {
                 <p className="break-all rounded-lg bg-gray-50 p-3 text-xs text-gray-600">{asset.url}</p>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={() => copyUrl(asset.url)} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold hover:bg-gray-50"><FiCopy /> Copy URL</button>
-                  <a href={resolveAssetUrl(asset.url)} download className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold hover:bg-gray-50"><FiDownload /> Download</a>
+                  <a href={getPreviewUrl(asset)} download className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold hover:bg-gray-50"><FiDownload /> Download</a>
                   <button type="button" onClick={() => deleteAsset(asset)} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50"><FiTrash2 /> Delete</button>
                 </div>
               </div>

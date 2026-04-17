@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import SEO from '../components/SEO'
 import { PageSkeleton } from '../components/SkeletonLoaders'
-import { pluginsAPI, resolveAssetUrl } from '../services/api'
+import { API_URL, pluginsAPI, resolveAssetUrl } from '../services/api'
 
 function formatPrice(value: number | string) {
   return Number(value || 0).toLocaleString('en-US', {
@@ -14,21 +14,24 @@ function formatPrice(value: number | string) {
 
 function renderUnlockedContent(item: any) {
   if (!item?.contentUrl) return null
+  const token = localStorage.getItem('authToken') || ''
+  const protectedMediaUrl = item.mediaAssetId ? `${API_URL}/protected-media/${item.mediaAssetId}?token=${encodeURIComponent(token)}` : ''
+  const contentUrl = protectedMediaUrl || resolveAssetUrl(item.contentUrl)
 
   if (item.contentType === 'video') {
     return (
-      <video src={resolveAssetUrl(item.contentUrl)} controls className="mt-4 w-full rounded-lg bg-black" />
+      <video src={contentUrl} controls className="mt-4 w-full rounded-lg bg-black" />
     )
   }
 
   if (item.contentType === 'image') {
     return (
-      <img src={resolveAssetUrl(item.contentUrl)} alt={item.title} className="mt-4 w-full rounded-lg object-cover" />
+      <img src={contentUrl} alt={item.title} className="mt-4 w-full rounded-lg object-cover" />
     )
   }
 
   return (
-    <a href={resolveAssetUrl(item.contentUrl)} target="_blank" rel="noreferrer" className="btn-primary mt-4 inline-flex">
+    <a href={contentUrl} target="_blank" rel="noreferrer" className="btn-primary mt-4 inline-flex">
       Open Document
     </a>
   )

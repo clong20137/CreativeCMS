@@ -43,6 +43,7 @@ import stripeWebhookRoutes from './routes/stripe-webhooks.js'
 import pluginRoutes from './routes/plugins.js'
 import pageRoutes from './routes/pages.js'
 import siteDemoRoutes from './routes/site-demos.js'
+import protectedMediaRoutes from './routes/protected-media.js'
 
 dotenv.config()
 
@@ -155,6 +156,7 @@ app.use('/api/contact-messages', contactMessageRoutes)
 app.use('/api/plugins', pluginRoutes)
 app.use('/api/site-demos', siteDemoRoutes)
 app.use('/api/pages', pageRoutes)
+app.use('/api/protected-media', protectedMediaRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {

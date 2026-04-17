@@ -27,6 +27,10 @@ const ProtectedContentItem = sequelize.define('ProtectedContentItem', {
     type: DataTypes.TEXT('long'),
     allowNull: false
   },
+  mediaAssetId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   price: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,

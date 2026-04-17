@@ -36,7 +36,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const uploadsDir = path.resolve(__dirname, '../../uploads')
+const privateUploadsDir = path.resolve(__dirname, '../../private-uploads')
 let mediaAssetsSchemaReady = false
+let protectedContentSchemaReady = false
 const mediaMimeExtensions = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
@@ -65,7 +67,7 @@ function getMediaType(mimeType) {
   return 'other'
 }
 
-async function storeUpload(dataUrl, originalName = '') {
+async function storeUpload(dataUrl, originalName = '', visibility = 'public') {
   const match = String(dataUrl || '').match(/^data:([^;]+);base64,(.+)$/)
   if (!match) {
     const error = new Error('Unsupported upload format')
@@ -88,19 +90,22 @@ async function storeUpload(dataUrl, originalName = '') {
     throw error
   }
 
-  await fs.mkdir(uploadsDir, { recursive: true })
+  const isPrivate = visibility === 'private'
+  const targetDir = isPrivate ? privateUploadsDir : uploadsDir
+  await fs.mkdir(targetDir, { recursive: true })
   const filename = `${randomUUID()}.${extension}`
-  const filePath = path.join(uploadsDir, filename)
+  const filePath = path.join(targetDir, filename)
   await fs.writeFile(filePath, buffer)
   await fs.access(filePath)
 
   return {
     filename,
     originalName,
-    url: `/api/uploads/${filename}`,
+    url: isPrivate ? '' : `/api/uploads/${filename}`,
     mimeType,
     mediaType: getMediaType(mimeType),
-    size: buffer.length
+    size: buffer.length,
+    visibility: isPrivate ? 'private' : 'public'
   }
 }
 
@@ -129,9 +134,56 @@ async function ensureMediaAssetsSchema() {
         if (!String(error?.message || '').includes('Duplicate column')) throw error
       })
     }
+    if (!table.visibility) {
+      await queryInterface.addColumn('MediaAssets', 'visibility', {
+        type: DataTypes.ENUM('public', 'private'),
+        allowNull: true,
+        defaultValue: 'public'
+      }).catch(error => {
+        if (!String(error?.message || '').includes('Duplicate column')) throw error
+      })
+    }
   }
 
   mediaAssetsSchemaReady = true
+}
+
+async function ensureProtectedContentSchema() {
+  if (protectedContentSchemaReady) return
+
+  const queryInterface = ProtectedContentItem.sequelize.getQueryInterface()
+  const table = await queryInterface.describeTable('ProtectedContentItems').catch(() => null)
+  if (!table) {
+    await ProtectedContentItem.sync()
+  } else if (!table.mediaAssetId) {
+    await queryInterface.addColumn('ProtectedContentItems', 'mediaAssetId', {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    }).catch(error => {
+      if (!String(error?.message || '').includes('Duplicate column')) throw error
+    })
+  }
+
+  protectedContentSchemaReady = true
+}
+
+async function moveMediaAssetFile(asset, nextVisibility) {
+  const currentVisibility = asset.visibility === 'private' ? 'private' : 'public'
+  if (nextVisibility !== 'private' && nextVisibility !== 'public') return {}
+  if (nextVisibility === currentVisibility) return {}
+
+  const currentDir = currentVisibility === 'private' ? privateUploadsDir : uploadsDir
+  const nextDir = nextVisibility === 'private' ? privateUploadsDir : uploadsDir
+  await fs.mkdir(nextDir, { recursive: true })
+  await fs.rename(path.join(currentDir, asset.filename), path.join(nextDir, asset.filename)).catch(async () => {
+    await fs.copyFile(path.join(currentDir, asset.filename), path.join(nextDir, asset.filename))
+    await fs.unlink(path.join(currentDir, asset.filename)).catch(() => {})
+  })
+
+  return {
+    visibility: nextVisibility,
+    url: nextVisibility === 'private' ? `/api/protected-media/${asset.id}` : `/api/uploads/${asset.filename}`
+  }
 }
 
 router.use((req, res, next) => {
@@ -576,6 +628,7 @@ router.delete('/plugins/events/items/:id', async (req, res) => {
 
 router.get('/plugins/protected-content/items', async (req, res) => {
   try {
+    await ensureProtectedContentSchema()
     await getOrCreateProtectedContentPlugin()
     const items = await ProtectedContentItem.findAll({
       order: [['sortOrder', 'ASC'], ['createdAt', 'DESC']]
@@ -588,12 +641,14 @@ router.get('/plugins/protected-content/items', async (req, res) => {
 
 router.post('/plugins/protected-content/items', async (req, res) => {
   try {
+    await ensureProtectedContentSchema()
     const item = await ProtectedContentItem.create({
       title: req.body.title,
       description: req.body.description || '',
       contentType: req.body.contentType || 'video',
       previewImage: req.body.previewImage || '',
       contentUrl: req.body.contentUrl || '',
+      mediaAssetId: req.body.mediaAssetId || null,
       price: Number(req.body.price || 0),
       buttonLabel: req.body.buttonLabel || 'Unlock Access',
       isActive: req.body.isActive !== false,
@@ -607,6 +662,7 @@ router.post('/plugins/protected-content/items', async (req, res) => {
 
 router.put('/plugins/protected-content/items/:id', async (req, res) => {
   try {
+    await ensureProtectedContentSchema()
     const item = await ProtectedContentItem.findByPk(req.params.id)
     if (!item) return res.status(404).json({ error: 'Protected content not found' })
 
@@ -616,6 +672,7 @@ router.put('/plugins/protected-content/items/:id', async (req, res) => {
       contentType: req.body.contentType || 'video',
       previewImage: req.body.previewImage || '',
       contentUrl: req.body.contentUrl || '',
+      mediaAssetId: req.body.mediaAssetId || null,
       price: Number(req.body.price || 0),
       buttonLabel: req.body.buttonLabel || 'Unlock Access',
       isActive: req.body.isActive !== false,
@@ -642,13 +699,14 @@ router.delete('/plugins/protected-content/items/:id', async (req, res) => {
 router.post('/uploads', async (req, res) => {
   try {
     await ensureMediaAssetsSchema()
-    const stored = await storeUpload(req.body.dataUrl, req.body.originalName || '')
+    const stored = await storeUpload(req.body.dataUrl, req.body.originalName || '', 'public')
     await MediaAsset.create({
       ...stored,
       title: req.body.title || req.body.originalName || stored.filename,
       altText: req.body.altText || '',
       folder: req.body.folder || 'Uncategorized',
-      tags: Array.isArray(req.body.tags) ? req.body.tags : []
+      tags: Array.isArray(req.body.tags) ? req.body.tags : [],
+      visibility: 'public'
     })
     res.status(201).json({ url: stored.url })
   } catch (error) {
@@ -661,6 +719,7 @@ router.get('/media', async (req, res) => {
     await ensureMediaAssetsSchema()
     const where = {}
     if (req.query.type && req.query.type !== 'all') where.mediaType = req.query.type
+    if (req.query.visibility && req.query.visibility !== 'all') where.visibility = req.query.visibility
     const assets = await MediaAsset.findAll({ where, order: [['createdAt', 'DESC']] })
     res.json(assets)
   } catch (error) {
@@ -671,14 +730,17 @@ router.get('/media', async (req, res) => {
 router.post('/media', async (req, res) => {
   try {
     await ensureMediaAssetsSchema()
-    const stored = await storeUpload(req.body.dataUrl, req.body.originalName || '')
+    const visibility = req.body.visibility === 'private' ? 'private' : 'public'
+    const stored = await storeUpload(req.body.dataUrl, req.body.originalName || '', visibility)
     const asset = await MediaAsset.create({
       ...stored,
       title: req.body.title || req.body.originalName || stored.filename,
       altText: req.body.altText || '',
       folder: req.body.folder || 'Uncategorized',
-      tags: Array.isArray(req.body.tags) ? req.body.tags : []
+      tags: Array.isArray(req.body.tags) ? req.body.tags : [],
+      visibility
     })
+    if (visibility === 'private') await asset.update({ url: `/api/protected-media/${asset.id}` })
     res.status(201).json(asset)
   } catch (error) {
     res.status(error.statusCode || 500).json({ error: error.message })
@@ -705,7 +767,12 @@ router.put('/media/bulk', async (req, res) => {
         updates.tags = (Array.isArray(asset.tags) ? asset.tags : []).filter(tag => !tagUpdates.includes(tag))
       }
 
-      return Object.keys(updates).length > 0 ? asset.update(updates) : asset
+      return (async () => {
+        if (req.body.visibility === 'public' || req.body.visibility === 'private') {
+          Object.assign(updates, await moveMediaAssetFile(asset, req.body.visibility))
+        }
+        return Object.keys(updates).length > 0 ? asset.update(updates) : asset
+      })()
     }))
 
     const updatedAssets = await MediaAsset.findAll({ where: { id: ids }, order: [['createdAt', 'DESC']] })
@@ -720,11 +787,15 @@ router.put('/media/:id', async (req, res) => {
     await ensureMediaAssetsSchema()
     const asset = await MediaAsset.findByPk(req.params.id)
     if (!asset) return res.status(404).json({ error: 'Media asset not found' })
+    const visibilityUpdates = req.body.visibility === 'private' || req.body.visibility === 'public'
+      ? await moveMediaAssetFile(asset, req.body.visibility)
+      : {}
     await asset.update({
       title: req.body.title ?? asset.title,
       altText: req.body.altText ?? asset.altText,
       folder: req.body.folder ?? asset.folder,
-      tags: Array.isArray(req.body.tags) ? req.body.tags : asset.tags
+      tags: Array.isArray(req.body.tags) ? req.body.tags : asset.tags,
+      ...visibilityUpdates
     })
     res.json(asset)
   } catch (error) {
@@ -740,7 +811,7 @@ router.delete('/media/bulk', async (req, res) => {
 
     const assets = await MediaAsset.findAll({ where: { id: ids } })
     await Promise.all(assets.map(async asset => {
-      const filePath = path.join(uploadsDir, asset.filename)
+      const filePath = path.join(asset.visibility === 'private' ? privateUploadsDir : uploadsDir, asset.filename)
       await fs.unlink(filePath).catch(() => {})
       await asset.destroy()
     }))
@@ -756,7 +827,7 @@ router.delete('/media/:id', async (req, res) => {
     await ensureMediaAssetsSchema()
     const asset = await MediaAsset.findByPk(req.params.id)
     if (!asset) return res.status(404).json({ error: 'Media asset not found' })
-    const filePath = path.join(uploadsDir, asset.filename)
+    const filePath = path.join(asset.visibility === 'private' ? privateUploadsDir : uploadsDir, asset.filename)
     await fs.unlink(filePath).catch(() => {})
     await asset.destroy()
     res.json({ message: 'Media asset deleted' })
