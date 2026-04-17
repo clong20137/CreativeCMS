@@ -102,6 +102,10 @@ const SiteSetting = sequelize.define('SiteSetting', {
       contact: []
     }
   },
+  reusableSections: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
   facebookUrl: {
     type: DataTypes.STRING,
     allowNull: true

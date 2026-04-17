@@ -36,6 +36,7 @@ function publicSiteSettings(settings) {
     'pageMetadata',
     'navigationItems',
     'pageSections',
+    'reusableSections',
     'facebookUrl',
     'instagramUrl',
     'twitterUrl',

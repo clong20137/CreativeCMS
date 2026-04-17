@@ -293,6 +293,7 @@ CREATE TABLE IF NOT EXISTS SiteSettings (
   pageMetadata JSON,
   navigationItems JSON,
   pageSections JSON,
+  reusableSections JSON,
   facebookUrl VARCHAR(500),
   instagramUrl VARCHAR(500),
   twitterUrl VARCHAR(500),
