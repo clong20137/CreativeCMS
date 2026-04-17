@@ -194,6 +194,7 @@ function makePageSection(type: string) {
     if (type === 'gallery') return [{ id: crypto.randomUUID(), title: '', description: '', image: '' }]
     if (type === 'imageCards') return [makeImageCard()]
     if (type === 'columns') return makeColumns(2)
+    if (type === 'faq') return [{ id: crypto.randomUUID(), q: '', a: '' }]
     return []
   }
 
@@ -1678,6 +1679,13 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
 
         {section.type === 'siteDemos' && <ListCountControls section={section} index={index} updateSection={updateSection} titlePlaceholder="Section title" />}
 
+        {section.type === 'faq' && (
+          <>
+            <ListCountControls section={section} index={index} updateSection={updateSection} titlePlaceholder="FAQ title" maxColumns={2} />
+            <FaqItemsEditor section={section} index={index} updateSection={updateSection} />
+          </>
+        )}
+
         {(section.type === 'image' || section.type === 'section') && (
           <div className="space-y-3">
             <input value={section.imageUrl || ''} onChange={(e) => updateSection(index, 'imageUrl', e.target.value)} placeholder="Image URL" className="w-full px-4 py-2 border rounded-lg" />
@@ -1896,6 +1904,18 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
               </div>
             )}
 
+            {section.type === 'faq' && (
+              <>
+                <div className="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="FAQ title" className="px-4 py-2 border rounded-lg" />
+                  <input type="number" min="1" max="2" value={section.columns || ''} onChange={(e) => updateSection(index, 'columns', Number(e.target.value || 0))} placeholder="Columns" className="px-4 py-2 border rounded-lg" />
+                  <textarea value={section.body || ''} onChange={(e) => updateSection(index, 'body', e.target.value)} placeholder="FAQ description" rows={3} className="px-4 py-2 border rounded-lg md:col-span-2" />
+                  <input type="number" min="1" value={section.itemLimit || ''} onChange={(e) => updateSection(index, 'itemLimit', Number(e.target.value || 0))} placeholder="Questions to show" className="px-4 py-2 border rounded-lg md:col-span-2" />
+                </div>
+                <FaqItemsEditor section={section} index={index} updateSection={updateSection} />
+              </>
+            )}
+
             {(section.type === 'image' || section.type === 'section') && (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <input value={section.imageUrl || ''} onChange={(e) => updateSection(index, 'imageUrl', e.target.value)} placeholder="Image URL" className="px-4 py-2 border rounded-lg" />
@@ -2069,6 +2089,43 @@ function SectionItemsEditor({ section, index, updateSection, uploadImageToField,
         </div>
       ))}
       {items.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No gallery images yet.</div>}
+    </div>
+  )
+}
+
+function FaqItemsEditor({ section, index, updateSection }: any) {
+  const items = Array.isArray(section.items) ? section.items : []
+  const updateItem = (itemIndex: number, field: string, value: any) => {
+    updateSection(index, 'items', items.map((item: any, currentIndex: number) => currentIndex === itemIndex ? { ...item, [field]: value } : item))
+  }
+  const addItem = () => updateSection(index, 'items', [...items, { id: crypto.randomUUID(), q: '', a: '' }])
+  const removeItem = (itemIndex: number) => updateSection(index, 'items', items.filter((_: any, currentIndex: number) => currentIndex !== itemIndex))
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h4 className="font-bold text-gray-900">Questions and Answers</h4>
+        <button type="button" onClick={addItem} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Add Question</button>
+      </div>
+      {items.map((item: any, itemIndex: number) => (
+        <div key={item.id || itemIndex} className="grid grid-cols-1 gap-3 rounded-lg border p-3">
+          <input
+            value={item.q ?? item.question ?? ''}
+            onChange={(e) => updateItem(itemIndex, 'q', e.target.value)}
+            placeholder="Question"
+            className="px-4 py-2 border rounded-lg"
+          />
+          <textarea
+            value={item.a ?? item.answer ?? ''}
+            onChange={(e) => updateItem(itemIndex, 'a', e.target.value)}
+            placeholder="Answer"
+            rows={4}
+            className="px-4 py-2 border rounded-lg"
+          />
+          <button type="button" onClick={() => removeItem(itemIndex)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Remove Question</button>
+        </div>
+      ))}
+      {items.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No questions yet. Add your first question and answer.</div>}
     </div>
   )
 }

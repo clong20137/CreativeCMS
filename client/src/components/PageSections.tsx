@@ -685,17 +685,25 @@ function ServicePricingSection({ section }: { section: any }) {
 
 function FaqSection({ section }: { section: any }) {
   const items = Array.isArray(section.items) ? section.items : []
+  const limit = Number(section.itemLimit || items.length || 0)
+  const visibleItems = limit > 0 ? items.slice(0, limit) : items
+  const columns = Number(section.columns || 1)
   return (
     <section className="py-16">
-      <div className="container max-w-2xl">
+      <div className={`container ${columns > 1 ? 'max-w-5xl' : 'max-w-2xl'}`}>
         <SectionHeading section={section} fallbackTitle="Frequently Asked Questions" />
-        <div className="space-y-6">
-          {items.map((faq: any, index: number) => (
+        <div className={`grid grid-cols-1 gap-6 ${columns > 1 ? 'md:grid-cols-2' : ''}`}>
+          {visibleItems.map((faq: any, index: number) => (
             <div key={index} className="card p-6">
-              <h3 className="text-lg font-bold text-gray-900">{faq.q}</h3>
-              <p className="mt-3 text-gray-600">{faq.a}</p>
+              <h3 className="text-lg font-bold text-gray-900">{faq.q || faq.question}</h3>
+              <p className="mt-3 whitespace-pre-line text-gray-600">{faq.a || faq.answer}</p>
             </div>
           ))}
+          {visibleItems.length === 0 && (
+            <div className="rounded-lg border border-dashed bg-white p-8 text-center text-gray-600 md:col-span-2">
+              No FAQ questions have been added yet.
+            </div>
+          )}
         </div>
       </div>
     </section>
