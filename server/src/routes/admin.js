@@ -35,6 +35,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const uploadsDir = path.resolve(__dirname, '../../uploads')
+let mediaAssetsSchemaReady = false
 const mediaMimeExtensions = {
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
@@ -100,6 +101,18 @@ async function storeUpload(dataUrl, originalName = '') {
     mediaType: getMediaType(mimeType),
     size: buffer.length
   }
+}
+
+async function ensureMediaAssetsSchema() {
+  if (mediaAssetsSchemaReady) return
+
+  const queryInterface = MediaAsset.sequelize.getQueryInterface()
+  const table = await queryInterface.describeTable('MediaAssets').catch(() => null)
+  if (!table) {
+    await MediaAsset.sync()
+  }
+
+  mediaAssetsSchemaReady = true
 }
 
 router.use((req, res, next) => {
@@ -609,6 +622,7 @@ router.delete('/plugins/protected-content/items/:id', async (req, res) => {
 
 router.post('/uploads', async (req, res) => {
   try {
+    await ensureMediaAssetsSchema()
     const stored = await storeUpload(req.body.dataUrl, req.body.originalName || '')
     await MediaAsset.create({
       ...stored,
@@ -623,6 +637,7 @@ router.post('/uploads', async (req, res) => {
 
 router.get('/media', async (req, res) => {
   try {
+    await ensureMediaAssetsSchema()
     const where = {}
     if (req.query.type && req.query.type !== 'all') where.mediaType = req.query.type
     const assets = await MediaAsset.findAll({ where, order: [['createdAt', 'DESC']] })
@@ -634,6 +649,7 @@ router.get('/media', async (req, res) => {
 
 router.post('/media', async (req, res) => {
   try {
+    await ensureMediaAssetsSchema()
     const stored = await storeUpload(req.body.dataUrl, req.body.originalName || '')
     const asset = await MediaAsset.create({
       ...stored,
@@ -648,6 +664,7 @@ router.post('/media', async (req, res) => {
 
 router.put('/media/:id', async (req, res) => {
   try {
+    await ensureMediaAssetsSchema()
     const asset = await MediaAsset.findByPk(req.params.id)
     if (!asset) return res.status(404).json({ error: 'Media asset not found' })
     await asset.update({
@@ -662,6 +679,7 @@ router.put('/media/:id', async (req, res) => {
 
 router.delete('/media/:id', async (req, res) => {
   try {
+    await ensureMediaAssetsSchema()
     const asset = await MediaAsset.findByPk(req.params.id)
     if (!asset) return res.status(404).json({ error: 'Media asset not found' })
     const filePath = path.join(uploadsDir, asset.filename)
