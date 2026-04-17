@@ -685,6 +685,36 @@ router.post('/media', async (req, res) => {
   }
 })
 
+router.put('/media/bulk', async (req, res) => {
+  try {
+    await ensureMediaAssetsSchema()
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.filter(Boolean) : []
+    if (ids.length === 0) return res.status(400).json({ error: 'No media assets selected' })
+
+    const assets = await MediaAsset.findAll({ where: { id: ids } })
+    const tagUpdates = Array.isArray(req.body.tags) ? req.body.tags.map(tag => String(tag).trim()).filter(Boolean) : []
+
+    await Promise.all(assets.map(asset => {
+      const updates = {}
+      if (req.body.folder !== undefined) updates.folder = req.body.folder || 'Uncategorized'
+
+      if (req.body.tagAction === 'add') {
+        updates.tags = Array.from(new Set([...(Array.isArray(asset.tags) ? asset.tags : []), ...tagUpdates]))
+      }
+      if (req.body.tagAction === 'remove') {
+        updates.tags = (Array.isArray(asset.tags) ? asset.tags : []).filter(tag => !tagUpdates.includes(tag))
+      }
+
+      return Object.keys(updates).length > 0 ? asset.update(updates) : asset
+    }))
+
+    const updatedAssets = await MediaAsset.findAll({ where: { id: ids }, order: [['createdAt', 'DESC']] })
+    res.json(updatedAssets)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 router.put('/media/:id', async (req, res) => {
   try {
     await ensureMediaAssetsSchema()
@@ -697,6 +727,25 @@ router.put('/media/:id', async (req, res) => {
       tags: Array.isArray(req.body.tags) ? req.body.tags : asset.tags
     })
     res.json(asset)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.delete('/media/bulk', async (req, res) => {
+  try {
+    await ensureMediaAssetsSchema()
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.filter(Boolean) : []
+    if (ids.length === 0) return res.status(400).json({ error: 'No media assets selected' })
+
+    const assets = await MediaAsset.findAll({ where: { id: ids } })
+    await Promise.all(assets.map(async asset => {
+      const filePath = path.join(uploadsDir, asset.filename)
+      await fs.unlink(filePath).catch(() => {})
+      await asset.destroy()
+    }))
+
+    res.json({ deleted: assets.length })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

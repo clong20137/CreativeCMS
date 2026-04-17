@@ -46,6 +46,10 @@ export default function AdminMediaLibrary() {
   const [query, setQuery] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [sortBy, setSortBy] = useState('newest')
+  const [selectedAssetIds, setSelectedAssetIds] = useState<Array<string | number>>([])
+  const [bulkFolder, setBulkFolder] = useState('')
+  const [bulkTags, setBulkTags] = useState('')
 
   const fetchAssets = async () => {
     try {
@@ -80,6 +84,17 @@ export default function AdminMediaLibrary() {
   const tags = useMemo(() => {
     return Array.from(new Set(assets.flatMap(asset => normalizeTags(asset.tags)))).sort((a, b) => a.localeCompare(b))
   }, [assets])
+
+  const sortedAssets = useMemo(() => {
+    return [...filteredAssets].sort((a, b) => {
+      if (sortBy === 'oldest') return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+      if (sortBy === 'name-asc') return String(a.title || a.originalName || a.filename || '').localeCompare(String(b.title || b.originalName || b.filename || ''))
+      if (sortBy === 'name-desc') return String(b.title || b.originalName || b.filename || '').localeCompare(String(a.title || a.originalName || a.filename || ''))
+      if (sortBy === 'size-desc') return Number(b.size || 0) - Number(a.size || 0)
+      if (sortBy === 'size-asc') return Number(a.size || 0) - Number(b.size || 0)
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    })
+  }, [filteredAssets, sortBy])
 
   const uploadFiles = async (files: FileList | null) => {
     if (!files?.length) return
@@ -124,6 +139,55 @@ export default function AdminMediaLibrary() {
     }
   }
 
+  const toggleAssetSelection = (assetId: string | number) => {
+    setSelectedAssetIds(current => current.map(String).includes(String(assetId)) ? current.filter(id => String(id) !== String(assetId)) : [...current, assetId])
+  }
+
+  const selectVisibleAssets = () => {
+    const visibleIds = sortedAssets.map(asset => asset.id)
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedAssetIds.map(String).includes(String(id)))
+    setSelectedAssetIds(allVisibleSelected ? [] : visibleIds)
+  }
+
+  const bulkMoveFolder = async () => {
+    if (selectedAssetIds.length === 0 || !bulkFolder.trim()) return
+    try {
+      const updated = await adminAPI.bulkUpdateMedia({ ids: selectedAssetIds, folder: bulkFolder.trim() })
+      setAssets(current => current.map(asset => updated.find((item: any) => item.id === asset.id) || asset))
+      setBulkFolder('')
+      setMessage(`${selectedAssetIds.length} media asset${selectedAssetIds.length === 1 ? '' : 's'} moved`)
+    } catch (err: any) {
+      setError(err.error || 'Failed to move media')
+    }
+  }
+
+  const bulkUpdateTags = async (tagAction: 'add' | 'remove') => {
+    const tagList = normalizeTags(bulkTags)
+    if (selectedAssetIds.length === 0 || tagList.length === 0) return
+    try {
+      const updated = await adminAPI.bulkUpdateMedia({ ids: selectedAssetIds, tagAction, tags: tagList })
+      setAssets(current => current.map(asset => updated.find((item: any) => item.id === asset.id) || asset))
+      setBulkTags('')
+      setMessage(`${tagAction === 'add' ? 'Updated tags for' : 'Removed tags from'} ${selectedAssetIds.length} media asset${selectedAssetIds.length === 1 ? '' : 's'}`)
+    } catch (err: any) {
+      setError(err.error || 'Failed to update tags')
+    }
+  }
+
+  const bulkDeleteAssets = async () => {
+    if (selectedAssetIds.length === 0) return
+    if (!window.confirm(`Delete ${selectedAssetIds.length} selected media asset${selectedAssetIds.length === 1 ? '' : 's'}?`)) return
+    try {
+      await adminAPI.bulkDeleteMedia(selectedAssetIds)
+      const selected = new Set(selectedAssetIds.map(String))
+      setAssets(current => current.filter(asset => !selected.has(String(asset.id))))
+      setSelectedAssetIds([])
+      setMessage('Selected media assets deleted')
+    } catch (err: any) {
+      setError(err.error || 'Failed to delete selected media')
+    }
+  }
+
   const deleteAsset = async (asset: any) => {
     if (!window.confirm(`Delete ${asset.title || asset.filename}?`)) return
     try {
@@ -162,7 +226,7 @@ export default function AdminMediaLibrary() {
             />
           </label>
         </div>
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_1fr]">
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_12rem_1fr]">
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-lg border px-4 py-2">
             <option value="all">All media</option>
             <option value="image">Images</option>
@@ -178,6 +242,14 @@ export default function AdminMediaLibrary() {
             <option value="all">All tags</option>
             {tags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
           </select>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="rounded-lg border px-4 py-2">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="name-asc">Name A-Z</option>
+            <option value="name-desc">Name Z-A</option>
+            <option value="size-desc">Largest first</option>
+            <option value="size-asc">Smallest first</option>
+          </select>
           <label className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-gray-600">
             <FiSearch />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search media" className="w-full border-0 bg-transparent p-0 outline-none" />
@@ -189,10 +261,37 @@ export default function AdminMediaLibrary() {
         </div>
       </section>
 
+      {!loading && (
+        <section className="card mb-6 p-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" onClick={selectVisibleAssets} className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50">
+                {sortedAssets.length > 0 && sortedAssets.every(asset => selectedAssetIds.map(String).includes(String(asset.id))) ? 'Clear visible' : 'Select visible'}
+              </button>
+              <span className="text-sm font-semibold text-gray-600">{selectedAssetIds.length} selected / {sortedAssets.length} visible</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-[12rem_1fr_auto_auto_auto]">
+              <input value={bulkFolder} onChange={(e) => setBulkFolder(e.target.value)} placeholder="Move to folder" className="rounded-lg border px-3 py-2" />
+              <input value={bulkTags} onChange={(e) => setBulkTags(e.target.value)} placeholder="Tags, comma separated" className="rounded-lg border px-3 py-2" />
+              <button type="button" onClick={bulkMoveFolder} disabled={selectedAssetIds.length === 0 || !bulkFolder.trim()} className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40">Move</button>
+              <button type="button" onClick={() => bulkUpdateTags('add')} disabled={selectedAssetIds.length === 0 || normalizeTags(bulkTags).length === 0} className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40">Add Tags</button>
+              <button type="button" onClick={() => bulkUpdateTags('remove')} disabled={selectedAssetIds.length === 0 || normalizeTags(bulkTags).length === 0} className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40">Remove Tags</button>
+            </div>
+            <button type="button" onClick={bulkDeleteAssets} disabled={selectedAssetIds.length === 0} className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-40">
+              <FiTrash2 /> Delete Selected
+            </button>
+          </div>
+        </section>
+      )}
+
       {loading ? <PageSkeleton /> : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {filteredAssets.map(asset => (
-            <article key={asset.id} className="card overflow-hidden">
+          {sortedAssets.map(asset => (
+            <article key={asset.id} className={`card overflow-hidden transition ${selectedAssetIds.map(String).includes(String(asset.id)) ? 'ring-2 ring-blue-600' : ''}`}>
+              <label className="flex cursor-pointer items-center gap-2 border-b bg-white px-4 py-3 text-sm font-bold text-gray-700">
+                <input type="checkbox" checked={selectedAssetIds.map(String).includes(String(asset.id))} onChange={() => toggleAssetSelection(asset.id)} />
+                Select asset
+              </label>
               <div className="flex h-56 items-center justify-center bg-gray-100">
                 {asset.mediaType === 'image' ? (
                   <img src={resolveAssetUrl(asset.url)} alt={asset.altText || asset.title || ''} className="h-full w-full object-cover" />
@@ -232,7 +331,7 @@ export default function AdminMediaLibrary() {
               </div>
             </article>
           ))}
-          {filteredAssets.length === 0 && <div className="card p-8 text-center text-gray-600 md:col-span-2 xl:col-span-3">No media found.</div>}
+          {sortedAssets.length === 0 && <div className="card p-8 text-center text-gray-600 md:col-span-2 xl:col-span-3">No media found.</div>}
         </div>
       )}
     </AdminLayout>
