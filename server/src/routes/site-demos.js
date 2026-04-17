@@ -75,11 +75,49 @@ export async function getOrCreateRealEstateSiteDemo() {
   return demo
 }
 
+export async function getOrCreateElectricianSiteDemo() {
+  const [demo] = await SiteDemo.findOrCreate({
+    where: { slug: 'electrician' },
+    defaults: {
+      slug: 'electrician',
+      name: 'Electrician Demo',
+      category: 'Home Services',
+      description: 'A residential and commercial electrician website demo for emergency calls, service panels, lighting, and quote requests.',
+      previewImage: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=1200&q=80',
+      demoUrl: '/site-demos/electrician',
+      isActive: true,
+      sortOrder: 50
+    }
+  })
+
+  return demo
+}
+
+export async function getOrCreateMowingBusinessSiteDemo() {
+  const [demo] = await SiteDemo.findOrCreate({
+    where: { slug: 'mowing-business' },
+    defaults: {
+      slug: 'mowing-business',
+      name: 'Mowing Business Demo',
+      category: 'Lawn Care',
+      description: 'A lawn mowing and property care website demo for recurring service plans, seasonal cleanup, and quote requests.',
+      previewImage: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1200&q=80',
+      demoUrl: '/site-demos/mowing-business',
+      isActive: true,
+      sortOrder: 60
+    }
+  })
+
+  return demo
+}
+
 export async function ensureSiteDemos() {
   await getOrCreateRestaurantSiteDemo()
   await getOrCreateTowingTransportSiteDemo()
   await getOrCreateBarbershopSiteDemo()
   await getOrCreateRealEstateSiteDemo()
+  await getOrCreateElectricianSiteDemo()
+  await getOrCreateMowingBusinessSiteDemo()
 }
 
 router.get('/', async (req, res) => {

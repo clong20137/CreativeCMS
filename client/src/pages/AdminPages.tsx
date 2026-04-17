@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiMonitor, FiMove, FiSave, FiSearch, FiSmartphone, FiTablet, FiTrash2, FiType } from 'react-icons/fi'
+import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiMonitor, FiMove, FiRotateCcw, FiRotateCw, FiSave, FiSearch, FiSmartphone, FiTablet, FiTrash2, FiType } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
 import MediaPicker from '../components/MediaPicker'
 import PageSections from '../components/PageSections'
@@ -1366,8 +1366,12 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
           })}
         </div>
           <div className="flex rounded-lg border bg-gray-50 p-1">
-            <button type="button" onClick={undoPageChange} disabled={!canUndo} className="rounded-md px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-white disabled:opacity-40">Undo</button>
-            <button type="button" onClick={redoPageChange} disabled={!canRedo} className="rounded-md px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-white disabled:opacity-40">Redo</button>
+            <button type="button" onClick={undoPageChange} disabled={!canUndo} aria-label="Undo" title="Undo" className="rounded-md px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-white disabled:opacity-40">
+              <FiRotateCcw size={18} />
+            </button>
+            <button type="button" onClick={redoPageChange} disabled={!canRedo} aria-label="Redo" title="Redo" className="rounded-md px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-white disabled:opacity-40">
+              <FiRotateCw size={18} />
+            </button>
           </div>
         </div>
       </div>

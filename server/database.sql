@@ -544,3 +544,29 @@ VALUES (
   40
 )
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO SiteDemos (slug, name, category, description, previewImage, demoUrl, isActive, sortOrder)
+VALUES (
+  'electrician',
+  'Electrician Demo',
+  'Home Services',
+  'A residential and commercial electrician website demo for emergency calls, service panels, lighting, and quote requests.',
+  'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=1200&q=80',
+  '/site-demos/electrician',
+  true,
+  50
+)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO SiteDemos (slug, name, category, description, previewImage, demoUrl, isActive, sortOrder)
+VALUES (
+  'mowing-business',
+  'Mowing Business Demo',
+  'Lawn Care',
+  'A lawn mowing and property care website demo for recurring service plans, seasonal cleanup, and quote requests.',
+  'https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1200&q=80',
+  '/site-demos/mowing-business',
+  true,
+  60
+)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
