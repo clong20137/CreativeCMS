@@ -183,6 +183,24 @@ main {
   letter-spacing: var(--section-letter-spacing, 0) !important;
 }
 
+.page-section-render .site-demo-card-meta {
+  font-size: var(--section-card-meta-size, 0.75rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+.page-section-render .site-demo-card-heading {
+  font-size: var(--section-card-heading-size, 1.5rem) !important;
+  font-weight: var(--section-card-heading-weight, 700) !important;
+  line-height: var(--section-card-heading-line-height, 1.25) !important;
+}
+
+.page-section-render .site-demo-card-body {
+  font-size: var(--section-card-body-size, 1rem) !important;
+  font-weight: var(--section-card-body-weight, 400) !important;
+  line-height: var(--section-card-body-line-height, 1.5) !important;
+}
+
 .page-section-animated {
   opacity: 0;
   animation-duration: var(--section-animation-duration, 650ms);

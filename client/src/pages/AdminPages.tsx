@@ -238,11 +238,18 @@ function makePageSection(type: string) {
     headingFontSize: '',
     bodyFontSize: '',
     buttonFontSize: '',
+    cardMetaFontSize: '',
+    cardHeadingFontSize: '',
+    cardBodyFontSize: '',
     headingFontWeight: '',
     bodyFontWeight: '',
     buttonFontWeight: '',
+    cardHeadingFontWeight: '',
+    cardBodyFontWeight: '',
     headingLineHeight: '',
     bodyLineHeight: '',
+    cardHeadingLineHeight: '',
+    cardBodyLineHeight: '',
     letterSpacing: '',
     animationType: '',
     animationDuration: 650,
@@ -2340,12 +2347,22 @@ function SectionTypographyControls({ section, index, updateSection }: any) {
           {sizeControl('buttonFontSize', 'Button', 12, 28)}
         </div>
 
+        {section.type === 'siteDemos' && (
+          <div className="space-y-3 border-t pt-4">
+            <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">Demo Card Text</h4>
+            {sizeControl('cardMetaFontSize', 'Category', 10, 22)}
+            {sizeControl('cardHeadingFontSize', 'Card title', 14, 48)}
+            {sizeControl('cardBodyFontSize', 'Card body', 12, 28)}
+          </div>
+        )}
+
         <div className="space-y-3 border-t pt-4">
           <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">Weight</h4>
           {[
             ['headingFontWeight', 'Heading'],
             ['bodyFontWeight', 'Body'],
-            ['buttonFontWeight', 'Button']
+            ['buttonFontWeight', 'Button'],
+            ...(section.type === 'siteDemos' ? [['cardHeadingFontWeight', 'Card title'], ['cardBodyFontWeight', 'Card body']] : [])
           ].map(([key, label]) => (
             <label key={key} className="grid grid-cols-[5rem_1fr] items-center gap-3 text-sm text-gray-700">
               <span className="font-semibold">{label}</span>
@@ -2368,6 +2385,20 @@ function SectionTypographyControls({ section, index, updateSection }: any) {
             <input type="range" min="1" max="2.4" step="0.05" value={getNumericValue('bodyLineHeight', 0)} onChange={(e) => updateSection(index, 'bodyLineHeight', e.target.value)} className="w-full accent-blue-600" />
             <input type="number" min="1" max="3" step="0.05" value={section.bodyLineHeight ?? ''} onChange={(e) => updateSection(index, 'bodyLineHeight', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
           </label>
+          {section.type === 'siteDemos' && (
+            <>
+              <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+                <span className="font-semibold">Card title</span>
+                <input type="range" min="0.9" max="2" step="0.05" value={getNumericValue('cardHeadingLineHeight', 0)} onChange={(e) => updateSection(index, 'cardHeadingLineHeight', e.target.value)} className="w-full accent-blue-600" />
+                <input type="number" min="0.8" max="3" step="0.05" value={section.cardHeadingLineHeight ?? ''} onChange={(e) => updateSection(index, 'cardHeadingLineHeight', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+              </label>
+              <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+                <span className="font-semibold">Card body</span>
+                <input type="range" min="1" max="2.4" step="0.05" value={getNumericValue('cardBodyLineHeight', 0)} onChange={(e) => updateSection(index, 'cardBodyLineHeight', e.target.value)} className="w-full accent-blue-600" />
+                <input type="number" min="1" max="3" step="0.05" value={section.cardBodyLineHeight ?? ''} onChange={(e) => updateSection(index, 'cardBodyLineHeight', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+              </label>
+            </>
+          )}
         </div>
 
         <div className="space-y-3 border-t pt-4">

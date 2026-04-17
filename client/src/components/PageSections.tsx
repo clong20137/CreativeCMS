@@ -115,11 +115,18 @@ function getSectionSpacingStyle(section: any) {
     '--section-heading-size': toPixels(section.headingFontSize),
     '--section-body-size': toPixels(section.bodyFontSize),
     '--section-button-size': toPixels(section.buttonFontSize),
+    '--section-card-meta-size': toPixels(section.cardMetaFontSize),
+    '--section-card-heading-size': toPixels(section.cardHeadingFontSize),
+    '--section-card-body-size': toPixels(section.cardBodyFontSize),
     '--section-heading-weight': section.headingFontWeight || undefined,
     '--section-body-weight': section.bodyFontWeight || undefined,
     '--section-button-weight': section.buttonFontWeight || undefined,
+    '--section-card-heading-weight': section.cardHeadingFontWeight || undefined,
+    '--section-card-body-weight': section.cardBodyFontWeight || undefined,
     '--section-heading-line-height': toUnitless(section.headingLineHeight),
     '--section-body-line-height': toUnitless(section.bodyLineHeight),
+    '--section-card-heading-line-height': toUnitless(section.cardHeadingLineHeight),
+    '--section-card-body-line-height': toUnitless(section.cardBodyLineHeight),
     '--section-letter-spacing': toPixels(section.letterSpacing),
     '--section-animation-duration': `${Number(section.animationDuration || 650)}ms`,
     '--section-animation-delay': `${Number(section.animationDelay || 0)}ms`,
@@ -818,9 +825,9 @@ function SiteDemosSection({ section }: { section: any }) {
               <article key={demo.id || demo.slug} className="group overflow-hidden rounded-lg bg-white shadow transition hover:-translate-y-1 hover:shadow-xl">
                 {demo.previewImage && <img src={resolveAssetUrl(demo.previewImage)} alt={demo.name} className="h-64 w-full object-cover transition duration-300 group-hover:scale-105" />}
                 <div className="p-6">
-                  <p className="text-xs font-bold uppercase tracking-wide text-blue-600">{demo.category}</p>
-                  <h3 className="mt-2 text-2xl font-bold text-gray-900">{demo.name}</h3>
-                  {demo.description && <p className="mt-3 text-gray-600">{demo.description}</p>}
+                  <p className="site-demo-card-meta text-xs font-bold uppercase tracking-wide text-blue-600">{demo.category}</p>
+                  <h3 className="site-demo-card-heading mt-2 text-2xl font-bold text-gray-900">{demo.name}</h3>
+                  {demo.description && <p className="site-demo-card-body mt-3 text-gray-600">{demo.description}</p>}
                   <Link to={demo.demoUrl} className="btn-primary mt-6 inline-flex items-center gap-2">
                     View Demo <FiArrowRight />
                   </Link>
