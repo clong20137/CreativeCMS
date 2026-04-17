@@ -1,13 +1,41 @@
 import express from 'express'
+import { DataTypes } from 'sequelize'
 import SiteSetting from '../models/SiteSetting.js'
 
 const router = express.Router()
+let siteSettingsSchemaReady = false
+
+async function ensureSiteSettingsSchema() {
+  if (siteSettingsSchemaReady) return
+
+  const queryInterface = SiteSetting.sequelize.getQueryInterface()
+  const table = await queryInterface.describeTable('SiteSettings').catch(() => null)
+  if (!table) return
+
+  if (!table.reusableSections) {
+    try {
+      await queryInterface.addColumn('SiteSettings', 'reusableSections', {
+        type: DataTypes.JSON,
+        allowNull: true
+      })
+    } catch (error) {
+      const message = String(error?.message || '')
+      if (!message.includes('Duplicate column')) throw error
+    }
+  }
+
+  siteSettingsSchemaReady = true
+}
 
 export async function getOrCreateSiteSettings() {
+  await ensureSiteSettingsSchema()
   const [settings] = await SiteSetting.findOrCreate({
     where: { id: 1 },
     defaults: { id: 1 }
   })
+  if (!settings.reusableSections) {
+    settings.reusableSections = []
+  }
   return settings
 }
 
