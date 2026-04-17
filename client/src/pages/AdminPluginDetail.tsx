@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FiEdit, FiImage, FiPlus, FiTrash2, FiX } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
+import MediaPicker from '../components/MediaPicker'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI, resolveAssetUrl } from '../services/api'
 
@@ -132,6 +133,7 @@ export default function AdminPluginDetail() {
   const [imageUploading, setImageUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
 
   const fetchData = async () => {
     try {
@@ -204,6 +206,14 @@ export default function AdminPluginDetail() {
     } finally {
       setImageUploading(false)
     }
+  }
+
+  const openMediaPicker = (setter: React.Dispatch<React.SetStateAction<any>>, field = 'image', type = 'image') => {
+    setMediaPicker({
+      open: true,
+      type,
+      onSelect: (url: string) => setter((current: any) => ({ ...current, [field]: url }))
+    })
   }
 
   const resetMenuForm = () => {
@@ -523,6 +533,9 @@ export default function AdminPluginDetail() {
                   <textarea placeholder="Description" value={menuForm.description} onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" rows={3} />
                   <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
                     <input type="url" placeholder="Image URL" value={menuForm.image} onChange={(e) => setMenuForm({ ...menuForm, image: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <button type="button" onClick={() => openMediaPicker(setMenuForm)} className="inline-flex items-center justify-center gap-2 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">
+                      <FiImage /> Choose Media
+                    </button>
                     <label className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-700">
                       <FiImage /> {imageUploading ? 'Uploading...' : 'Upload Image'}
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadImage(e.target.files?.[0], setMenuForm)} />
@@ -592,6 +605,9 @@ export default function AdminPluginDetail() {
                     <FiImage /> {imageUploading ? 'Uploading...' : 'Upload Listing Image'}
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadImage(e.target.files?.[0], setListingForm)} />
                   </label>
+                  <button type="button" onClick={() => openMediaPicker(setListingForm)} className="inline-flex items-center justify-center gap-2 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">
+                    <FiImage /> Choose Media
+                  </button>
                   {listingForm.image && <img src={resolveAssetUrl(listingForm.image)} alt={listingForm.title || 'Listing'} className="h-32 w-48 rounded-lg object-cover border" />}
                   <label className="flex items-center gap-2 text-sm text-gray-700">
                     <input type="checkbox" checked={listingForm.isActive} onChange={(e) => setListingForm({ ...listingForm, isActive: e.target.checked })} />
@@ -738,6 +754,9 @@ export default function AdminPluginDetail() {
                   <textarea placeholder="Description" value={eventForm.description} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" rows={4} />
                   <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
                     <input type="text" placeholder="Image URL" value={eventForm.image} onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <button type="button" onClick={() => openMediaPicker(setEventForm)} className="inline-flex items-center justify-center gap-2 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">
+                      <FiImage /> Choose Media
+                    </button>
                     <label className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-700">
                       <FiImage /> {imageUploading ? 'Uploading...' : 'Upload Image'}
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadImage(e.target.files?.[0], setEventForm)} />
@@ -804,6 +823,9 @@ export default function AdminPluginDetail() {
                     <input type="text" placeholder="Private content URL, returned only after purchase" value={protectedContentForm.contentUrl} onChange={(e) => setProtectedContentForm({ ...protectedContentForm, contentUrl: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
                     <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
                       <input type="text" placeholder="Preview image URL" value={protectedContentForm.previewImage} onChange={(e) => setProtectedContentForm({ ...protectedContentForm, previewImage: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                      <button type="button" onClick={() => openMediaPicker(setProtectedContentForm, 'previewImage')} className="inline-flex items-center justify-center gap-2 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">
+                        <FiImage /> Choose Media
+                      </button>
                       <label className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-700">
                         <FiImage /> {imageUploading ? 'Uploading...' : 'Upload Preview'}
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadImage(e.target.files?.[0], setProtectedContentForm, 'previewImage')} />
@@ -844,6 +866,15 @@ export default function AdminPluginDetail() {
           )}
         </div>
       )}
+      <MediaPicker
+        isOpen={mediaPicker.open}
+        type={mediaPicker.type}
+        onClose={() => setMediaPicker({ open: false, type: 'image', onSelect: null })}
+        onSelect={(url) => {
+          mediaPicker.onSelect?.(url)
+          setMessage('Media selected')
+        }}
+      />
     </AdminLayout>
   )
 }

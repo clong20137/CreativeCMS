@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiMonitor, FiMove, FiSave, FiSearch, FiSmartphone, FiTablet, FiTrash2, FiType } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
+import MediaPicker from '../components/MediaPicker'
 import PageSections from '../components/PageSections'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI, resolveAssetUrl } from '../services/api'
@@ -325,6 +326,7 @@ export default function AdminPages() {
   const [unsavedPrompt, setUnsavedPrompt] = useState<{ open: boolean; href?: string; action?: () => void }>({ open: false })
   const [undoStack, setUndoStack] = useState<string[]>([])
   const [redoStack, setRedoStack] = useState<string[]>([])
+  const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
 
   const activeBuiltInPageKey = publicPages.some(page => page.id === activeTab) ? activeTab : ''
 
@@ -492,6 +494,10 @@ export default function AdminPages() {
       setMessage('')
       setError(err.error || err.message || 'Failed to upload image')
     }
+  }
+
+  const openMediaPicker = (setter: (url: string) => void, type = 'image') => {
+    setMediaPicker({ open: true, type, onSelect: setter })
   }
 
   const addPageSection = (type: string) => {
@@ -1257,6 +1263,7 @@ export default function AdminPages() {
                 removeSection={removeActiveSection}
                 duplicateSection={duplicateActiveSection}
                 uploadImageToField={uploadImageToField}
+                openMediaPicker={openMediaPicker}
                 savePage={saveActivePage}
                 isOpen={sectionsPanelOpen}
                 setIsOpen={setSectionsPanelOpen}
@@ -1278,6 +1285,15 @@ export default function AdminPages() {
           </aside>
         </div>
       )}
+      <MediaPicker
+        isOpen={mediaPicker.open}
+        type={mediaPicker.type}
+        onClose={() => setMediaPicker({ open: false, type: 'image', onSelect: null })}
+        onSelect={(url) => {
+          mediaPicker.onSelect?.(url)
+          setMessage('Media selected. Save to publish it.')
+        }}
+      />
       {unsavedPrompt.open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
@@ -1539,7 +1555,7 @@ function PageSettingsInspector({ title, editor, isCustomPage, isSavedCustomPage,
   )
 }
 
-function SectionInspector({ title, section, index, updateSection, removeSection, duplicateSection, uploadImageToField, savePage, isOpen = true, setIsOpen = () => {} }: any) {
+function SectionInspector({ title, section, index, updateSection, removeSection, duplicateSection, uploadImageToField, openMediaPicker, savePage, isOpen = true, setIsOpen = () => {} }: any) {
   if (!isOpen) {
     return (
       <section className="h-full overflow-hidden bg-white">
@@ -1606,6 +1622,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
             {section.type === 'hero' && <input value={section.secondaryButtonLabel || ''} onChange={(e) => updateSection(index, 'secondaryButtonLabel', e.target.value)} placeholder="Secondary button label" className="w-full px-4 py-2 border rounded-lg" />}
             {section.type === 'hero' && <input value={section.secondaryButtonUrl || ''} onChange={(e) => updateSection(index, 'secondaryButtonUrl', e.target.value)} placeholder="Secondary button URL" className="w-full px-4 py-2 border rounded-lg" />}
             {section.type !== 'cta' && <input value={section.imageUrl || ''} onChange={(e) => updateSection(index, 'imageUrl', e.target.value)} placeholder="Optional image URL" className="w-full px-4 py-2 border rounded-lg" />}
+            {section.type !== 'cta' && <button type="button" onClick={() => openMediaPicker((url: string) => updateSection(index, 'imageUrl', url), 'image')} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50"><FiImage /> Choose from Media Library</button>}
             {section.type !== 'cta' && <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateSection(index, 'imageUrl', url), e.target.files?.[0])} className="w-full px-4 py-2 border rounded-lg" />}
             {section.imageUrl && section.type !== 'cta' && <img src={resolveAssetUrl(section.imageUrl)} alt="" className="h-40 w-full rounded-lg object-cover" />}
           </div>
@@ -1625,18 +1642,18 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
         {section.type === 'gallery' && (
           <>
             <ListCountControls section={section} index={index} updateSection={updateSection} titlePlaceholder="Gallery title" />
-            <SectionItemsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} />
+            <SectionItemsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
           </>
         )}
 
         {section.type === 'imageCards' && (
           <>
             <ListCountControls section={section} index={index} updateSection={updateSection} titlePlaceholder="Section title" maxColumns={3} />
-            <ImageCardsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} />
+            <ImageCardsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
           </>
         )}
 
-        {section.type === 'columns' && <ColumnsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} />}
+        {section.type === 'columns' && <ColumnsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />}
 
         {section.type === 'siteDemos' && <ListCountControls section={section} index={index} updateSection={updateSection} titlePlaceholder="Section title" />}
 
@@ -1644,6 +1661,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
           <div className="space-y-3">
             <input value={section.imageUrl || ''} onChange={(e) => updateSection(index, 'imageUrl', e.target.value)} placeholder="Image URL" className="w-full px-4 py-2 border rounded-lg" />
             <input value={section.alt || ''} onChange={(e) => updateSection(index, 'alt', e.target.value)} placeholder="Alt text" className="w-full px-4 py-2 border rounded-lg" />
+            <button type="button" onClick={() => openMediaPicker((url: string) => updateSection(index, 'imageUrl', url), 'image')} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50"><FiImage /> Choose from Media Library</button>
             <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateSection(index, 'imageUrl', url), e.target.files?.[0])} className="w-full px-4 py-2 border rounded-lg" />
             {section.imageUrl && <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || 'Section image'} className="h-40 w-full rounded-lg object-cover" />}
           </div>
@@ -1882,7 +1900,7 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
   )
 }
 
-function ImageCardsEditor({ section, index, updateSection, uploadImageToField }: any) {
+function ImageCardsEditor({ section, index, updateSection, uploadImageToField, openMediaPicker }: any) {
   const items = Array.isArray(section.items) ? section.items : []
   const updateItem = (itemIndex: number, field: string, value: any) => {
     updateSection(index, 'items', items.map((item: any, currentIndex: number) => currentIndex === itemIndex ? { ...item, [field]: value } : item))
@@ -1902,6 +1920,7 @@ function ImageCardsEditor({ section, index, updateSection, uploadImageToField }:
           <input value={item.title || ''} onChange={(e) => updateItem(itemIndex, 'title', e.target.value)} placeholder="Header" className="px-4 py-2 border rounded-lg" />
           <textarea value={item.description || ''} onChange={(e) => updateItem(itemIndex, 'description', e.target.value)} placeholder="Subtext" rows={2} className="px-4 py-2 border rounded-lg" />
           <input value={item.image || ''} onChange={(e) => updateItem(itemIndex, 'image', e.target.value)} placeholder="Image URL" className="px-4 py-2 border rounded-lg" />
+          {openMediaPicker && <button type="button" onClick={() => openMediaPicker((url: string) => updateItem(itemIndex, 'image', url), 'image')} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50"><FiImage /> Choose from Media Library</button>}
           <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateItem(itemIndex, 'image', url), e.target.files?.[0])} className="px-4 py-2 border rounded-lg" />
           {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || 'Image card'} className="h-36 w-full rounded-lg object-cover" />}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -1915,7 +1934,7 @@ function ImageCardsEditor({ section, index, updateSection, uploadImageToField }:
   )
 }
 
-function ColumnsEditor({ section, index, updateSection, uploadImageToField }: any) {
+function ColumnsEditor({ section, index, updateSection, uploadImageToField, openMediaPicker }: any) {
   const count = Number(section.columns || 2)
   const columns = makeColumns(count, Array.isArray(section.items) ? section.items : [])
   const updateColumns = (nextColumns: any[]) => updateSection(index, 'items', nextColumns)
@@ -1965,7 +1984,7 @@ function ColumnsEditor({ section, index, updateSection, uploadImageToField }: an
             })}
           </div>
           {(column.sections || []).map((block: any, blockIndex: number) => (
-            <NestedBlockEditor key={block.id || blockIndex} block={block} columnIndex={columnIndex} blockIndex={blockIndex} updateBlock={updateBlock} removeBlock={removeBlock} uploadImageToField={uploadImageToField} />
+            <NestedBlockEditor key={block.id || blockIndex} block={block} columnIndex={columnIndex} blockIndex={blockIndex} updateBlock={updateBlock} removeBlock={removeBlock} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
           ))}
         </div>
       ))}
@@ -1973,7 +1992,7 @@ function ColumnsEditor({ section, index, updateSection, uploadImageToField }: an
   )
 }
 
-function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, removeBlock, uploadImageToField }: any) {
+function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, removeBlock, uploadImageToField, openMediaPicker }: any) {
   return (
     <div className="space-y-2 rounded-lg bg-gray-50 p-3">
       <div className="flex items-center justify-between gap-2">
@@ -1987,6 +2006,7 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
       {(block.type === 'image' || block.type === 'imageCard') && (
         <>
           <input value={block.imageUrl || block.image || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, block.type === 'imageCard' ? 'image' : 'imageUrl', e.target.value)} placeholder="Image URL" className="w-full px-4 py-2 border rounded-lg" />
+          {openMediaPicker && <button type="button" onClick={() => openMediaPicker((url: string) => updateBlock(columnIndex, blockIndex, block.type === 'imageCard' ? 'image' : 'imageUrl', url), 'image')} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50"><FiImage /> Choose from Media Library</button>}
           <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateBlock(columnIndex, blockIndex, block.type === 'imageCard' ? 'image' : 'imageUrl', url), e.target.files?.[0])} className="w-full px-4 py-2 border rounded-lg" />
           {(block.imageUrl || block.image) && <img src={resolveAssetUrl(block.imageUrl || block.image)} alt={block.title || ''} className="h-32 w-full rounded-lg object-cover" />}
         </>
@@ -2001,7 +2021,7 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
   )
 }
 
-function SectionItemsEditor({ section, index, updateSection, uploadImageToField }: any) {
+function SectionItemsEditor({ section, index, updateSection, uploadImageToField, openMediaPicker }: any) {
   const items = Array.isArray(section.items) ? section.items : []
   const updateItem = (itemIndex: number, field: string, value: any) => {
     const nextItems = items.map((item: any, currentIndex: number) => currentIndex === itemIndex ? { ...item, [field]: value } : item)
@@ -2021,6 +2041,7 @@ function SectionItemsEditor({ section, index, updateSection, uploadImageToField 
           <input value={item.title || ''} onChange={(e) => updateItem(itemIndex, 'title', e.target.value)} placeholder="Image title" className="px-4 py-2 border rounded-lg" />
           <input value={item.image || ''} onChange={(e) => updateItem(itemIndex, 'image', e.target.value)} placeholder="Image URL" className="px-4 py-2 border rounded-lg" />
           <textarea value={item.description || ''} onChange={(e) => updateItem(itemIndex, 'description', e.target.value)} placeholder="Image description" rows={2} className="px-4 py-2 border rounded-lg md:col-span-2" />
+          {openMediaPicker && <button type="button" onClick={() => openMediaPicker((url: string) => updateItem(itemIndex, 'image', url), 'image')} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 md:col-span-2"><FiImage /> Choose from Media Library</button>}
           <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateItem(itemIndex, 'image', url), e.target.files?.[0])} className="px-4 py-2 border rounded-lg md:col-span-2" />
           {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || 'Gallery image'} className="h-40 w-full rounded-lg object-cover md:col-span-2" />}
           <button type="button" onClick={() => removeItem(itemIndex)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 md:col-span-2">Remove Image</button>

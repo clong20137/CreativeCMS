@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FiEdit, FiPlus, FiTrash2, FiX } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
+import MediaPicker from '../components/MediaPicker'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI, resolveAssetUrl } from '../services/api'
 
@@ -22,6 +23,7 @@ export default function AdminPortfolio() {
   const [formData, setFormData] = useState(emptyForm)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
 
   const fetchItems = async () => {
     try {
@@ -134,6 +136,9 @@ export default function AdminPortfolio() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Upload image</label>
+            <button type="button" onClick={() => setMediaPickerOpen(true)} className="mb-3 inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50">
+              Choose from Media Library
+            </button>
             <input
               type="file"
               accept="image/*"
@@ -175,6 +180,15 @@ export default function AdminPortfolio() {
           {items.length === 0 && <div className="card p-8 text-center text-gray-600 lg:col-span-4">No portfolio items yet.</div>}
         </div>
       )}
+      <MediaPicker
+        isOpen={mediaPickerOpen}
+        type="image"
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={(url) => {
+          setFormData(prev => ({ ...prev, image: url }))
+          setMessage('Media selected. Save to publish it.')
+        }}
+      />
     </AdminLayout>
   )
 }
