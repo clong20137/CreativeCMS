@@ -2086,6 +2086,44 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
           <div className="space-y-3">
             <input value={section.imageUrl || ''} onChange={(e) => updateSection(index, 'imageUrl', e.target.value)} placeholder="Image URL" className="w-full px-4 py-2 border rounded-lg" />
             <input value={section.alt || ''} onChange={(e) => updateSection(index, 'alt', e.target.value)} placeholder="Alt text" className="w-full px-4 py-2 border rounded-lg" />
+            {section.type === 'image' && (
+              <>
+                <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+                  <span className="font-semibold">Width</span>
+                  <input type="range" min="10" max="100" step="1" value={Number(section.imageWidth || 100)} onChange={(e) => updateSection(index, 'imageWidth', e.target.value)} className="w-full accent-blue-600" />
+                  <div className="flex items-center gap-1">
+                    <input type="number" min="10" max="100" value={section.imageWidth || ''} onChange={(e) => updateSection(index, 'imageWidth', e.target.value)} placeholder="100" className="w-full rounded-lg border px-2 py-1 text-right" />
+                    <span className="text-xs text-gray-500">%</span>
+                  </div>
+                </label>
+                <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+                  <span className="font-semibold">Height</span>
+                  <input type="range" min="120" max="1200" step="10" value={Number(section.imageHeight || 480)} onChange={(e) => updateSection(index, 'imageHeight', e.target.value)} className="w-full accent-blue-600" />
+                  <div className="flex items-center gap-1">
+                    <input type="number" min="120" max="1200" value={section.imageHeight || ''} onChange={(e) => updateSection(index, 'imageHeight', e.target.value)} placeholder="480" className="w-full rounded-lg border px-2 py-1 text-right" />
+                    <span className="text-xs text-gray-500">px</span>
+                  </div>
+                </label>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="space-y-2 text-sm text-gray-700">
+                    <span className="block font-semibold">Horizontal alignment</span>
+                    <select value={section.imageAlignX || 'center'} onChange={(e) => updateSection(index, 'imageAlignX', e.target.value)} className="w-full rounded-lg border px-4 py-2">
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </label>
+                  <label className="space-y-2 text-sm text-gray-700">
+                    <span className="block font-semibold">Vertical alignment</span>
+                    <select value={section.imageAlignY || 'center'} onChange={(e) => updateSection(index, 'imageAlignY', e.target.value)} className="w-full rounded-lg border px-4 py-2">
+                      <option value="top">Top</option>
+                      <option value="center">Center</option>
+                      <option value="bottom">Bottom</option>
+                    </select>
+                  </label>
+                </div>
+              </>
+            )}
             <button type="button" onClick={() => openMediaPicker((url: string) => updateSection(index, 'imageUrl', url), 'image')} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50"><FiImage /> Choose from Media Library</button>
             <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateSection(index, 'imageUrl', url), e.target.files?.[0])} className="w-full px-4 py-2 border rounded-lg" />
             {section.imageUrl && <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || 'Section image'} className="h-40 w-full rounded-lg object-cover" />}

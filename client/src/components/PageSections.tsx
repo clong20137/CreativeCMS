@@ -47,6 +47,28 @@ function getAlignmentClasses(textAlign?: string) {
   return { container: 'text-center', body: 'mx-auto' }
 }
 
+function getImageLayout(section: any) {
+  const width = Math.min(100, Math.max(10, Number(section.imageWidth || 100)))
+  const height = Math.min(1200, Math.max(120, Number(section.imageHeight || 480)))
+  const horizontal = ['left', 'center', 'right'].includes(section.imageAlignX) ? section.imageAlignX : 'center'
+  const vertical = ['top', 'center', 'bottom'].includes(section.imageAlignY) ? section.imageAlignY : 'center'
+
+  return {
+    width,
+    height,
+    horizontal,
+    vertical,
+    wrapperClass:
+      horizontal === 'left'
+        ? 'justify-start'
+        : horizontal === 'right'
+          ? 'justify-end'
+          : 'justify-center',
+    objectPosition:
+      `${horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center'} ${vertical === 'top' ? 'top' : vertical === 'bottom' ? 'bottom' : 'center'}`
+  }
+}
+
 function AnimatedSection({ section, children }: { section: any; children: ReactNode }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const hasAnimation = Boolean(section.animationType && section.animationType !== 'none')
@@ -197,11 +219,23 @@ function PageSection({ section }: { section: any }) {
   }
 
   if (section.type === 'image') {
+    const imageLayout = getImageLayout(section)
     return (
       <section className="section-padding">
-        <div className="container max-w-5xl">
+        <div className={`container flex max-w-5xl ${imageLayout.wrapperClass}`}>
           <figure>
-            <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || ''} loading="lazy" decoding="async" className="w-full rounded-lg object-cover" />
+            <img
+              src={resolveAssetUrl(section.imageUrl)}
+              alt={section.alt || section.title || ''}
+              loading="lazy"
+              decoding="async"
+              className="rounded-lg object-cover"
+              style={{
+                width: `${imageLayout.width}%`,
+                height: `${imageLayout.height}px`,
+                objectPosition: imageLayout.objectPosition
+              }}
+            />
             {(section.title || section.body) && (
               <figcaption className="mt-3 text-sm text-gray-600">
                 {section.title && <strong className="text-gray-900">{section.title}</strong>} {section.body}
