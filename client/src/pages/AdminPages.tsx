@@ -1560,7 +1560,7 @@ export default function AdminPages() {
           )}
           </div>
 
-          <aside className="h-[calc(100vh-12rem)] overflow-auto rounded-none border border-r-0 bg-white shadow transition-all duration-300 xl:sticky xl:top-4">
+          <aside className={`h-[calc(100vh-12rem)] overflow-hidden rounded-none border border-r-0 bg-white shadow transition-all duration-300 ease-in-out xl:sticky xl:top-4 ${sectionsPanelOpen ? 'opacity-100' : 'opacity-95'}`}>
             {selectedSection ? (
               <SectionInspector
                 title="Section Settings"
@@ -1571,7 +1571,6 @@ export default function AdminPages() {
                 duplicateSection={duplicateActiveSection}
                 uploadImageToField={uploadImageToField}
                 openMediaPicker={openMediaPicker}
-                savePage={saveActivePage}
                 isOpen={sectionsPanelOpen}
                 setIsOpen={setSectionsPanelOpen}
               />
@@ -1579,12 +1578,6 @@ export default function AdminPages() {
               <PageSettingsInspector
                 title="General Settings"
                 editor={pageSettingsEditor}
-                isCustomPage={activeTab === 'Custom Pages'}
-                isSavedCustomPage={activeTab === 'Custom Pages' && selectedPageId !== 'new'}
-                isPublished={Boolean(pageDraft.isPublished)}
-                updatePublished={(value: boolean) => updatePageDraft('isPublished', value)}
-                deletePage={deleteCustomPage}
-                savePage={saveActivePage}
                 isOpen={sectionsPanelOpen}
                 setIsOpen={setSectionsPanelOpen}
               />
@@ -1659,38 +1652,62 @@ function FloatingPageActions({ isCustomPage, isSavedCustomPage, isPublished, upd
 }
 
 function PageScoreCard({ insights }: any) {
-  const scoreTone = (value: number) => value >= 90 ? 'text-green-700 bg-green-100' : value >= 75 ? 'text-yellow-700 bg-yellow-100' : 'text-red-700 bg-red-100'
+  const [displayOverall, setDisplayOverall] = useState(0)
+  const [displaySeo, setDisplaySeo] = useState(0)
+  const [displayMobile, setDisplayMobile] = useState(0)
+  const [displaySpeed, setDisplaySpeed] = useState(0)
+  const scoreTone = (value: number) => value >= 85 ? 'text-green-700 bg-green-100 ring-green-200' : value >= 65 ? 'text-orange-700 bg-orange-100 ring-orange-200' : 'text-red-700 bg-red-100 ring-red-200'
+
+  useEffect(() => {
+    const animateValue = (setter: (value: number) => void, target: number, duration = 520) => {
+      const started = performance.now()
+      const tick = (now: number) => {
+        const progress = Math.min((now - started) / duration, 1)
+        setter(Math.round(target * (1 - Math.pow(1 - progress, 3))))
+        if (progress < 1) window.requestAnimationFrame(tick)
+      }
+      window.requestAnimationFrame(tick)
+    }
+
+    animateValue(setDisplayOverall, Number(insights?.overall || 0))
+    animateValue(setDisplaySeo, Number(insights?.seo || 0), 460)
+    animateValue(setDisplayMobile, Number(insights?.mobile || 0), 500)
+    animateValue(setDisplaySpeed, Number(insights?.speed || 0), 540)
+  }, [insights?.overall, insights?.seo, insights?.mobile, insights?.speed])
+
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">Page Score</h3>
-          <p className="text-sm text-gray-600">Live editor estimate for SEO, mobile, and speed while you build.</p>
+    <div className="rounded-lg border bg-white p-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black ring-2 ${scoreTone(displayOverall)}`}>
+          {displayOverall}
         </div>
-        <div className={`inline-flex h-14 w-14 items-center justify-center rounded-full text-lg font-black ${scoreTone(insights.overall)}`}>
-          {insights.overall}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-bold text-gray-900">Page Score</h3>
+            <p className="text-xs text-gray-500">Live while editing</p>
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {[
+              ['SEO', displaySeo],
+              ['Mobile', displayMobile],
+              ['Speed', displaySpeed]
+            ].map(([label, value]: any) => (
+              <div key={label} className="rounded-lg bg-gray-50 px-2 py-2 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-gray-500">{label}</p>
+                <p className="mt-0.5 text-sm font-bold text-gray-900">{value}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        {[
-          ['SEO', insights.seo],
-          ['Mobile', insights.mobile],
-          ['Speed', insights.speed]
-        ].map(([label, value]: any) => (
-          <div key={label} className="rounded-lg bg-gray-50 p-3 text-center">
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{label}</p>
-            <p className="mt-1 text-xl font-bold text-gray-900">{value}</p>
+      <div className="mt-3 space-y-2">
+        {insights.suggestions.slice(0, 3).map((item: any, index: number) => (
+          <div key={`${item.category}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-gray-500">{item.category}</p>
+            <p className="mt-1 text-xs text-gray-700">{item.text}</p>
           </div>
         ))}
-      </div>
-      <div className="mt-4 space-y-2">
-        {insights.suggestions.map((item: any, index: number) => (
-          <div key={`${item.category}-${index}`} className="rounded-lg bg-gray-50 p-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{item.category}</p>
-            <p className="mt-1 text-sm text-gray-700">{item.text}</p>
-          </div>
-        ))}
-        {insights.suggestions.length === 0 && <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">This page is in a solid place. Keep an eye on compressed images and clean metadata as you publish updates.</p>}
+        {insights.suggestions.length === 0 && <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">This page is in a solid place. Keep an eye on images and metadata as you publish updates.</p>}
       </div>
     </div>
   )
@@ -1894,69 +1911,58 @@ function SectionBlockLibrary({ addSection, reusableSections = [], addReusableSec
 }
 
 function PageSettingsInspector({ title, editor, isOpen = true, setIsOpen = () => {} }: any) {
-  if (!isOpen) {
-    return (
-      <section className="h-full overflow-hidden bg-white">
-        <button type="button" onClick={() => setIsOpen(true)} className="flex h-16 w-full items-center justify-center text-gray-900" aria-label="Expand general settings" title="Expand general settings">
-          <FiArrowLeft />
-        </button>
-      </section>
-    )
-  }
-
   return (
     <section className="flex h-full flex-col bg-white">
-      <button type="button" onClick={() => setIsOpen(false)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left" aria-label="Collapse general settings" title="Collapse general settings">
-        <span>
-          <span className="block text-xl font-bold text-gray-900">{title}</span>
-          <span className="block text-sm text-gray-600">Page details appear here until you select a section.</span>
-        </span>
-        <FiArrowRight className="text-blue-600" />
+      <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors duration-200 hover:bg-gray-50" aria-label={isOpen ? 'Collapse general settings' : 'Expand general settings'} title={isOpen ? 'Collapse general settings' : 'Expand general settings'}>
+        {isOpen ? (
+          <span>
+            <span className="block text-xl font-bold text-gray-900">{title}</span>
+            <span className="block text-sm text-gray-600">Page details appear here until you select a section.</span>
+          </span>
+        ) : <span className="sr-only">{title}</span>}
+        <FiArrowRight className={`text-blue-600 transition-transform duration-300 ease-in-out ${isOpen ? '' : 'rotate-180'}`} />
       </button>
-      <div className="min-h-0 flex-1 space-y-4 overflow-auto border-t p-4 pb-8">
-        {editor}
+      <div className={`min-h-0 flex-1 overflow-hidden border-t transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[calc(100vh-12rem)] opacity-100' : 'max-h-0 opacity-0 border-t-0'}`}>
+        <div className="space-y-4 overflow-auto p-4 pb-8">
+          {editor}
+        </div>
       </div>
     </section>
   )
 }
 
 function SectionInspector({ title, section, index, updateSection, removeSection, duplicateSection, uploadImageToField, openMediaPicker, isOpen = true, setIsOpen = () => {} }: any) {
-  if (!isOpen) {
-    return (
-      <section className="h-full overflow-hidden bg-white">
-        <button type="button" onClick={() => setIsOpen(true)} className="flex h-16 w-full items-center justify-center text-gray-900" aria-label="Expand section settings" title="Expand section settings">
-          <FiArrowLeft />
-        </button>
-      </section>
-    )
-  }
-
   if (!section || index < 0) {
     return (
       <section className="h-full bg-white">
-        <button type="button" onClick={() => setIsOpen(false)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left" aria-label="Collapse section settings" title="Collapse section settings">
+        <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors duration-200 hover:bg-gray-50" aria-label={isOpen ? 'Collapse section settings' : 'Expand section settings'} title={isOpen ? 'Collapse section settings' : 'Expand section settings'}>
           <span>
             <span className="block text-xl font-bold text-gray-900">{title}</span>
             <span className="block text-sm text-gray-600">Select a section in the preview to edit it here.</span>
           </span>
-          <FiArrowRight className="text-blue-600" />
+          <FiArrowRight className={`text-blue-600 transition-transform duration-300 ease-in-out ${isOpen ? '' : 'rotate-180'}`} />
         </button>
-        <div className="border-t p-4 text-sm text-gray-600">No section selected.</div>
+        <div className={`overflow-hidden border-t transition-all duration-300 ease-in-out ${isOpen ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0 border-t-0'}`}>
+          <div className="p-4 text-sm text-gray-600">No section selected.</div>
+        </div>
       </section>
     )
   }
 
   return (
     <section className="flex h-full flex-col bg-white">
-      <button type="button" onClick={() => setIsOpen(false)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left" aria-label="Collapse section settings" title="Collapse section settings">
-        <span>
-          <span className="block text-xl font-bold text-gray-900">{title}</span>
-          <span className="block text-sm text-gray-600">{getSectionTitle(section, index)}</span>
-        </span>
-        <FiArrowRight className="text-blue-600" />
+      <button type="button" onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition-colors duration-200 hover:bg-gray-50" aria-label={isOpen ? 'Collapse section settings' : 'Expand section settings'} title={isOpen ? 'Collapse section settings' : 'Expand section settings'}>
+        {isOpen ? (
+          <span>
+            <span className="block text-xl font-bold text-gray-900">{title}</span>
+            <span className="block text-sm text-gray-600">{getSectionTitle(section, index)}</span>
+          </span>
+        ) : <span className="sr-only">{title}</span>}
+        <FiArrowRight className={`text-blue-600 transition-transform duration-300 ease-in-out ${isOpen ? '' : 'rotate-180'}`} />
       </button>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-auto border-t p-4 pb-8">
+      <div className={`min-h-0 flex-1 overflow-hidden border-t transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[calc(100vh-12rem)] opacity-100' : 'max-h-0 opacity-0 border-t-0'}`}>
+      <div className="space-y-4 overflow-auto p-4 pb-8">
         <div className="rounded-lg border bg-gray-50 p-4">
           <label className="mb-2 block text-sm font-bold text-gray-700">Section Type</label>
           <select value={section.type || 'paragraph'} onChange={(e) => updateSection(index, 'type', e.target.value)} className="w-full px-4 py-2 border rounded-lg">
@@ -2932,17 +2938,23 @@ function SectionAnimationControls({ section, index, updateSection }: any) {
 
 function CustomPageSettingsEditor({ pageDraft, updatePageDraft }: any) {
   return (
-    <section className="rounded-lg border p-4">
+    <section className="rounded-lg border p-5">
       <h3 className="mb-4 text-xl font-bold text-gray-900">Page Settings</h3>
-      <div className="grid grid-cols-1 gap-3">
-        <input value={pageDraft.title || ''} onChange={(e) => updatePageDraft('title', e.target.value)} placeholder="Page title" className="px-4 py-2 border rounded-lg" required />
-        <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', makeSlug(e.target.value))} placeholder="page-url" className="px-4 py-2 border rounded-lg" required />
-        <input value={pageDraft.headerTitle || ''} onChange={(e) => updatePageDraft('headerTitle', e.target.value)} placeholder="Header title" className="px-4 py-2 border rounded-lg" />
-        <input type="number" value={pageDraft.sortOrder ?? 0} onChange={(e) => updatePageDraft('sortOrder', Number(e.target.value))} placeholder="Sort order" className="px-4 py-2 border rounded-lg" />
-        <textarea value={pageDraft.headerSubtitle || ''} onChange={(e) => updatePageDraft('headerSubtitle', e.target.value)} placeholder="Header subtitle" rows={2} className="px-4 py-2 border rounded-lg" />
-        <input value={pageDraft.metaTitle || ''} onChange={(e) => updatePageDraft('metaTitle', e.target.value)} placeholder="SEO title" className="px-4 py-2 border rounded-lg" />
-        <input value={pageDraft.metaDescription || ''} onChange={(e) => updatePageDraft('metaDescription', e.target.value)} placeholder="SEO description" className="px-4 py-2 border rounded-lg" />
-        <textarea value={pageDraft.content || ''} onChange={(e) => updatePageDraft('content', e.target.value)} placeholder="Fallback page content" rows={5} className="px-4 py-2 border rounded-lg" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <input value={pageDraft.title || ''} onChange={(e) => updatePageDraft('title', e.target.value)} placeholder="Page title" className="px-4 py-3 border rounded-lg" required />
+        <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', makeSlug(e.target.value))} placeholder="page-url" className="px-4 py-3 border rounded-lg" required />
+        <input value={pageDraft.headerTitle || ''} onChange={(e) => updatePageDraft('headerTitle', e.target.value)} placeholder="Header title" className="px-4 py-3 border rounded-lg" />
+        <input type="number" value={pageDraft.sortOrder ?? 0} onChange={(e) => updatePageDraft('sortOrder', Number(e.target.value))} placeholder="Sort order" className="px-4 py-3 border rounded-lg" />
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-semibold text-gray-700">Header subtitle</label>
+          <textarea value={pageDraft.headerSubtitle || ''} onChange={(e) => updatePageDraft('headerSubtitle', e.target.value)} placeholder="Short supporting text below the page heading" rows={4} className="min-h-28 w-full px-4 py-3 border rounded-lg" />
+        </div>
+        <input value={pageDraft.metaTitle || ''} onChange={(e) => updatePageDraft('metaTitle', e.target.value)} placeholder="SEO title" className="px-4 py-3 border rounded-lg" />
+        <input value={pageDraft.metaDescription || ''} onChange={(e) => updatePageDraft('metaDescription', e.target.value)} placeholder="SEO description" className="px-4 py-3 border rounded-lg" />
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-semibold text-gray-700">Fallback page content</label>
+          <textarea value={pageDraft.content || ''} onChange={(e) => updatePageDraft('content', e.target.value)} placeholder="Used if this page has no custom sections yet" rows={6} className="min-h-40 w-full px-4 py-3 border rounded-lg" />
+        </div>
         <label className="inline-flex items-center gap-2 rounded-lg border px-4 py-3 font-semibold text-gray-700">
           <input type="checkbox" checked={pageDraft.showPageHeader !== false} onChange={(e) => updatePageDraft('showPageHeader', e.target.checked)} />
           Show top page header banner
@@ -2960,12 +2972,15 @@ function PageMetadataEditor({ page, fallback, metadata, legacyHeader, updatePage
   const headerSubtitle = metadata.headerSubtitle || legacyHeader.subtitle || ''
 
   return (
-    <section className="rounded-lg border p-4">
+    <section className="rounded-lg border p-5">
       <h3 className="mb-4 text-xl font-bold text-gray-900">Page Settings</h3>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <input value={pageTitle} onChange={(e) => updatePageMetadata(page, 'pageTitle', e.target.value)} placeholder="Page Title" className="px-4 py-2 border rounded-lg" />
-        <input value={pageUrl} onChange={(e) => updatePageMetadata(page, 'pageUrl', e.target.value)} placeholder="Page URL" className="px-4 py-2 border rounded-lg" />
-        <textarea value={description} onChange={(e) => updatePageMetadata(page, 'description', e.target.value)} placeholder="Page Description" rows={2} className="px-4 py-2 border rounded-lg md:col-span-2" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <input value={pageTitle} onChange={(e) => updatePageMetadata(page, 'pageTitle', e.target.value)} placeholder="Page Title" className="px-4 py-3 border rounded-lg" />
+        <input value={pageUrl} onChange={(e) => updatePageMetadata(page, 'pageUrl', e.target.value)} placeholder="Page URL" className="px-4 py-3 border rounded-lg" />
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-semibold text-gray-700">Page description</label>
+          <textarea value={description} onChange={(e) => updatePageMetadata(page, 'description', e.target.value)} placeholder="Short summary for the page and preview sections" rows={4} className="min-h-28 w-full px-4 py-3 border rounded-lg" />
+        </div>
         <input
           value={headerTitle}
           onChange={(e) => {
@@ -2973,20 +2988,26 @@ function PageMetadataEditor({ page, fallback, metadata, legacyHeader, updatePage
             updatePageHeader(page, 'title', e.target.value)
           }}
           placeholder="Header Title"
-          className="px-4 py-2 border rounded-lg"
+          className="px-4 py-3 border rounded-lg"
         />
-        <input value={metadata.metaTitle || ''} onChange={(e) => updatePageMetadata(page, 'metaTitle', e.target.value)} placeholder="SEO Title" className="px-4 py-2 border rounded-lg" />
-        <textarea
-          value={headerSubtitle}
-          onChange={(e) => {
-            updatePageMetadata(page, 'headerSubtitle', e.target.value)
-            updatePageHeader(page, 'subtitle', e.target.value)
-          }}
-          placeholder="Header Text"
-          rows={2}
-          className="px-4 py-2 border rounded-lg md:col-span-2"
-        />
-        <textarea value={metadata.metaDescription || ''} onChange={(e) => updatePageMetadata(page, 'metaDescription', e.target.value)} placeholder="SEO Description" rows={2} className="px-4 py-2 border rounded-lg md:col-span-2" />
+        <input value={metadata.metaTitle || ''} onChange={(e) => updatePageMetadata(page, 'metaTitle', e.target.value)} placeholder="SEO Title" className="px-4 py-3 border rounded-lg" />
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-semibold text-gray-700">Header text</label>
+          <textarea
+            value={headerSubtitle}
+            onChange={(e) => {
+              updatePageMetadata(page, 'headerSubtitle', e.target.value)
+              updatePageHeader(page, 'subtitle', e.target.value)
+            }}
+            placeholder="Supporting copy for the page heading"
+            rows={4}
+            className="min-h-28 w-full px-4 py-3 border rounded-lg"
+          />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-semibold text-gray-700">SEO description</label>
+          <textarea value={metadata.metaDescription || ''} onChange={(e) => updatePageMetadata(page, 'metaDescription', e.target.value)} placeholder="Search result description for this page" rows={4} className="min-h-28 w-full px-4 py-3 border rounded-lg" />
+        </div>
       </div>
     </section>
   )
