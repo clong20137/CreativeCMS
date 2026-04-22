@@ -269,15 +269,23 @@ function PageSection({ section }: { section: any }) {
   if (section.type === 'cta') return <CtaSection section={section} />
 
   if (section.type === 'section') {
+    const isImageFirst = section.imageOrder === 'image-first'
+    const textBlock = (
+      <div>
+        {section.title && <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>}
+        {section.body && <RichTextContent html={section.body} className="mt-3 text-gray-600" />}
+      </div>
+    )
+    const imageBlock = section.imageUrl
+      ? <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || ''} className="w-full rounded-lg object-cover" />
+      : null
+
     return (
       <section className="section-padding">
         <div className="container">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-center">
-            <div>
-              {section.title && <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>}
-              {section.body && <RichTextContent html={section.body} className="mt-3 text-gray-600" />}
-            </div>
-            {section.imageUrl && <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || ''} className="w-full rounded-lg object-cover" />}
+            {isImageFirst ? imageBlock : textBlock}
+            {isImageFirst ? textBlock : imageBlock}
           </div>
         </div>
       </section>

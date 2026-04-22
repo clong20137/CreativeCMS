@@ -2086,6 +2086,15 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
           <div className="space-y-3">
             <input value={section.imageUrl || ''} onChange={(e) => updateSection(index, 'imageUrl', e.target.value)} placeholder="Image URL" className="w-full px-4 py-2 border rounded-lg" />
             <input value={section.alt || ''} onChange={(e) => updateSection(index, 'alt', e.target.value)} placeholder="Alt text" className="w-full px-4 py-2 border rounded-lg" />
+            {section.type === 'section' && (
+              <label className="space-y-2 text-sm text-gray-700">
+                <span className="block font-semibold">Layout order</span>
+                <select value={section.imageOrder || 'image-second'} onChange={(e) => updateSection(index, 'imageOrder', e.target.value)} className="w-full rounded-lg border px-4 py-2">
+                  <option value="image-second">Text first, image second</option>
+                  <option value="image-first">Image first, text second</option>
+                </select>
+              </label>
+            )}
             {section.type === 'image' && (
               <>
                 <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
