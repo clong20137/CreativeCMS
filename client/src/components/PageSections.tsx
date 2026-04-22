@@ -292,6 +292,8 @@ function PageSection({ section }: { section: any }) {
   if (section.type === 'divider') {
     const width = Math.min(100, Math.max(10, Number(section.dividerWidth || 100)))
     const height = Math.min(20, Math.max(1, Number(section.dividerHeight || 1)))
+    const marginTop = Math.max(0, Number(section.dividerMarginTop || 0))
+    const marginBottom = Math.max(0, Number(section.dividerMarginBottom || 0))
     const justifyClass = section.dividerAlign === 'left'
       ? 'justify-start'
       : section.dividerAlign === 'right'
@@ -306,6 +308,8 @@ function PageSection({ section }: { section: any }) {
             className="w-full"
             style={{
               width: `${width}%`,
+              marginTop: `${marginTop}px`,
+              marginBottom: `${marginBottom}px`,
               borderTopWidth: `${height}px`,
               borderTopStyle: section.dividerStyle || 'solid',
               borderTopColor: section.dividerColor || '#d1d5db'

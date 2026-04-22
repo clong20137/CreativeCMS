@@ -2101,6 +2101,22 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
                 <span className="text-xs text-gray-500">px</span>
               </div>
             </label>
+            <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">Top</span>
+              <input type="range" min="0" max="160" step="1" value={Number(section.dividerMarginTop || 0)} onChange={(e) => updateSection(index, 'dividerMarginTop', e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" max="320" value={section.dividerMarginTop ?? ''} onChange={(e) => updateSection(index, 'dividerMarginTop', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </label>
+            <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">Bottom</span>
+              <input type="range" min="0" max="160" step="1" value={Number(section.dividerMarginBottom || 0)} onChange={(e) => updateSection(index, 'dividerMarginBottom', e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" max="320" value={section.dividerMarginBottom ?? ''} onChange={(e) => updateSection(index, 'dividerMarginBottom', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </label>
             <label className="block text-sm font-semibold text-gray-700">
               Style
               <select value={section.dividerStyle || 'solid'} onChange={(e) => updateSection(index, 'dividerStyle', e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
