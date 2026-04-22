@@ -626,8 +626,8 @@ export default function AdminPages() {
   const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
 
   const activeBuiltInPageKey = publicPages.some(page => page.id === activeTab) ? activeTab : ''
-  const activeBuiltInMetadata = activeBuiltInPageKey ? (settings.pageMetadata?.[activeBuiltInPageKey] || {}) : {}
-  const activeBuiltInHeader = activeBuiltInPageKey ? (settings.pageHeaders?.[activeBuiltInPageKey] || {}) : {}
+  const activeBuiltInMetadata: Record<string, any> = activeBuiltInPageKey ? (settings.pageMetadata?.[activeBuiltInPageKey] || {}) : {}
+  const activeBuiltInHeader: Record<string, any> = activeBuiltInPageKey ? (settings.pageHeaders?.[activeBuiltInPageKey] || {}) : {}
   const activeBuiltInSections = activeBuiltInPageKey ? getBuiltInSections(activeBuiltInPageKey) : []
   const pageInsights = useMemo(() => {
     if (activeTab === 'Custom Pages') return buildPageEditorInsights(pageDraft, pageDraft.sections || [])
@@ -1893,7 +1893,7 @@ function SectionBlockLibrary({ addSection, reusableSections = [], addReusableSec
   )
 }
 
-function PageSettingsInspector({ title, editor, isCustomPage, isSavedCustomPage, isPublished, updatePublished, deletePage, savePage, isOpen = true, setIsOpen = () => {} }: any) {
+function PageSettingsInspector({ title, editor, isOpen = true, setIsOpen = () => {} }: any) {
   if (!isOpen) {
     return (
       <section className="h-full overflow-hidden bg-white">
@@ -1920,7 +1920,7 @@ function PageSettingsInspector({ title, editor, isCustomPage, isSavedCustomPage,
   )
 }
 
-function SectionInspector({ title, section, index, updateSection, removeSection, duplicateSection, uploadImageToField, openMediaPicker, savePage, isOpen = true, setIsOpen = () => {} }: any) {
+function SectionInspector({ title, section, index, updateSection, removeSection, duplicateSection, uploadImageToField, openMediaPicker, isOpen = true, setIsOpen = () => {} }: any) {
   if (!isOpen) {
     return (
       <section className="h-full overflow-hidden bg-white">
