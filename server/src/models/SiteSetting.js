@@ -91,6 +91,10 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.JSON,
     defaultValue: []
   },
+  footerNavigationItems: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
   pageSections: {
     type: DataTypes.JSON,
     defaultValue: {

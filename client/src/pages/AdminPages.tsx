@@ -69,6 +69,7 @@ const sectionTypeOptions = [
   { value: 'image', label: 'Image', icon: FiImage },
   { value: 'imageCards', label: 'Image Cards', icon: FiGrid },
   { value: 'imageOverlay', label: 'Image Overlay', icon: FiImage },
+  { value: 'divider', label: 'Divider', icon: FiLayout },
   { value: 'gallery', label: 'Gallery', icon: FiImage },
   { value: 'plugin', label: 'Plugin', icon: FiGrid },
   { value: 'section', label: 'Text + Image', icon: FiColumns },
@@ -2080,6 +2081,49 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
             <ListCountControls section={section} index={index} updateSection={updateSection} titlePlaceholder="FAQ title" maxColumns={2} />
             <FaqItemsEditor section={section} index={index} updateSection={updateSection} />
           </>
+        )}
+
+        {section.type === 'divider' && (
+          <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
+            <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">Width</span>
+              <input type="range" min="10" max="100" step="1" value={Number(section.dividerWidth || 100)} onChange={(e) => updateSection(index, 'dividerWidth', e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="10" max="100" value={section.dividerWidth ?? ''} onChange={(e) => updateSection(index, 'dividerWidth', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">%</span>
+              </div>
+            </label>
+            <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">Height</span>
+              <input type="range" min="1" max="20" step="1" value={Number(section.dividerHeight || 1)} onChange={(e) => updateSection(index, 'dividerHeight', e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="1" max="20" value={section.dividerHeight ?? ''} onChange={(e) => updateSection(index, 'dividerHeight', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Style
+              <select value={section.dividerStyle || 'solid'} onChange={(e) => updateSection(index, 'dividerStyle', e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+                <option value="double">Double</option>
+              </select>
+            </label>
+            <label className="block text-sm font-semibold text-gray-700">
+              Alignment
+              <select value={section.dividerAlign || 'center'} onChange={(e) => updateSection(index, 'dividerAlign', e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </label>
+            <div className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
+              <span className="font-semibold">Line color</span>
+              <input type="color" value={/^#[0-9A-F]{6}$/i.test(section.dividerColor || '') ? section.dividerColor : '#d1d5db'} onChange={(e) => updateSection(index, 'dividerColor', e.target.value)} className="h-10 w-12 rounded border p-1" />
+              <input value={section.dividerColor || ''} onChange={(e) => updateSection(index, 'dividerColor', e.target.value)} placeholder="#d1d5db" className="w-full rounded-lg border px-2 py-1" />
+            </div>
+          </div>
         )}
 
         {section.type === 'section' && (

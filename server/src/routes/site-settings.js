@@ -28,7 +28,8 @@ async function ensureSiteSettingsSchema() {
     ['googleSearchConsoleProperty', { type: DataTypes.STRING, allowNull: true }],
     ['googleSearchConsoleServiceAccountJson', { type: DataTypes.TEXT('long'), allowNull: true }],
     ['pageSpeedUrl', { type: DataTypes.STRING, allowNull: true }],
-    ['pageSpeedApiKey', { type: DataTypes.STRING, allowNull: true }]
+    ['pageSpeedApiKey', { type: DataTypes.STRING, allowNull: true }],
+    ['footerNavigationItems', { type: DataTypes.JSON, allowNull: true }]
   ]
 
   for (const [name, definition] of columns) {
@@ -81,6 +82,7 @@ function publicSiteSettings(settings) {
     'pageHeaders',
     'pageMetadata',
     'navigationItems',
+    'footerNavigationItems',
     'pageSections',
     'reusableSections',
     'facebookUrl',

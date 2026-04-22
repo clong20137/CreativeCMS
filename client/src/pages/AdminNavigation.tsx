@@ -11,6 +11,13 @@ type NavigationItem = {
   children: NavigationItem[]
 }
 
+type FooterNavigationItem = {
+  label: string
+  url: string
+  isActive: boolean
+  sortOrder: number
+}
+
 const defaultNavigationItems: NavigationItem[] = [
   { label: 'Home', url: '/', isActive: true, sortOrder: 0, children: [] },
   { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10, children: [] },
@@ -18,6 +25,13 @@ const defaultNavigationItems: NavigationItem[] = [
   { label: 'Pricing', url: '/pricing', isActive: true, sortOrder: 30, children: [] },
   { label: 'Plugins', url: '/plugins', isActive: true, sortOrder: 40, children: [] },
   { label: 'Contact', url: '/contact', isActive: true, sortOrder: 50, children: [] }
+]
+
+const defaultFooterNavigationItems: FooterNavigationItem[] = [
+  { label: 'Home', url: '/', isActive: true, sortOrder: 0 },
+  { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10 },
+  { label: 'Services', url: '/services', isActive: true, sortOrder: 20 },
+  { label: 'Pricing', url: '/pricing', isActive: true, sortOrder: 30 }
 ]
 
 function normalizeNavigationItem(item: any, index = 0): NavigationItem {
@@ -41,6 +55,7 @@ function sortNavigationItems(items: NavigationItem[]): NavigationItem[] {
 
 export default function AdminNavigation() {
   const [items, setItems] = useState<NavigationItem[]>(defaultNavigationItems)
+  const [footerItems, setFooterItems] = useState<FooterNavigationItem[]>(defaultFooterNavigationItems)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -50,6 +65,14 @@ export default function AdminNavigation() {
       try {
         const settings = await adminAPI.getSiteSettings()
         setItems(Array.isArray(settings.navigationItems) && settings.navigationItems.length ? settings.navigationItems.map(normalizeNavigationItem) : defaultNavigationItems)
+        setFooterItems(Array.isArray(settings.footerNavigationItems) && settings.footerNavigationItems.length
+          ? settings.footerNavigationItems.map((item: any, index: number) => ({
+            label: item?.label || 'Footer Link',
+            url: item?.url || '/',
+            isActive: item?.isActive !== false,
+            sortOrder: Number(item?.sortOrder ?? index * 10)
+          }))
+          : defaultFooterNavigationItems)
       } catch (err: any) {
         setError(err.error || 'Failed to load navigation')
       } finally {
@@ -105,13 +128,30 @@ export default function AdminNavigation() {
       setError('')
       setMessage('Saving navigation...')
       const sortedItems = sortNavigationItems(items)
-      await adminAPI.updateSiteSettings({ navigationItems: sortedItems })
+      const sortedFooterItems = [...footerItems].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
+      await adminAPI.updateSiteSettings({ navigationItems: sortedItems, footerNavigationItems: sortedFooterItems })
       setItems(sortedItems)
+      setFooterItems(sortedFooterItems)
       setMessage('Navigation saved')
     } catch (err: any) {
       setMessage('')
       setError(err.error || 'Failed to save navigation')
     }
+  }
+
+  const updateFooterItem = (index: number, field: keyof FooterNavigationItem, value: any) => {
+    setFooterItems(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item))
+  }
+
+  const addFooterItem = () => {
+    setFooterItems(current => [
+      ...current,
+      { label: 'Footer Link', url: '/', isActive: true, sortOrder: current.length * 10 }
+    ])
+  }
+
+  const removeFooterItem = (index: number) => {
+    setFooterItems(current => current.filter((_, itemIndex) => itemIndex !== index))
   }
 
   return (
@@ -228,6 +268,54 @@ export default function AdminNavigation() {
 
             <button type="button" onClick={addItem} className="btn-secondary">
               Add Navigation Item
+            </button>
+          </div>
+
+          <div className="card p-6 space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Footer Links</h2>
+              <p className="text-gray-600">Choose which links appear in the footer quick links area.</p>
+            </div>
+
+            <div className="space-y-3">
+              {footerItems.map((item, index) => (
+                <div key={`footer-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border p-4 md:grid-cols-[1fr_1fr_7rem_auto_auto] md:items-center">
+                  <input
+                    value={item.label || ''}
+                    onChange={(e) => updateFooterItem(index, 'label', e.target.value)}
+                    placeholder="Footer label"
+                    className="px-4 py-2 border rounded-lg"
+                  />
+                  <input
+                    value={item.url || ''}
+                    onChange={(e) => updateFooterItem(index, 'url', e.target.value)}
+                    placeholder="/page-url"
+                    className="px-4 py-2 border rounded-lg"
+                  />
+                  <input
+                    type="number"
+                    value={item.sortOrder ?? 0}
+                    onChange={(e) => updateFooterItem(index, 'sortOrder', Number(e.target.value))}
+                    placeholder="Order"
+                    className="px-4 py-2 border rounded-lg"
+                  />
+                  <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={item.isActive !== false}
+                      onChange={(e) => updateFooterItem(index, 'isActive', e.target.checked)}
+                    />
+                    Active
+                  </label>
+                  <button type="button" onClick={() => removeFooterItem(index)} className="btn-secondary text-red-600">
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button type="button" onClick={addFooterItem} className="btn-secondary">
+              Add Footer Link
             </button>
           </div>
 

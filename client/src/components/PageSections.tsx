@@ -289,6 +289,33 @@ function PageSection({ section }: { section: any }) {
     )
   }
 
+  if (section.type === 'divider') {
+    const width = Math.min(100, Math.max(10, Number(section.dividerWidth || 100)))
+    const height = Math.min(20, Math.max(1, Number(section.dividerHeight || 1)))
+    const justifyClass = section.dividerAlign === 'left'
+      ? 'justify-start'
+      : section.dividerAlign === 'right'
+        ? 'justify-end'
+        : 'justify-center'
+
+    return (
+      <section className="section-padding">
+        <div className={`container flex ${justifyClass}`}>
+          <div
+            aria-hidden="true"
+            className="w-full"
+            style={{
+              width: `${width}%`,
+              borderTopWidth: `${height}px`,
+              borderTopStyle: section.dividerStyle || 'solid',
+              borderTopColor: section.dividerColor || '#d1d5db'
+            }}
+          />
+        </div>
+      </section>
+    )
+  }
+
   if (section.type === 'plugin') return <EmbeddedPluginSection section={section} />
   if (section.type === 'testimonials') return <TestimonialsSection />
   if (section.type === 'portfolio') return <PortfolioSection section={section} />

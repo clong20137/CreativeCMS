@@ -1,6 +1,30 @@
 import { FiFacebook, FiInstagram, FiTwitter, FiLinkedin } from 'react-icons/fi'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { resolveAssetUrl, siteSettingsAPI } from '../services/api'
+
+type FooterNavigationItem = {
+  label: string
+  url: string
+  isActive?: boolean
+  sortOrder?: number
+}
+
+const defaultFooterLinks: FooterNavigationItem[] = [
+  { label: 'Home', url: '/', isActive: true, sortOrder: 0 },
+  { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10 },
+  { label: 'Services', url: '/services', isActive: true, sortOrder: 20 },
+  { label: 'Pricing', url: '/pricing', isActive: true, sortOrder: 30 }
+]
+
+function normalizeFooterLink(item: any, index = 0): FooterNavigationItem {
+  return {
+    label: item?.label || 'Footer Link',
+    url: item?.url || '/',
+    isActive: item?.isActive !== false,
+    sortOrder: Number(item?.sortOrder ?? index * 10)
+  }
+}
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -9,7 +33,8 @@ export default function Footer() {
     logoUrl: '',
     logoSize: 40,
     footerDescription: 'Transforming ideas into stunning visual experiences through web design, photography, and videography.',
-    contactEmail: 'hello@creativestudio.com'
+    contactEmail: 'hello@creativestudio.com',
+    footerNavigationItems: defaultFooterLinks
   })
   const socialLinks = [
     { url: settings.facebookUrl, icon: FiFacebook, label: 'Facebook' },
@@ -17,6 +42,12 @@ export default function Footer() {
     { url: settings.twitterUrl, icon: FiTwitter, label: 'Twitter' },
     { url: settings.linkedinUrl, icon: FiLinkedin, label: 'LinkedIn' }
   ].filter(link => link.url)
+  const footerLinks: FooterNavigationItem[] = (Array.isArray(settings.footerNavigationItems) && settings.footerNavigationItems.length
+    ? settings.footerNavigationItems
+    : defaultFooterLinks)
+    .map(normalizeFooterLink)
+    .filter((link: FooterNavigationItem) => link.isActive !== false)
+    .sort((a: FooterNavigationItem, b: FooterNavigationItem) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -53,10 +84,11 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><a href="/" className="hover:text-white transition">Home</a></li>
-              <li><a href="/portfolio" className="hover:text-white transition">Portfolio</a></li>
-              <li><a href="/services" className="hover:text-white transition">Services</a></li>
-              <li><a href="/pricing" className="hover:text-white transition">Pricing</a></li>
+              {footerLinks.map((link: FooterNavigationItem) => (
+                <li key={`${link.label}-${link.url}`}>
+                  <Link to={link.url} className="hover:text-white transition">{link.label}</Link>
+                </li>
+              ))}
             </ul>
           </div>
 
