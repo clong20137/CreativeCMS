@@ -201,6 +201,40 @@ main {
   line-height: var(--section-card-body-line-height, 1.5) !important;
 }
 
+.rich-text-content > * + *,
+.rich-text-editor > * + * {
+  margin-top: 0.75rem;
+}
+
+.rich-text-content a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.rich-text-content ul,
+.rich-text-content ol {
+  padding-left: 1.5rem;
+}
+
+.rich-text-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+}
+
+.rich-text-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+html.dark-mode .rich-text-editor {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+html.dark-mode .rich-text-editor:empty::before {
+  color: #9ca3af;
+}
+
 .page-section-animated {
   opacity: 0;
   animation-duration: var(--section-animation-duration, 650ms);

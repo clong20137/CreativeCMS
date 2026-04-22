@@ -6,6 +6,7 @@ import MediaPicker from '../components/MediaPicker'
 import PageSections from '../components/PageSections'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI, resolveAssetUrl } from '../services/api'
+import { normalizeRichTextHtml, sanitizeRichTextHtml } from '../utils/richText'
 
 const publicPages = [
   { id: 'home', label: 'Homepage', url: '/' },
@@ -324,6 +325,69 @@ function cloneSectionWithNewIds(section: any) {
   cloned.title = cloned.title ? `${cloned.title} Copy` : cloned.title
   applyIds(cloned)
   return cloned
+}
+
+function RichTextEditorField({ label, value, onChange, placeholder = 'Start typing...', minHeight = 140 }: any) {
+  const editorRef = useRef<HTMLDivElement | null>(null)
+  const normalized = normalizeRichTextHtml(value)
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return
+    if (document.activeElement === editor) return
+    if (editor.innerHTML !== normalized) editor.innerHTML = normalized
+  }, [normalized])
+
+  const emitChange = () => {
+    const nextValue = sanitizeRichTextHtml(editorRef.current?.innerHTML || '')
+    onChange(nextValue)
+  }
+
+  const applyCommand = (command: string, commandValue?: string) => {
+    const editor = editorRef.current
+    if (!editor) return
+    editor.focus()
+    document.execCommand(command, false, commandValue)
+    emitChange()
+  }
+
+  const applyLink = () => {
+    const editor = editorRef.current
+    if (!editor) return
+    const url = window.prompt('Enter a URL', 'https://')
+    if (!url) return
+    editor.focus()
+    document.execCommand('createLink', false, url)
+    emitChange()
+  }
+
+  return (
+    <div className="space-y-2">
+      {label && <label className="block text-sm font-bold text-gray-700">{label}</label>}
+      <div className="rounded-lg border">
+        <div className="flex flex-wrap items-center gap-2 border-b bg-gray-50 p-2">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applyCommand('bold')} className="rounded border bg-white px-3 py-1 text-sm font-bold text-gray-800 hover:bg-gray-100" title="Bold">B</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applyCommand('italic')} className="rounded border bg-white px-3 py-1 text-sm italic text-gray-800 hover:bg-gray-100" title="Italic">I</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applyCommand('underline')} className="rounded border bg-white px-3 py-1 text-sm underline text-gray-800 hover:bg-gray-100" title="Underline">U</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={applyLink} className="rounded border bg-white px-3 py-1 text-sm font-semibold text-gray-800 hover:bg-gray-100" title="Add hyperlink">Link</button>
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => applyCommand('unlink')} className="rounded border bg-white px-3 py-1 text-sm font-semibold text-gray-800 hover:bg-gray-100" title="Remove hyperlink">Unlink</button>
+          <label className="inline-flex items-center gap-2 rounded border bg-white px-3 py-1 text-sm font-semibold text-gray-800">
+            Text Color
+            <input type="color" onChange={(e) => applyCommand('foreColor', e.target.value)} className="h-7 w-8 cursor-pointer rounded border p-0" title="Change text color" />
+          </label>
+        </div>
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          data-placeholder={placeholder}
+          onInput={emitChange}
+          className="rich-text-editor min-h-[140px] px-4 py-3 text-gray-900 focus:outline-none"
+          style={{ minHeight }}
+        />
+      </div>
+    </div>
+  )
 }
 
 export default function AdminPages() {
@@ -1655,7 +1719,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
         {(section.type === 'banner' || section.type === 'hero' || section.type === 'cta' || section.type === 'imageOverlay') && (
           <div className="space-y-3">
             <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Heading" className="w-full px-4 py-2 border rounded-lg" />
-            <textarea value={section.body || ''} onChange={(e) => updateSection(index, 'body', e.target.value)} placeholder="Text" rows={3} className="w-full px-4 py-2 border rounded-lg" />
+            <RichTextEditorField label="Text" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Add text, links, and color..." minHeight={120} />
             <input value={section.buttonLabel || ''} onChange={(e) => updateSection(index, 'buttonLabel', e.target.value)} placeholder="Button label" className="w-full px-4 py-2 border rounded-lg" />
             <input value={section.buttonUrl || ''} onChange={(e) => updateSection(index, 'buttonUrl', e.target.value)} placeholder="Button URL" className="w-full px-4 py-2 border rounded-lg" />
             {section.type === 'hero' && <input value={section.secondaryButtonLabel || ''} onChange={(e) => updateSection(index, 'secondaryButtonLabel', e.target.value)} placeholder="Secondary button label" className="w-full px-4 py-2 border rounded-lg" />}
@@ -1687,7 +1751,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
         )}
 
         {(section.type === 'paragraph' || section.type === 'section' || section.type === 'services') && (
-          <textarea value={section.body || ''} onChange={(e) => updateSection(index, 'body', e.target.value)} placeholder="Text content" rows={4} className="w-full px-4 py-2 border rounded-lg" />
+          <RichTextEditorField label="Text content" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Format certain words, add links, and set colors..." minHeight={160} />
         )}
 
         {section.type === 'portfolio' && <ListCountControls section={section} index={index} updateSection={updateSection} />}
@@ -1789,7 +1853,7 @@ function ListCountControls({ section, index, updateSection, titlePlaceholder = '
     <div className="space-y-3">
       <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder={titlePlaceholder} className="w-full px-4 py-2 border rounded-lg" />
       <input type="number" min="1" max={maxColumns} value={section.columns || ''} onChange={(e) => updateSection(index, 'columns', Number(e.target.value || 0))} placeholder="Columns" className="w-full px-4 py-2 border rounded-lg" />
-      <textarea value={section.body || ''} onChange={(e) => updateSection(index, 'body', e.target.value)} placeholder="Section description" rows={3} className="w-full px-4 py-2 border rounded-lg" />
+      <RichTextEditorField label="Section description" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Section description..." minHeight={120} />
       <input type="number" min="1" value={section.itemLimit || ''} onChange={(e) => updateSection(index, 'itemLimit', Number(e.target.value || 0))} placeholder="Items to show" className="w-full px-4 py-2 border rounded-lg" />
     </div>
   )
@@ -2068,7 +2132,9 @@ function ColumnsEditor({ section, index, updateSection, uploadImageToField, open
           <option value={2}>Split columns</option>
           <option value={3}>Three columns</option>
         </select>
-        <textarea value={section.body || ''} onChange={(e) => updateSection(index, 'body', e.target.value)} placeholder="Section description" rows={2} className="px-4 py-2 border rounded-lg md:col-span-2" />
+        <div className="md:col-span-2">
+          <RichTextEditorField label="Section description" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Section description..." minHeight={120} />
+        </div>
       </div>
       {columns.map((column, columnIndex) => (
         <div key={column.id || columnIndex} className="space-y-3 rounded-lg border p-3">
@@ -2102,7 +2168,7 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
       </div>
       {(block.type === 'header' || block.type === 'imageCard') && <input value={block.title || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'title', e.target.value)} placeholder="Header" className="w-full px-4 py-2 border rounded-lg" />}
       {block.type === 'imageCard' && <input value={block.category || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'category', e.target.value)} placeholder="Category / small heading" className="w-full px-4 py-2 border rounded-lg" />}
-      {(block.type === 'paragraph' || block.type === 'header') && <textarea value={block.body || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'body', e.target.value)} placeholder="Text" rows={3} className="w-full px-4 py-2 border rounded-lg" />}
+      {(block.type === 'paragraph' || block.type === 'header') && <RichTextEditorField label="Text" value={block.body || ''} onChange={(value: string) => updateBlock(columnIndex, blockIndex, 'body', value)} placeholder="Format text..." minHeight={120} />}
       {block.type === 'imageCard' && <textarea value={block.description || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'description', e.target.value)} placeholder="Subtext" rows={2} className="w-full px-4 py-2 border rounded-lg" />}
       {(block.type === 'image' || block.type === 'imageCard') && (
         <>

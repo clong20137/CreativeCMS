@@ -5,6 +5,7 @@ import { FiArrowRight, FiCamera, FiCheck, FiMail, FiMapPin, FiMonitor, FiPenTool
 import Testimonials from './Testimonials'
 import TurnstileWidget from './TurnstileWidget'
 import { contactMessagesAPI, pluginsAPI, portfolioAPI, resolveAssetUrl, servicePackagesAPI, siteDemosAPI, siteSettingsAPI } from '../services/api'
+import { normalizeRichTextHtml } from '../utils/richText'
 
 const pluginLabels: Record<string, string> = {
   restaurant: 'Restaurant Menu',
@@ -144,7 +145,7 @@ function PageSection({ section }: { section: any }) {
         <div className="container relative">
           <div className="max-w-3xl">
             <h2 className="text-4xl font-bold md:text-6xl">{section.title}</h2>
-            {section.body && <p className="mt-6 text-xl text-blue-100 whitespace-pre-line">{section.body}</p>}
+            {section.body && <RichTextContent html={section.body} className="mt-6 text-xl text-blue-100" />}
             {section.buttonLabel && section.buttonUrl && (
               <Link to={section.buttonUrl} className="btn-primary mt-8 inline-flex">
                 {section.buttonLabel}
@@ -161,7 +162,7 @@ function PageSection({ section }: { section: any }) {
       <section className="section-padding">
         <div className="container text-center">
           <h2 className="section-title">{section.title}</h2>
-          {section.body && <p className="mx-auto -mt-8 max-w-3xl text-lg text-gray-600 whitespace-pre-line">{section.body}</p>}
+          {section.body && <RichTextContent html={section.body} className="mx-auto -mt-8 max-w-3xl text-lg text-gray-600" />}
         </div>
       </section>
     )
@@ -212,7 +213,7 @@ function PageSection({ section }: { section: any }) {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-center">
             <div>
               {section.title && <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>}
-              {section.body && <p className="mt-3 text-gray-600 whitespace-pre-line">{section.body}</p>}
+              {section.body && <RichTextContent html={section.body} className="mt-3 text-gray-600" />}
             </div>
             {section.imageUrl && <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || ''} className="w-full rounded-lg object-cover" />}
           </div>
@@ -224,10 +225,16 @@ function PageSection({ section }: { section: any }) {
   return (
     <section className="section-padding">
       <div className="container max-w-4xl">
-        <p className="text-lg leading-relaxed text-gray-700 whitespace-pre-line">{section.body}</p>
+        <RichTextContent html={section.body} className="text-lg leading-relaxed text-gray-700" />
       </div>
     </section>
   )
+}
+
+function RichTextContent({ html, className = '' }: { html?: string; className?: string }) {
+  const normalized = normalizeRichTextHtml(html)
+  if (!normalized) return null
+  return <div className={`rich-text-content ${className}`.trim()} dangerouslySetInnerHTML={{ __html: normalized }} />
 }
 
 function ColumnsSection({ section }: { section: any }) {
@@ -257,7 +264,7 @@ function ColumnBlock({ block }: { block: any }) {
     return (
       <div>
         {block.title && <h3 className="text-2xl font-bold text-gray-900">{block.title}</h3>}
-        {block.body && <p className="mt-2 text-gray-600 whitespace-pre-line">{block.body}</p>}
+        {block.body && <RichTextContent html={block.body} className="mt-2 text-gray-600" />}
       </div>
     )
   }
@@ -270,7 +277,7 @@ function ColumnBlock({ block }: { block: any }) {
     return <ImageCard item={block} />
   }
 
-  return <p className="text-gray-700 whitespace-pre-line">{block.body}</p>
+  return <RichTextContent html={block.body} className="text-gray-700" />
 }
 
 function ImageCardsSection({ section }: { section: any }) {
@@ -316,7 +323,7 @@ function ImageOverlaySection({ section }: { section: any }) {
       <div className="container relative flex min-h-[30rem] items-center py-16">
         <div className="max-w-2xl">
           {section.title && <h2 className="text-4xl font-bold md:text-6xl">{section.title}</h2>}
-          {section.body && <p className="mt-5 text-lg text-gray-100 whitespace-pre-line md:text-xl">{section.body}</p>}
+          {section.body && <RichTextContent html={section.body} className="mt-5 text-lg text-gray-100 md:text-xl" />}
           {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="btn-primary mt-8 inline-flex">{section.buttonLabel}</Link>}
         </div>
       </div>
@@ -361,7 +368,7 @@ function HeroSection({ section }: { section: any }) {
         <div className={`grid grid-cols-1 items-center gap-10 ${hasHeroForm ? 'lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]' : ''}`}>
           <div className="max-w-3xl">
             <h1 className="text-4xl font-bold md:text-6xl">{section.title}</h1>
-            {section.body && <p className="mt-6 text-xl text-blue-100 md:text-2xl whitespace-pre-line">{section.body}</p>}
+            {section.body && <RichTextContent html={section.body} className="mt-6 text-xl text-blue-100 md:text-2xl" />}
             <div className="mt-8 flex flex-wrap gap-4">
               {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="btn-primary inline-flex items-center gap-2">{section.buttonLabel} <FiArrowRight /></Link>}
               {section.secondaryButtonLabel && section.secondaryButtonUrl && <Link to={section.secondaryButtonUrl} className="btn-secondary inline-flex">{section.secondaryButtonLabel}</Link>}
@@ -438,7 +445,7 @@ function SectionHeading({ section, fallbackTitle }: { section: any; fallbackTitl
   return (
     <div className="mb-10 text-center">
       <h2 className="text-3xl font-bold text-gray-900">{section.title || fallbackTitle}</h2>
-      {section.body && <p className="mx-auto mt-3 max-w-3xl text-gray-600 whitespace-pre-line">{section.body}</p>}
+      {section.body && <RichTextContent html={section.body} className="mx-auto mt-3 max-w-3xl text-gray-600" />}
     </div>
   )
 }
@@ -979,7 +986,7 @@ function CtaSection({ section }: { section: any }) {
     <section className="bg-blue-600 py-16 text-white">
       <div className="container text-center">
         <h2 className="text-3xl font-bold md:text-4xl">{section.title}</h2>
-        {section.body && <p className="mx-auto mt-6 max-w-2xl text-xl text-blue-100 whitespace-pre-line">{section.body}</p>}
+        {section.body && <RichTextContent html={section.body} className="mx-auto mt-6 max-w-2xl text-xl text-blue-100" />}
         {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="btn-primary mt-8 inline-block">{section.buttonLabel}</Link>}
       </div>
     </section>
