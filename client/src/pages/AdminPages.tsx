@@ -93,7 +93,9 @@ const nestedBlockOptions = [
   { value: 'header', label: 'Header', icon: FiType },
   { value: 'paragraph', label: 'Paragraph', icon: FiFileText },
   { value: 'image', label: 'Image', icon: FiImage },
-  { value: 'imageCard', label: 'Image Card', icon: FiGrid }
+  { value: 'imageCard', label: 'Image Card', icon: FiGrid },
+  { value: 'pluginsList', label: 'Plugins List', icon: FiGrid },
+  { value: 'siteDemos', label: 'Site Demos', icon: FiMonitor }
 ]
 
 const MAX_IMAGE_WIDTH = 1200
@@ -296,7 +298,7 @@ function makeImageCard() {
 }
 
 function makeNestedBlock(type: string) {
-  return {
+  const base = {
     id: crypto.randomUUID(),
     type,
     title: '',
@@ -308,6 +310,28 @@ function makeNestedBlock(type: string) {
     buttonLabel: 'Learn More',
     buttonUrl: '/contact'
   }
+
+  if (type === 'pluginsList') {
+    return {
+      ...base,
+      title: 'Plugins',
+      body: '',
+      columns: 1,
+      itemLimit: 6
+    }
+  }
+
+  if (type === 'siteDemos') {
+    return {
+      ...base,
+      title: 'Site Demos',
+      body: '',
+      columns: 1,
+      itemLimit: 3
+    }
+  }
+
+  return base
 }
 
 function makeColumns(count: number, existing: any[] = []) {
@@ -2567,6 +2591,16 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
       {(block.type === 'header' || block.type === 'imageCard') && <input value={block.title || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'title', e.target.value)} placeholder="Header" className="w-full px-4 py-2 border rounded-lg" />}
       {block.type === 'imageCard' && <input value={block.category || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'category', e.target.value)} placeholder="Category / small heading" className="w-full px-4 py-2 border rounded-lg" />}
       {(block.type === 'paragraph' || block.type === 'header') && <RichTextEditorField label="Text" value={block.body || ''} onChange={(value: string) => updateBlock(columnIndex, blockIndex, 'body', value)} placeholder="Format text..." minHeight={120} />}
+      {(block.type === 'pluginsList' || block.type === 'siteDemos') && (
+        <>
+          <input value={block.title || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'title', e.target.value)} placeholder="Section title" className="w-full px-4 py-2 border rounded-lg" />
+          <RichTextEditorField label="Text" value={block.body || ''} onChange={(value: string) => updateBlock(columnIndex, blockIndex, 'body', value)} placeholder="Optional description..." minHeight={120} />
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <input type="number" min="1" max="6" value={block.columns || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'columns', Number(e.target.value || 0))} placeholder="Columns" className="w-full px-4 py-2 border rounded-lg" />
+            <input type="number" min="1" value={block.itemLimit || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'itemLimit', Number(e.target.value || 0))} placeholder={block.type === 'siteDemos' ? 'Demos to show' : 'Plugins to show'} className="w-full px-4 py-2 border rounded-lg" />
+          </div>
+        </>
+      )}
       {block.type === 'imageCard' && <textarea value={block.description || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'description', e.target.value)} placeholder="Subtext" rows={2} className="w-full px-4 py-2 border rounded-lg" />}
       {(block.type === 'image' || block.type === 'imageCard') && (
         <>

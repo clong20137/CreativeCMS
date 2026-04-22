@@ -428,7 +428,89 @@ function ColumnBlock({ block }: { block: any }) {
     return <ImageCard item={block} />
   }
 
+  if (block.type === 'pluginsList') {
+    return <ColumnPluginsListBlock block={block} />
+  }
+
+  if (block.type === 'siteDemos') {
+    return <ColumnSiteDemosBlock block={block} />
+  }
+
   return <RichTextContent html={block.body} className="text-gray-700" />
+}
+
+function ColumnPluginsListBlock({ block }: { block: any }) {
+  const [plugins, setPlugins] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const limit = Number(block.itemLimit || 6)
+  const count = Number(block.columns || 1)
+
+  useEffect(() => {
+    pluginsAPI.getPlugins()
+      .then(setPlugins)
+      .catch(() => setPlugins([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      <SectionHeading section={block} fallbackTitle="Plugins" />
+      {loading ? (
+        <div className="text-gray-600">Loading plugins...</div>
+      ) : (
+        <div className={`grid grid-cols-1 gap-4 ${columnClasses[count] || columnClasses[1]}`}>
+          {plugins.slice(0, limit).map((plugin) => (
+            <div key={plugin.id} className="rounded-lg border bg-white p-5 shadow-sm">
+              <h3 className="text-xl font-bold text-gray-900">{plugin.name}</h3>
+              {plugin.description && <p className="mt-2 text-gray-600">{plugin.description}</p>}
+              {plugin.demoUrl && <Link to={plugin.demoUrl} className="btn-primary mt-4 inline-flex">View Demo</Link>}
+            </div>
+          ))}
+          {plugins.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No plugins are available yet.</div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ColumnSiteDemosBlock({ block }: { block: any }) {
+  const [demos, setDemos] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const limit = Number(block.itemLimit || 3)
+  const count = Number(block.columns || 1)
+
+  useEffect(() => {
+    siteDemosAPI.getDemos()
+      .then(setDemos)
+      .catch(() => setDemos([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      <SectionHeading section={block} fallbackTitle="Site Demos" />
+      {loading ? (
+        <div className="text-gray-600">Loading site demos...</div>
+      ) : (
+        <div className={`grid grid-cols-1 gap-4 ${columnClasses[count] || columnClasses[1]}`}>
+          {demos.slice(0, limit).map((demo) => (
+            <article key={demo.id || demo.slug} className="overflow-hidden rounded-lg border bg-white shadow-sm">
+              {demo.previewImage && <img src={resolveAssetUrl(demo.previewImage)} alt={demo.name} loading="lazy" decoding="async" className="h-48 w-full object-cover" />}
+              <div className="p-5">
+                <p className="site-demo-card-meta text-xs font-bold uppercase tracking-wide text-blue-600">{demo.category}</p>
+                <h3 className="site-demo-card-heading mt-2 text-2xl font-bold text-gray-900">{demo.name}</h3>
+                {demo.description && <p className="site-demo-card-body mt-3 text-gray-600">{demo.description}</p>}
+                <Link to={demo.demoUrl} className="btn-primary mt-4 inline-flex items-center gap-2">
+                  View Demo <FiArrowRight />
+                </Link>
+              </div>
+            </article>
+          ))}
+          {demos.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No site demos are available yet.</div>}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ImageCardsSection({ section }: { section: any }) {
