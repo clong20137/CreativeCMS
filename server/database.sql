@@ -369,6 +369,7 @@ CREATE TABLE IF NOT EXISTS CustomPages (
   slug VARCHAR(255) NOT NULL UNIQUE,
   headerTitle VARCHAR(255),
   headerSubtitle TEXT,
+  showPageHeader BOOLEAN DEFAULT true,
   content LONGTEXT,
   sections JSON,
   metaTitle VARCHAR(255),

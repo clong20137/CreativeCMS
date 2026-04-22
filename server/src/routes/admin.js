@@ -40,6 +40,7 @@ const uploadsDir = path.resolve(__dirname, '../../uploads')
 const privateUploadsDir = path.resolve(__dirname, '../../private-uploads')
 let mediaAssetsSchemaReady = false
 let protectedContentSchemaReady = false
+let customPagesSchemaReady = false
 let googleAccessTokenCache = { token: '', expiresAt: 0 }
 const seoDashboardCache = new Map()
 const mediaMimeExtensions = {
@@ -96,6 +97,29 @@ function parseGoogleServiceAccount(rawValue) {
     const decoded = Buffer.from(value, 'base64').toString('utf8')
     return JSON.parse(decoded)
   }
+}
+
+async function ensureCustomPagesSchema() {
+  if (customPagesSchemaReady) return
+
+  const queryInterface = CustomPage.sequelize.getQueryInterface()
+  const table = await queryInterface.describeTable('CustomPages').catch(() => null)
+  if (!table) return
+
+  if (!table.showPageHeader) {
+    try {
+      await queryInterface.addColumn('CustomPages', 'showPageHeader', {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+      })
+    } catch (error) {
+      const message = String(error?.message || '')
+      if (!message.includes('Duplicate column')) throw error
+    }
+  }
+
+  customPagesSchemaReady = true
 }
 
 async function getGoogleAccessToken(settings) {
@@ -1278,6 +1302,7 @@ router.put('/site-settings', async (req, res) => {
 
 router.get('/pages', async (req, res) => {
   try {
+    await ensureCustomPagesSchema()
     const pages = await CustomPage.findAll({ order: [['sortOrder', 'ASC'], ['title', 'ASC']] })
     res.json(pages)
   } catch (error) {
@@ -1287,6 +1312,7 @@ router.get('/pages', async (req, res) => {
 
 router.post('/pages', async (req, res) => {
   try {
+    await ensureCustomPagesSchema()
     const page = await CustomPage.create({
       title: req.body.title,
       slug: String(req.body.slug || req.body.title || '')
@@ -1312,6 +1338,7 @@ router.post('/pages', async (req, res) => {
 
 router.put('/pages/:id', async (req, res) => {
   try {
+    await ensureCustomPagesSchema()
     const page = await CustomPage.findByPk(req.params.id)
     if (!page) return res.status(404).json({ error: 'Page not found' })
 
@@ -1340,6 +1367,7 @@ router.put('/pages/:id', async (req, res) => {
 
 router.delete('/pages/:id', async (req, res) => {
   try {
+    await ensureCustomPagesSchema()
     const page = await CustomPage.findByPk(req.params.id)
     if (!page) return res.status(404).json({ error: 'Page not found' })
 
