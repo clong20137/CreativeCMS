@@ -16,6 +16,14 @@ function getSiteUrl() {
   return (import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, '')
 }
 
+export function normalizeSeoPath(path = '/') {
+  const value = String(path || '/').trim()
+  if (!value || value === '/') return '/'
+  const prefixed = value.startsWith('/') ? value : `/${value}`
+  const normalized = prefixed.replace(/\/{2,}/g, '/')
+  return normalized !== '/' && normalized.endsWith('/') ? normalized.slice(0, -1) : normalized
+}
+
 function upsertMeta(selector: string, create: () => HTMLMetaElement, content: string) {
   let element = document.head.querySelector<HTMLMetaElement>(selector)
   if (!element) {
@@ -45,7 +53,8 @@ export default function SEO({
 }: SEOProps) {
   useEffect(() => {
     const siteUrl = getSiteUrl()
-    const canonicalUrl = `${siteUrl}${path.startsWith('/') ? path : `/${path}`}`
+    const normalizedPath = normalizeSeoPath(path)
+    const canonicalUrl = `${siteUrl}${normalizedPath}`
     const imageUrl = image.startsWith('http') ? image : `${siteUrl}${image.startsWith('/') ? image : `/${image}`}`
     const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`
 
@@ -125,12 +134,13 @@ export default function SEO({
 
 export function localBusinessSchema(path = '/') {
   const siteUrl = getSiteUrl()
+  const normalizedPath = normalizeSeoPath(path)
 
   return {
     '@context': 'https://schema.org',
     '@type': 'ProfessionalService',
     name: SITE_NAME,
-    url: `${siteUrl}${path}`,
+    url: `${siteUrl}${normalizedPath}`,
     areaServed: [
       { '@type': 'City', name: 'Indianapolis' },
       { '@type': 'State', name: 'Indiana' },

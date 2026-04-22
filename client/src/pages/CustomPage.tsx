@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
+import SEO from '../components/SEO'
 import PageSections, { RichTextContent } from '../components/PageSections'
 import { customPagesAPI, siteSettingsAPI } from '../services/api'
 import EditableBuiltInPage from './EditableBuiltInPage'
@@ -54,6 +55,11 @@ export default function CustomPage() {
 
   return (
     <div>
+      <SEO
+        title={page.metaTitle || page.headerTitle || page.title}
+        description={page.metaDescription || page.headerSubtitle || stripHtmlText(page.content || '')}
+        path={`/${page.slug}`}
+      />
       {page.showPageHeader !== false && (
         <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
           <div className="container text-center">
@@ -74,4 +80,8 @@ export default function CustomPage() {
       )}
     </div>
   )
+}
+
+function stripHtmlText(value: string) {
+  return String(value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
 }

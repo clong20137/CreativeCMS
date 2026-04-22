@@ -27,6 +27,7 @@ import ProtectedContentPurchase from './models/ProtectedContentPurchase.js'
 import SiteDemo from './models/SiteDemo.js'
 import MediaAsset from './models/MediaAsset.js'
 import CRMLead from './models/CRMLead.js'
+import { getOrCreateSiteSettings } from './routes/site-settings.js'
 
 // Import routes
 import authRoutes from './routes/auth.js'
@@ -116,6 +117,27 @@ const uploadsPath = path.resolve(__dirname, '../uploads')
 app.use('/uploads', express.static(uploadsPath))
 app.use('/api/uploads', express.static(uploadsPath))
 
+function normalizePublicPath(pathname = '/') {
+  const value = String(pathname || '/').trim()
+  if (!value || value === '/') return '/'
+  const prefixed = value.startsWith('/') ? value : `/${value}`
+  const normalized = prefixed.replace(/\/{2,}/g, '/')
+  return normalized !== '/' && normalized.endsWith('/') ? normalized.slice(0, -1) : normalized
+}
+
+function getPublicSiteUrl() {
+  return String(process.env.PUBLIC_SITE_URL || process.env.VITE_SITE_URL || allowedOrigins[0] || 'http://localhost:5173').replace(/\/$/, '')
+}
+
+function xmlEscape(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 const authAttempts = new Map()
 app.use('/api/auth', (req, res, next) => {
   if (!['POST'].includes(req.method)) return next()
@@ -162,6 +184,55 @@ app.use('/api/protected-media', protectedMediaRoutes)
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' })
+})
+
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const siteUrl = getPublicSiteUrl()
+    const settings = await getOrCreateSiteSettings()
+    const builtInPaths = ['/', '/portfolio', '/services', '/pricing', '/plugins', '/contact']
+    const metadataEntries = Object.values(settings.pageMetadata || {})
+      .map((page) => normalizePublicPath(page?.pageUrl || ''))
+      .filter(Boolean)
+    const customPages = await CustomPage.findAll({
+      where: { isPublished: true },
+      attributes: ['slug', 'updatedAt']
+    })
+    const siteDemos = await SiteDemo.findAll({
+      where: { isActive: true },
+      attributes: ['slug', 'updatedAt']
+    })
+    const plugins = await Plugin.findAll({
+      where: { isEnabled: true },
+      attributes: ['demoUrl', 'updatedAt']
+    })
+
+    const urls = new Map()
+    const addUrl = (pathname, updatedAt) => {
+      const normalized = normalizePublicPath(pathname)
+      if (!normalized || normalized.startsWith('/admin') || normalized.startsWith('/client-dashboard') || normalized === '/login') return
+      urls.set(normalized, updatedAt || urls.get(normalized) || null)
+    }
+
+    builtInPaths.forEach(pathname => addUrl(pathname, null))
+    metadataEntries.forEach(pathname => addUrl(pathname, null))
+    customPages.forEach(page => addUrl(`/${page.slug}`, page.updatedAt))
+    siteDemos.forEach(demo => addUrl(`/site-demos/${demo.slug}`, demo.updatedAt))
+    plugins.forEach(plugin => plugin.demoUrl && addUrl(plugin.demoUrl, plugin.updatedAt))
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${Array.from(urls.entries()).map(([pathname, updatedAt]) => `  <url>
+    <loc>${xmlEscape(`${siteUrl}${pathname}`)}</loc>
+    ${updatedAt ? `<lastmod>${new Date(updatedAt).toISOString()}</lastmod>` : ''}
+  </url>`).join('\n')}
+</urlset>`
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8')
+    res.send(xml)
+  } catch (error) {
+    res.status(500).type('text/plain').send('Failed to generate sitemap')
+  }
 })
 
 // 404 handler

@@ -11,6 +11,14 @@ type NavigationItem = {
   children: NavigationItem[]
 }
 
+function normalizeNavigationPath(url: string) {
+  const value = String(url || '/').trim()
+  if (!value || value === '/') return '/'
+  const prefixed = value.startsWith('/') ? value : `/${value}`
+  const normalized = prefixed.replace(/\/{2,}/g, '/')
+  return normalized !== '/' && normalized.endsWith('/') ? normalized.slice(0, -1) : normalized
+}
+
 const defaultNavigationItems: NavigationItem[] = [
   { label: 'Home', url: '/', isActive: true, sortOrder: 0, children: [] },
   { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10, children: [] },
@@ -23,7 +31,7 @@ const defaultNavigationItems: NavigationItem[] = [
 function normalizeNavigationItem(item: any, index = 0): NavigationItem {
   return {
     label: item?.label || 'New Page',
-    url: item?.url || '/new-page',
+    url: normalizeNavigationPath(item?.url || '/new-page'),
     isActive: item?.isActive !== false,
     sortOrder: Number(item?.sortOrder ?? index * 10),
     children: Array.isArray(item?.children) ? item.children.map((child: any, childIndex: number): NavigationItem => normalizeNavigationItem(child, childIndex)) : []
@@ -76,7 +84,7 @@ export default function Navigation() {
             return {
               ...item,
               label: page.pageTitle || item.label,
-              url: page.pageUrl || item.url,
+              url: normalizeNavigationPath(page.pageUrl || item.url),
               children: []
             }
           }))
