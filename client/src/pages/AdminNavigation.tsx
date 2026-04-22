@@ -3,7 +3,15 @@ import AdminLayout from '../components/AdminLayout'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI } from '../services/api'
 
-const defaultNavigationItems = [
+type NavigationItem = {
+  label: string
+  url: string
+  isActive: boolean
+  sortOrder: number
+  children: NavigationItem[]
+}
+
+const defaultNavigationItems: NavigationItem[] = [
   { label: 'Home', url: '/', isActive: true, sortOrder: 0, children: [] },
   { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10, children: [] },
   { label: 'Services', url: '/services', isActive: true, sortOrder: 20, children: [] },
@@ -12,19 +20,19 @@ const defaultNavigationItems = [
   { label: 'Contact', url: '/contact', isActive: true, sortOrder: 50, children: [] }
 ]
 
-function normalizeNavigationItem(item: any, index = 0) {
+function normalizeNavigationItem(item: any, index = 0): NavigationItem {
   return {
     label: item?.label || 'New Page',
     url: item?.url || '/new-page',
     isActive: item?.isActive !== false,
     sortOrder: Number(item?.sortOrder ?? index * 10),
-    children: Array.isArray(item?.children) ? item.children.map((child: any, childIndex: number) => normalizeNavigationItem(child, childIndex)) : []
+    children: Array.isArray(item?.children) ? item.children.map((child: any, childIndex: number): NavigationItem => normalizeNavigationItem(child, childIndex)) : []
   }
 }
 
-function sortNavigationItems(items: any[]) {
+function sortNavigationItems(items: NavigationItem[]): NavigationItem[] {
   return [...items]
-    .map(item => ({
+    .map((item: NavigationItem): NavigationItem => ({
       ...item,
       children: sortNavigationItems(Array.isArray(item.children) ? item.children : [])
     }))
@@ -32,7 +40,7 @@ function sortNavigationItems(items: any[]) {
 }
 
 export default function AdminNavigation() {
-  const [items, setItems] = useState<any[]>(defaultNavigationItems)
+  const [items, setItems] = useState<NavigationItem[]>(defaultNavigationItems)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -52,14 +60,14 @@ export default function AdminNavigation() {
     fetchNavigation()
   }, [])
 
-  const updateItem = (index: number, field: string, value: any) => {
-    setItems(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item))
+  const updateItem = (index: number, field: keyof NavigationItem, value: any) => {
+    setItems(current => current.map((item: NavigationItem, itemIndex: number) => itemIndex === index ? { ...item, [field]: value } : item))
   }
 
-  const updateChildItem = (parentIndex: number, childIndex: number, field: string, value: any) => {
-    setItems(current => current.map((item, itemIndex) => itemIndex === parentIndex ? {
+  const updateChildItem = (parentIndex: number, childIndex: number, field: keyof NavigationItem, value: any) => {
+    setItems(current => current.map((item: NavigationItem, itemIndex: number) => itemIndex === parentIndex ? {
       ...item,
-      children: (item.children || []).map((child: any, currentChildIndex: number) => currentChildIndex === childIndex ? { ...child, [field]: value } : child)
+      children: (item.children || []).map((child: NavigationItem, currentChildIndex: number) => currentChildIndex === childIndex ? { ...child, [field]: value } : child)
     } : item))
   }
 
@@ -81,13 +89,13 @@ export default function AdminNavigation() {
   }
 
   const removeItem = (index: number) => {
-    setItems(current => current.filter((_, itemIndex) => itemIndex !== index))
+    setItems(current => current.filter((_: NavigationItem, itemIndex: number) => itemIndex !== index))
   }
 
   const removeChildItem = (parentIndex: number, childIndex: number) => {
-    setItems(current => current.map((item, itemIndex) => itemIndex === parentIndex ? {
+    setItems(current => current.map((item: NavigationItem, itemIndex: number) => itemIndex === parentIndex ? {
       ...item,
-      children: (item.children || []).filter((_: any, currentChildIndex: number) => currentChildIndex !== childIndex)
+      children: (item.children || []).filter((_: NavigationItem, currentChildIndex: number) => currentChildIndex !== childIndex)
     } : item))
   }
 
@@ -173,7 +181,7 @@ export default function AdminNavigation() {
                     </div>
                     {(item.children || []).length > 0 ? (
                       <>
-                      {(item.children || []).map((child: any, childIndex: number) => (
+                      {(item.children || []).map((child: NavigationItem, childIndex: number) => (
                         <div key={`${index}-${childIndex}`} className="grid grid-cols-1 gap-3 rounded-lg border bg-white p-3 md:grid-cols-[1fr_1fr_7rem_auto_auto] md:items-center">
                           <input
                             value={child.label || ''}

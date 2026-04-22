@@ -3,7 +3,15 @@ import { useEffect, useState } from 'react'
 import { FiChevronDown, FiMenu, FiMoon, FiSun, FiX } from 'react-icons/fi'
 import { pluginsAPI, resolveAssetUrl, siteSettingsAPI } from '../services/api'
 
-const defaultNavigationItems = [
+type NavigationItem = {
+  label: string
+  url: string
+  isActive: boolean
+  sortOrder: number
+  children: NavigationItem[]
+}
+
+const defaultNavigationItems: NavigationItem[] = [
   { label: 'Home', url: '/', isActive: true, sortOrder: 0, children: [] },
   { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10, children: [] },
   { label: 'Services', url: '/services', isActive: true, sortOrder: 20, children: [] },
@@ -12,19 +20,19 @@ const defaultNavigationItems = [
   { label: 'Contact', url: '/contact', isActive: true, sortOrder: 50, children: [] }
 ]
 
-function normalizeNavigationItem(item: any, index = 0): any {
+function normalizeNavigationItem(item: any, index = 0): NavigationItem {
   return {
     label: item?.label || 'New Page',
     url: item?.url || '/new-page',
     isActive: item?.isActive !== false,
     sortOrder: Number(item?.sortOrder ?? index * 10),
-    children: Array.isArray(item?.children) ? item.children.map((child: any, childIndex: number) => normalizeNavigationItem(child, childIndex)) : []
+    children: Array.isArray(item?.children) ? item.children.map((child: any, childIndex: number): NavigationItem => normalizeNavigationItem(child, childIndex)) : []
   }
 }
 
-function sortNavigationItems(items: any[]) {
+function sortNavigationItems(items: NavigationItem[]): NavigationItem[] {
   return [...items]
-    .map(item => ({ ...item, children: sortNavigationItems(Array.isArray(item.children) ? item.children : []) }))
+    .map((item: NavigationItem): NavigationItem => ({ ...item, children: sortNavigationItems(Array.isArray(item.children) ? item.children : []) }))
     .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
 }
 
@@ -36,7 +44,7 @@ export default function Navigation() {
   const [siteName, setSiteName] = useState('Creative by Caleb')
   const [logoUrl, setLogoUrl] = useState('')
   const [logoSize, setLogoSize] = useState(40)
-  const [navigationItems, setNavigationItems] = useState(defaultNavigationItems)
+  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(defaultNavigationItems)
   const [hasActivePlugins, setHasActivePlugins] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('siteTheme') || 'light')
   const location = useLocation()
@@ -99,10 +107,10 @@ export default function Navigation() {
     localStorage.setItem('siteTheme', theme)
   }, [theme])
 
-  const filterNavigationItems = (items: any[]) => sortNavigationItems(items)
-    .filter(item => item.isActive !== false)
-    .filter(item => item.url !== '/plugins' || hasActivePlugins)
-    .map(item => ({
+  const filterNavigationItems = (items: NavigationItem[]): NavigationItem[] => sortNavigationItems(items)
+    .filter((item: NavigationItem) => item.isActive !== false)
+    .filter((item: NavigationItem) => item.url !== '/plugins' || hasActivePlugins)
+    .map((item: NavigationItem): NavigationItem => ({
       ...item,
       children: filterNavigationItems(Array.isArray(item.children) ? item.children : [])
     }))
@@ -142,7 +150,7 @@ export default function Navigation() {
                 )
               }
 
-              const isParentActive = isSectionActive(item.url) || children.some((child: any) => isActive(child.url) || isSectionActive(child.url))
+              const isParentActive = isSectionActive(item.url) || children.some((child: NavigationItem) => isActive(child.url) || isSectionActive(child.url))
 
               return (
                 <div
@@ -165,7 +173,7 @@ export default function Navigation() {
                     </button>
                   </div>
                   <div className={`absolute left-0 top-full z-50 mt-2 min-w-[14rem] rounded-lg border bg-white p-2 shadow-xl transition ${desktopOpenDropdown === dropdownKey ? 'visible opacity-100 translate-y-0' : 'invisible -translate-y-1 opacity-0'}`}>
-                    {children.map((child: any) => (
+                    {children.map((child: NavigationItem) => (
                       <Link key={`${child.label}-${child.url}`} to={child.url} className={`block rounded-md px-3 py-2 text-sm font-medium transition ${isActive(child.url) || isSectionActive(child.url) ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'}`}>
                         {child.label}
                       </Link>
@@ -231,7 +239,7 @@ export default function Navigation() {
                   </div>
                   {mobileOpenDropdown === dropdownKey && (
                     <div className="mt-2 space-y-1 border-t pt-2">
-                      {children.map((child: any) => (
+                      {children.map((child: NavigationItem) => (
                         <Link key={`${child.label}-${child.url}`} to={child.url} className="block rounded-md px-2 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600">
                           {child.label}
                         </Link>
