@@ -366,12 +366,16 @@ function GallerySection({ section }: { section: any }) {
 
 function HeroSection({ section }: { section: any }) {
   const hasHeroForm = Boolean(section.heroFormEnabled)
+  const heroMinHeight = Number(section.heroHeight || 0)
   return (
-    <section className={`relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-800 text-white ${hasHeroForm ? 'py-12 md:py-16' : 'py-20 md:py-32'}`}>
+    <section
+      className={`relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-800 text-white ${hasHeroForm ? 'py-12 md:py-16' : 'py-20 md:py-32'}`}
+      style={heroMinHeight > 0 ? { minHeight: `${heroMinHeight}px` } : undefined}
+    >
       {section.imageUrl && section.mediaType !== 'video' && <img src={resolveAssetUrl(section.imageUrl)} alt="" className="absolute inset-0 h-full w-full object-cover" />}
       {section.imageUrl && section.mediaType === 'video' && <video src={resolveAssetUrl(section.imageUrl)} className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline />}
       <div className="absolute inset-0 bg-blue-950/55"></div>
-      <div className="container relative">
+      <div className={`container relative ${heroMinHeight > 0 ? 'flex items-center' : ''}`} style={heroMinHeight > 0 ? { minHeight: `${heroMinHeight}px` } : undefined}>
         <div className={`grid grid-cols-1 items-center gap-10 ${hasHeroForm ? 'lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]' : ''}`}>
           <div className="max-w-3xl">
             <h1 className="text-4xl font-bold md:text-6xl">{section.title}</h1>

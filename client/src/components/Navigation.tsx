@@ -172,12 +172,14 @@ export default function Navigation() {
                       <FiChevronDown className={`transition-transform ${desktopOpenDropdown === dropdownKey ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
-                  <div className={`absolute left-0 top-full z-50 mt-2 min-w-[14rem] rounded-lg border bg-white p-2 shadow-xl transition ${desktopOpenDropdown === dropdownKey ? 'visible opacity-100 translate-y-0' : 'invisible -translate-y-1 opacity-0'}`}>
-                    {children.map((child: NavigationItem) => (
-                      <Link key={`${child.label}-${child.url}`} to={child.url} className={`block rounded-md px-3 py-2 text-sm font-medium transition ${isActive(child.url) || isSectionActive(child.url) ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'}`}>
-                        {child.label}
-                      </Link>
-                    ))}
+                  <div className={`absolute left-0 top-full z-50 min-w-[14rem] pt-2 transition ${desktopOpenDropdown === dropdownKey ? 'visible opacity-100 translate-y-0' : 'invisible -translate-y-1 opacity-0'}`}>
+                    <div className="rounded-lg border bg-white p-2 shadow-xl">
+                      {children.map((child: NavigationItem) => (
+                        <Link key={`${child.label}-${child.url}`} to={child.url} className={`block rounded-md px-3 py-2 text-sm font-medium transition ${isActive(child.url) || isSectionActive(child.url) ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'}`}>
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )

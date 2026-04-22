@@ -214,6 +214,7 @@ function makePageSection(type: string) {
     secondaryButtonLabel: '',
     secondaryButtonUrl: '',
     heroFormEnabled: false,
+    heroHeight: '',
     items: defaultItems(),
     overlayColor: '',
     overlayOpacity: 55,
@@ -1828,6 +1829,14 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
             {section.imageUrl && section.type !== 'cta' && <img src={resolveAssetUrl(section.imageUrl)} alt="" className="h-40 w-full rounded-lg object-cover" />}
             {section.type === 'hero' && (
               <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
+                <label className="grid grid-cols-[6rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+                  <span className="font-semibold">Height</span>
+                  <input type="range" min="320" max="1080" step="10" value={Number(section.heroHeight || (section.heroFormEnabled ? 520 : 640))} onChange={(e) => updateSection(index, 'heroHeight', e.target.value)} className="w-full accent-blue-600" />
+                  <div className="flex items-center gap-1">
+                    <input type="number" min="320" max="1080" value={section.heroHeight || ''} onChange={(e) => updateSection(index, 'heroHeight', e.target.value)} placeholder={section.heroFormEnabled ? '520' : '640'} className="w-full rounded-lg border px-2 py-1 text-right" />
+                    <span className="text-xs text-gray-500">px</span>
+                  </div>
+                </label>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                   <input type="checkbox" checked={Boolean(section.heroFormEnabled)} onChange={(e) => updateSection(index, 'heroFormEnabled', e.target.checked)} />
                   Show CRM form in hero
