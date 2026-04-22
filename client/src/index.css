@@ -141,10 +141,6 @@ html.dark-mode .shadow-sm {
   }
 }
 
-main {
-  animation: fadeInUp 0.5s ease-out;
-}
-
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -170,6 +166,26 @@ main {
 .page-section-render .btn-primary {
   background-color: var(--section-button-bg, #2563eb) !important;
   color: var(--section-button-text, #ffffff) !important;
+}
+
+.page-section-render .section-button {
+  background-color: var(--section-button-bg, #2563eb) !important;
+  color: var(--section-button-text, #ffffff) !important;
+  border-radius: var(--section-button-radius, 0.5rem) !important;
+  padding: var(--section-button-py, 0.75rem) var(--section-button-px, 1.5rem) !important;
+  font-weight: var(--section-button-weight, 600) !important;
+  line-height: 1.2;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.page-section-render .section-button:hover {
+  background-color: var(--section-button-hover-bg, var(--section-button-bg, #1d4ed8)) !important;
+  transform: var(--section-button-hover-transform, translateY(-2px));
+  box-shadow: var(--section-button-hover-shadow, 0 12px 24px rgba(15, 23, 42, 0.16));
 }
 
 .page-section-render {
@@ -365,11 +381,13 @@ html.dark-mode .rich-text-editor:empty::before {
 }
 
 .btn-primary {
-  @apply px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200 transform hover:scale-105;
+  @apply px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700;
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .btn-secondary {
-  @apply px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200;
+  @apply px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300;
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .section-title {
@@ -378,8 +396,8 @@ html.dark-mode .rich-text-editor:empty::before {
 }
 
 .card {
-  @apply bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300;
-  animation: fadeInUp 0.5s ease-out;
+  @apply bg-white rounded-lg shadow-lg hover:shadow-xl;
+  transition: box-shadow 220ms ease, transform 220ms ease;
 }
 
 /* Skeleton Loader Shimmer Effect */
@@ -396,7 +414,7 @@ html.dark-mode .rich-text-editor:empty::before {
 
 /* Smooth transitions for all interactive elements */
 a, button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease, transform 180ms ease;
 }
 
 /* Loading bar at top of page */
@@ -428,15 +446,6 @@ a, button {
 }
 
 /* Text animations */
-h1, h2, h3 {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-/* Image lazy loading fade in */
-img {
-  animation: fadeIn 0.3s ease-out;
-}
-
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;

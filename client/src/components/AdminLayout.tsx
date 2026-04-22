@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { FiArrowLeft, FiArrowRight, FiBarChart, FiBell, FiChevronDown, FiChevronRight, FiCreditCard, FiFileText, FiGrid, FiHelpCircle, FiHome, FiImage, FiInbox, FiLogOut, FiMoon, FiSearch, FiSettings, FiSun, FiUsers } from 'react-icons/fi'
+import { FiArrowLeft, FiArrowRight, FiBarChart, FiBell, FiChevronDown, FiChevronRight, FiCreditCard, FiFileText, FiGrid, FiHelpCircle, FiHome, FiImage, FiInbox, FiLogOut, FiMenu, FiMonitor, FiMoon, FiSearch, FiSettings, FiSun, FiUsers } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { adminAPI, ticketsAPI } from '../services/api'
@@ -68,6 +68,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
   const [customPages, setCustomPages] = useState<any[]>([])
   const [theme, setTheme] = useState(() => localStorage.getItem('siteTheme') || 'light')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [menuSearch, setMenuSearch] = useState('')
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notificationItems, setNotificationItems] = useState<any[]>([])
@@ -89,6 +90,11 @@ export default function AdminLayout({ title, children }: { title: string; childr
     document.documentElement.classList.toggle('dark-mode', theme === 'dark')
     localStorage.setItem('siteTheme', theme)
   }, [theme])
+
+  useEffect(() => {
+    setMobileSidebarOpen(false)
+    setNotificationsOpen(false)
+  }, [location.pathname, location.search])
 
   useEffect(() => {
     let isMounted = true
@@ -217,10 +223,11 @@ export default function AdminLayout({ title, children }: { title: string; childr
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
-      <aside className={`flex bg-white shadow-sm transition-all duration-300 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:flex-col ${sidebarOpen ? 'lg:w-72' : 'lg:w-16'}`}>
+      {mobileSidebarOpen && <button type="button" aria-label="Close admin navigation" onClick={() => setMobileSidebarOpen(false)} className="fixed inset-0 z-40 bg-gray-950/45 lg:hidden" />}
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-[17.5rem] max-w-[88vw] bg-white shadow-sm transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:flex-col lg:translate-x-0 lg:transition-all ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarOpen ? 'lg:w-72' : 'lg:w-16'}`}>
         <div className="flex w-full flex-col border-b border-gray-200 lg:h-full lg:border-b-0 lg:border-r">
           <div className={`border-b border-gray-200 ${sidebarOpen ? 'p-5' : 'p-3'}`}>
-            <div className={`flex items-center ${sidebarOpen ? 'justify-between gap-3' : 'justify-center'}`}>
+            <div className={`flex ${sidebarOpen ? 'items-center justify-between gap-3' : 'flex-col items-center gap-2'}`}>
               <Link to="/admin/dashboard" className={`inline-flex min-w-0 items-center gap-2 text-lg font-black text-gray-900 ${sidebarOpen ? '' : 'justify-center'}`} title="Admin Portal">
                 <FiGrid className="shrink-0 text-blue-600" />
                 {sidebarOpen && <span className="truncate">Admin Portal</span>}
@@ -253,7 +260,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
               {primaryLinks.filter(link => matchesSearch(link.label)).map((link) => {
                 const Icon = link.icon
                 return (
-                  <NavLink key={link.path} to={link.path} className={sidebarOpen ? sidebarLinkClass : collapsedLinkClass} title={link.label}>
+                  <NavLink key={link.path} to={link.path} onClick={() => setMobileSidebarOpen(false)} className={sidebarOpen ? sidebarLinkClass : collapsedLinkClass} title={link.label}>
                     <span className="inline-flex items-center gap-2">
                       <Icon size={16} />
                       {sidebarOpen && link.label}
@@ -308,6 +315,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                         <Link
                           key={link.path}
                           to={link.path}
+                          onClick={() => setMobileSidebarOpen(false)}
                           className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
                             link.active
                               ? 'bg-blue-600 text-white'
@@ -325,7 +333,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                     const Icon = link.icon
                     const badgeCount = getBadgeCount('badgeKey' in link ? (link as any).badgeKey : undefined)
                     return (
-                      <NavLink key={link.path} to={link.path} className={sidebarLinkClass}>
+                      <NavLink key={link.path} to={link.path} onClick={() => setMobileSidebarOpen(false)} className={sidebarLinkClass}>
                         <span className="inline-flex items-center gap-2">
                           <Icon size={16} />
                           {link.label}
@@ -348,7 +356,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
               {utilityLinks.filter(link => matchesSearch(link.label)).map((link) => {
                 const Icon = link.icon
                 return (
-                  <NavLink key={link.path} to={link.path} className={sidebarOpen ? sidebarLinkClass : collapsedLinkClass} title={link.label}>
+                  <NavLink key={link.path} to={link.path} onClick={() => setMobileSidebarOpen(false)} className={sidebarOpen ? sidebarLinkClass : collapsedLinkClass} title={link.label}>
                     <span className="inline-flex items-center gap-2">
                       <Icon size={16} />
                       {sidebarOpen && link.label}
@@ -362,10 +370,11 @@ export default function AdminLayout({ title, children }: { title: string; childr
           <div className={`mt-auto space-y-2 border-t border-gray-200 ${sidebarOpen ? 'p-4' : 'p-3'}`}>
             <Link
               to="/"
+              onClick={() => setMobileSidebarOpen(false)}
               className="flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
               title="Back to Website"
             >
-              <FiHome />
+              <FiMonitor />
               {sidebarOpen && 'Back to Website'}
             </Link>
             <button
@@ -392,11 +401,16 @@ export default function AdminLayout({ title, children }: { title: string; childr
         <div className="border-b border-gray-200 bg-white">
           <div className={isPageEditor ? 'px-4 py-5' : 'container py-5'}>
             <div className="flex items-center justify-between gap-4">
-              <div>
-                <Link to="/admin/dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
-                  Admin Panel
-                </Link>
-                <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setMobileSidebarOpen(true)} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 lg:hidden" aria-label="Open admin navigation">
+                  <FiMenu size={18} />
+                </button>
+                <div>
+                  <Link to="/admin/dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
+                    Admin Panel
+                  </Link>
+                  <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+                </div>
               </div>
               <div className="relative">
                 <button

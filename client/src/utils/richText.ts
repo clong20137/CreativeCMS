@@ -10,6 +10,13 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#39;')
 }
 
+function decodeHtmlEntities(value: string) {
+  if (!value) return ''
+  const parser = new DOMParser()
+  const documentNode = parser.parseFromString(`<textarea>${value}</textarea>`, 'text/html')
+  return documentNode.querySelector('textarea')?.value || value
+}
+
 function hasMarkup(value: string) {
   return /<\/?[a-z][\s\S]*>/i.test(value)
 }
@@ -99,12 +106,12 @@ export function sanitizeRichTextHtml(value: string) {
   }
 
   sanitizeChildren(root)
-  return root.innerHTML
+  return root.innerHTML.replace(/&nbsp;/g, ' ').replace(/\u00A0/g, ' ')
 }
 
 export function normalizeRichTextHtml(value?: string | null) {
   const source = String(value || '')
   if (!source.trim()) return ''
   if (hasMarkup(source)) return sanitizeRichTextHtml(source)
-  return escapeHtml(source).replace(/\n/g, '<br>')
+  return escapeHtml(decodeHtmlEntities(source).replace(/\u00A0/g, ' ')).replace(/\n/g, '<br>')
 }

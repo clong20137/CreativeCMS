@@ -94,6 +94,21 @@ function getSectionSpacingStyle(section: any) {
     const number = Number(value)
     return Number.isFinite(number) ? String(number) : undefined
   }
+  const hoverEffect = section.buttonHoverEffect || 'lift'
+  const hoverTransform = hoverEffect === 'grow'
+    ? 'scale(1.04)'
+    : hoverEffect === 'glow'
+      ? 'translateY(-1px)'
+      : hoverEffect === 'none'
+        ? 'none'
+        : 'translateY(-2px)'
+  const hoverShadow = hoverEffect === 'glow'
+    ? '0 16px 36px rgba(37, 99, 235, 0.28)'
+    : hoverEffect === 'lift'
+      ? '0 12px 24px rgba(15, 23, 42, 0.16)'
+      : hoverEffect === 'grow'
+        ? '0 10px 20px rgba(15, 23, 42, 0.14)'
+        : 'none'
 
   return {
     marginTop: toPixels(section.marginTop),
@@ -119,6 +134,12 @@ function getSectionSpacingStyle(section: any) {
     '--section-text-color': section.textColor || undefined,
     '--section-button-bg': section.buttonBackgroundColor || undefined,
     '--section-button-text': section.buttonTextColor || undefined,
+    '--section-button-hover-bg': section.buttonHoverBackgroundColor || section.buttonBackgroundColor || undefined,
+    '--section-button-radius': toPixels(section.buttonBorderRadius),
+    '--section-button-px': toPixels(section.buttonPaddingX),
+    '--section-button-py': toPixels(section.buttonPaddingY),
+    '--section-button-hover-transform': hoverTransform,
+    '--section-button-hover-shadow': hoverShadow,
     '--section-text-align': section.textAlign || undefined,
     '--section-heading-size': toPixels(section.headingFontSize),
     '--section-body-size': toPixels(section.bodyFontSize),
@@ -153,7 +174,7 @@ function PageSection({ section }: { section: any }) {
             <h2 className="text-4xl font-bold md:text-6xl">{section.title}</h2>
             {section.body && <RichTextContent html={section.body} className="mt-6 text-xl text-blue-100" />}
             {section.buttonLabel && section.buttonUrl && (
-              <Link to={section.buttonUrl} className="btn-primary mt-8 inline-flex">
+              <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center">
                 {section.buttonLabel}
               </Link>
             )}
@@ -180,7 +201,7 @@ function PageSection({ section }: { section: any }) {
       <section className="section-padding">
         <div className="container max-w-5xl">
           <figure>
-            <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || ''} className="w-full rounded-lg object-cover" />
+            <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || ''} loading="lazy" decoding="async" className="w-full rounded-lg object-cover" />
             {(section.title || section.body) && (
               <figcaption className="mt-3 text-sm text-gray-600">
                 {section.title && <strong className="text-gray-900">{section.title}</strong>} {section.body}
@@ -277,7 +298,7 @@ function ColumnBlock({ block }: { block: any }) {
   }
 
   if (block.type === 'image') {
-    return block.imageUrl ? <img src={resolveAssetUrl(block.imageUrl)} alt={block.alt || block.title || ''} className="w-full rounded-lg object-cover" /> : null
+    return block.imageUrl ? <img src={resolveAssetUrl(block.imageUrl)} alt={block.alt || block.title || ''} loading="lazy" decoding="async" className="w-full rounded-lg object-cover" /> : null
   }
 
   if (block.type === 'imageCard') {
@@ -306,8 +327,8 @@ function ImageCardsSection({ section }: { section: any }) {
 function ImageCard({ item }: { item: any }) {
   return (
     <article className="card overflow-hidden">
-      {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || ''} className="h-64 w-full object-cover" />}
-      {item.imageUrl && !item.image && <img src={resolveAssetUrl(item.imageUrl)} alt={item.title || ''} className="h-64 w-full object-cover" />}
+      {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || ''} loading="lazy" decoding="async" className="h-64 w-full object-cover" />}
+      {item.imageUrl && !item.image && <img src={resolveAssetUrl(item.imageUrl)} alt={item.title || ''} loading="lazy" decoding="async" className="h-64 w-full object-cover" />}
       <div className="p-6">
         {(item.category || item.subtitle) && <p className="text-sm font-semibold text-blue-600">{item.category || item.subtitle}</p>}
         {item.title && <h3 className="mt-2 text-2xl font-bold text-gray-900">{item.title}</h3>}
@@ -331,7 +352,7 @@ function ImageOverlaySection({ section }: { section: any }) {
         <div className="max-w-2xl">
           {section.title && <h2 className="text-4xl font-bold md:text-6xl">{section.title}</h2>}
           {section.body && <RichTextContent html={section.body} className="mt-5 text-lg text-gray-100 md:text-xl" />}
-          {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="btn-primary mt-8 inline-flex">{section.buttonLabel}</Link>}
+          {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center">{section.buttonLabel}</Link>}
         </div>
       </div>
     </section>
@@ -348,7 +369,7 @@ function GallerySection({ section }: { section: any }) {
         <div className={`grid grid-cols-1 gap-4 ${columnClasses[Number(section.columns || 3)] || columnClasses[3]}`}>
           {items.map((item: any, index: number) => (
             <figure key={item.id || index} className="group overflow-hidden rounded-lg bg-gray-100">
-              {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || section.title || ''} className="h-72 w-full object-cover transition duration-300 group-hover:scale-105" />}
+              {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || section.title || ''} loading="lazy" decoding="async" className="h-72 w-full object-cover transition duration-300 group-hover:scale-105" />}
               {(item.title || item.description) && (
                 <figcaption className="p-4">
                   {item.title && <h3 className="font-bold text-gray-900">{item.title}</h3>}
@@ -381,7 +402,7 @@ function HeroSection({ section }: { section: any }) {
             <h1 className="text-4xl font-bold md:text-6xl">{section.title}</h1>
             {section.body && <RichTextContent html={section.body} className="mt-6 text-xl text-blue-100 md:text-2xl" />}
             <div className="mt-8 flex flex-wrap gap-4">
-              {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="btn-primary inline-flex items-center gap-2">{section.buttonLabel} <FiArrowRight /></Link>}
+              {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="section-button inline-flex items-center justify-center gap-2">{section.buttonLabel} <FiArrowRight /></Link>}
               {section.secondaryButtonLabel && section.secondaryButtonUrl && <Link to={section.secondaryButtonUrl} className="btn-secondary inline-flex">{section.secondaryButtonLabel}</Link>}
             </div>
           </div>
@@ -433,7 +454,7 @@ function FeaturedWorkSection({ section }: { section: any }) {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {items.map((work: any, index: number) => (
             <div key={work.id || index} className="card overflow-hidden transition hover:shadow-2xl">
-              {work.image && <img src={resolveAssetUrl(work.image)} alt={work.title} className="h-64 w-full object-cover transition-transform duration-300 hover:scale-105" />}
+              {work.image && <img src={resolveAssetUrl(work.image)} alt={work.title} loading="lazy" decoding="async" className="h-64 w-full object-cover transition-transform duration-300 hover:scale-105" />}
               <div className="p-6">
                 <span className="text-sm font-semibold text-blue-600">{work.category}</span>
                 <h3 className="mt-2 text-2xl font-bold text-gray-900">{work.title}</h3>
@@ -584,7 +605,7 @@ function PortfolioGallerySection({ section }: { section: any }) {
             {filteredItems.map(item => (
               <div key={item.id} className="card group cursor-pointer overflow-hidden transition hover:shadow-2xl">
                 <div className="relative h-64 overflow-hidden bg-gray-100">
-                  {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title} className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105" />}
+                  {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title} loading="lazy" decoding="async" className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105" />}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                     <Link to={`/portfolio/${item.id}`} className="btn-primary">View Details</Link>
                   </div>
@@ -870,7 +891,7 @@ function SiteDemosSection({ section }: { section: any }) {
           <div className={`grid grid-cols-1 gap-6 ${columnClasses[Number(section.columns || 3)] || columnClasses[3]}`}>
             {demos.slice(0, limit).map(demo => (
               <article key={demo.id || demo.slug} className="group overflow-hidden rounded-lg bg-white shadow transition hover:-translate-y-1 hover:shadow-xl">
-                {demo.previewImage && <img src={resolveAssetUrl(demo.previewImage)} alt={demo.name} className="h-64 w-full object-cover transition duration-300 group-hover:scale-105" />}
+                {demo.previewImage && <img src={resolveAssetUrl(demo.previewImage)} alt={demo.name} loading="lazy" decoding="async" className="h-64 w-full object-cover transition duration-300 group-hover:scale-105" />}
                 <div className="p-6">
                   <p className="site-demo-card-meta text-xs font-bold uppercase tracking-wide text-blue-600">{demo.category}</p>
                   <h3 className="site-demo-card-heading mt-2 text-2xl font-bold text-gray-900">{demo.name}</h3>
@@ -999,7 +1020,7 @@ function CtaSection({ section }: { section: any }) {
       <div className="container text-center">
         <h2 className="text-3xl font-bold md:text-4xl">{section.title}</h2>
         {section.body && <RichTextContent html={section.body} className="mx-auto mt-6 max-w-2xl text-xl text-blue-100" />}
-        {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="btn-primary mt-8 inline-block">{section.buttonLabel}</Link>}
+        {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center">{section.buttonLabel}</Link>}
       </div>
     </section>
   )
@@ -1038,7 +1059,7 @@ function PluginContent({ pluginSlug, data, section = {} }: { pluginSlug: string;
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {items.slice(0, 6).map((item: any) => (
           <article key={item.id} className="overflow-hidden rounded-lg bg-white shadow">
-            {item.image && <img src={resolveAssetUrl(item.image)} alt={item.name} className="h-40 w-full object-cover" />}
+            {item.image && <img src={resolveAssetUrl(item.image)} alt={item.name} loading="lazy" decoding="async" className="h-40 w-full object-cover" />}
             <div className="p-4">
               <div className="flex justify-between gap-3">
                 <h3 className="font-bold text-gray-900">{item.name}</h3>
@@ -1060,7 +1081,7 @@ function PluginContent({ pluginSlug, data, section = {} }: { pluginSlug: string;
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {listings.slice(0, 4).map((listing: any) => (
           <article key={listing.id} className="overflow-hidden rounded-lg bg-white shadow">
-            {listing.image && <img src={resolveAssetUrl(listing.image)} alt={listing.title} className="h-44 w-full object-cover" />}
+            {listing.image && <img src={resolveAssetUrl(listing.image)} alt={listing.title} loading="lazy" decoding="async" className="h-44 w-full object-cover" />}
             <div className="p-4">
               <p className="font-bold text-blue-600">{formatCurrency(listing.price)}</p>
               <h3 className="mt-1 font-bold text-gray-900">{listing.title}</h3>
@@ -1099,7 +1120,7 @@ function PluginContent({ pluginSlug, data, section = {} }: { pluginSlug: string;
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {events.slice(0, 4).map((event: any) => (
           <article key={event.id} className="overflow-hidden rounded-lg bg-white shadow">
-            {event.image && <img src={resolveAssetUrl(event.image)} alt={event.title} className="h-44 w-full object-cover" />}
+            {event.image && <img src={resolveAssetUrl(event.image)} alt={event.title} loading="lazy" decoding="async" className="h-44 w-full object-cover" />}
             <div className="p-4">
               <p className="text-sm font-bold uppercase text-blue-600">{formatDate(event.eventDate)}</p>
               <h3 className="mt-1 font-bold text-gray-900">{event.title}</h3>
@@ -1120,7 +1141,7 @@ function PluginContent({ pluginSlug, data, section = {} }: { pluginSlug: string;
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {items.slice(0, 4).map((item: any) => (
           <article key={item.id} className="overflow-hidden rounded-lg bg-white shadow">
-            {item.previewImage && <img src={resolveAssetUrl(item.previewImage)} alt={item.title} className="h-44 w-full object-cover" />}
+            {item.previewImage && <img src={resolveAssetUrl(item.previewImage)} alt={item.title} loading="lazy" decoding="async" className="h-44 w-full object-cover" />}
             <div className="p-4">
               <p className="text-sm font-bold uppercase text-blue-600">{item.contentType}</p>
               <h3 className="mt-1 font-bold text-gray-900">{item.title}</h3>

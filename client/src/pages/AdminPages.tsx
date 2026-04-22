@@ -213,6 +213,11 @@ function makePageSection(type: string) {
     buttonUrl: '/contact',
     secondaryButtonLabel: '',
     secondaryButtonUrl: '',
+    buttonHoverBackgroundColor: '',
+    buttonBorderRadius: '',
+    buttonPaddingX: '',
+    buttonPaddingY: '',
+    buttonHoverEffect: 'lift',
     heroFormEnabled: false,
     heroHeight: '',
     items: defaultItems(),
@@ -332,6 +337,95 @@ function cloneSectionWithNewIds(section: any) {
   return cloned
 }
 
+function clampScore(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function stripHtml(value: string) {
+  return String(value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function buildPageEditorInsights(page: any, sections: any[] = []) {
+  let seo = 100
+  let mobile = 100
+  let speed = 100
+  const suggestions: Array<{ category: 'SEO' | 'Mobile' | 'Speed'; text: string; priority: 'high' | 'medium' }> = []
+
+  const title = String(page?.title || page?.pageTitle || '').trim()
+  const metaTitle = String(page?.metaTitle || '').trim()
+  const metaDescription = String(page?.metaDescription || '').trim()
+  const slug = String(page?.slug || page?.pageUrl || '').trim()
+  const headerTitle = String(page?.headerTitle || '').trim()
+  const bodyText = sections.map(section => stripHtml(section?.body || '')).join(' ').trim()
+  const heroSections = sections.filter(section => section?.type === 'hero')
+  const imageSections = sections.filter(section => ['image', 'gallery', 'imageCards', 'imageOverlay', 'portfolio', 'portfolioGallery'].includes(section?.type))
+  const missingAltCount = sections.filter(section => section?.imageUrl && !String(section?.alt || '').trim()).length
+
+  if (!title || title.length < 4) {
+    seo -= 18
+    suggestions.push({ category: 'SEO', priority: 'high', text: 'Add a clear page title so search engines and visitors know what this page is about.' })
+  }
+  if (!metaTitle || metaTitle.length < 20 || metaTitle.length > 60) {
+    seo -= 14
+    suggestions.push({ category: 'SEO', priority: 'high', text: 'Keep the SEO title between about 20 and 60 characters so it has a better chance of showing cleanly in Google.' })
+  }
+  if (!metaDescription || metaDescription.length < 70 || metaDescription.length > 160) {
+    seo -= 12
+    suggestions.push({ category: 'SEO', priority: 'medium', text: 'Write a meta description around 70 to 160 characters to improve click-through rate from search.' })
+  }
+  if (!slug || !slug.startsWith('/')) {
+    seo -= 8
+    suggestions.push({ category: 'SEO', priority: 'medium', text: 'Use a clean URL path that starts with a slash, like /services or /locations.' })
+  }
+  if (!headerTitle && !heroSections.length) {
+    seo -= 10
+    suggestions.push({ category: 'SEO', priority: 'medium', text: 'Add a visible heading or hero title so the page has a strong main heading.' })
+  }
+  if (bodyText.length < 140) {
+    seo -= 10
+    suggestions.push({ category: 'SEO', priority: 'medium', text: 'This page is still light on content. Add more useful copy to help it rank for real searches.' })
+  }
+  if (missingAltCount > 0) {
+    seo -= Math.min(12, missingAltCount * 4)
+    suggestions.push({ category: 'SEO', priority: 'medium', text: `Add alt text to ${missingAltCount} image${missingAltCount === 1 ? '' : 's'} so the page is more accessible and better described.` })
+  }
+
+  if (heroSections.some(section => Number(section?.heroHeight || 0) > 760)) {
+    mobile -= 14
+    suggestions.push({ category: 'Mobile', priority: 'medium', text: 'The hero is very tall. Shortening it a bit will show more content above the fold on phones.' })
+  }
+  if (sections.some(section => Number(section?.columns || 1) >= 3)) {
+    mobile -= 10
+    suggestions.push({ category: 'Mobile', priority: 'medium', text: 'Three-column layouts can feel cramped on phones. Check mobile preview and reduce columns where needed.' })
+  }
+  if (sections.length > 10) {
+    mobile -= 8
+    speed -= 6
+    suggestions.push({ category: 'Mobile', priority: 'medium', text: 'This page is getting long. Combine lighter sections where possible to keep mobile scrolling focused.' })
+  }
+
+  if (heroSections.some(section => section?.mediaType === 'video')) {
+    speed -= 18
+    suggestions.push({ category: 'Speed', priority: 'high', text: 'Hero videos are expensive on mobile. Use them sparingly or fall back to a compressed image.' })
+  }
+  if (imageSections.length >= 4) {
+    speed -= 10
+    suggestions.push({ category: 'Speed', priority: 'medium', text: 'This page uses a lot of imagery. Make sure uploaded images are compressed and sized close to how they render.' })
+  }
+  if (sections.some(section => section?.animationType && section.animationType !== 'none')) {
+    speed -= 6
+    suggestions.push({ category: 'Speed', priority: 'medium', text: 'Multiple entrance animations can add extra work on slower devices. Use them where they matter most.' })
+  }
+
+  return {
+    overall: clampScore((seo + mobile + speed) / 3),
+    seo: clampScore(seo),
+    mobile: clampScore(mobile),
+    speed: clampScore(speed),
+    suggestions: suggestions.slice(0, 6)
+  }
+}
+
 function RichTextEditorField({ label, value, onChange, placeholder = 'Start typing...', minHeight = 140 }: any) {
   const editorRef = useRef<HTMLDivElement | null>(null)
   const savedRangeRef = useRef<Range | null>(null)
@@ -445,7 +539,8 @@ function RichTextEditorField({ label, value, onChange, placeholder = 'Start typi
             <input type="color" onChange={(e) => applyCommand('foreColor', e.target.value)} className="h-7 w-8 cursor-pointer rounded border p-0" title="Change text color" />
           </label>
           {linkPopoverOpen && (
-            <div className="absolute left-2 top-full z-20 mt-2 w-80 rounded-lg border bg-white p-4 shadow-xl">
+            <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/40 p-4" onMouseDown={() => setLinkPopoverOpen(false)}>
+              <div className="w-full max-w-md rounded-lg border bg-white p-4 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
               <div className="space-y-3">
                 <div>
                   <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Link URL</label>
@@ -476,6 +571,7 @@ function RichTextEditorField({ label, value, onChange, placeholder = 'Start typi
                   <button type="button" onClick={applyLinkSettings} className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">Apply Link</button>
                 </div>
               </div>
+            </div>
             </div>
           )}
         </div>
@@ -530,6 +626,20 @@ export default function AdminPages() {
   const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
 
   const activeBuiltInPageKey = publicPages.some(page => page.id === activeTab) ? activeTab : ''
+  const activeBuiltInMetadata = activeBuiltInPageKey ? (settings.pageMetadata?.[activeBuiltInPageKey] || {}) : {}
+  const activeBuiltInHeader = activeBuiltInPageKey ? (settings.pageHeaders?.[activeBuiltInPageKey] || {}) : {}
+  const activeBuiltInSections = activeBuiltInPageKey ? getBuiltInSections(activeBuiltInPageKey) : []
+  const pageInsights = useMemo(() => {
+    if (activeTab === 'Custom Pages') return buildPageEditorInsights(pageDraft, pageDraft.sections || [])
+
+    return buildPageEditorInsights({
+      title: activeBuiltInMetadata.pageTitle || publicPages.find(page => page.id === activeBuiltInPageKey)?.label || '',
+      metaTitle: activeBuiltInMetadata.metaTitle || '',
+      metaDescription: activeBuiltInMetadata.metaDescription || '',
+      slug: activeBuiltInMetadata.pageUrl || publicPages.find(page => page.id === activeBuiltInPageKey)?.url || '',
+      headerTitle: activeBuiltInMetadata.headerTitle || activeBuiltInHeader.title || ''
+    }, activeBuiltInSections)
+  }, [activeTab, activeBuiltInHeader.title, activeBuiltInMetadata, activeBuiltInPageKey, activeBuiltInSections, pageDraft])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -751,9 +861,11 @@ export default function AdminPages() {
     })
   }
 
-  const getBuiltInSections = (pageKey: string) => Array.isArray(settings.pageSections?.[pageKey]) ? settings.pageSections[pageKey] : []
+  function getBuiltInSections(pageKey: string) {
+    return Array.isArray(settings.pageSections?.[pageKey]) ? settings.pageSections[pageKey] : []
+  }
 
-  const updateBuiltInSections = (pageKey: string, sections: any[]) => {
+  function updateBuiltInSections(pageKey: string, sections: any[]) {
     recordHistory()
     setSettings(prev => ({
       ...prev,
@@ -1259,15 +1371,8 @@ export default function AdminPages() {
                   redoPageChange={redoPageChange}
                   onDrop={handlePreviewDrop}
                   emptyText={pageDraft.content || 'Drag a section from the right panel into the preview.'}
+                  insights={pageInsights}
                 />
-                <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
-                  <input type="checkbox" checked={Boolean(pageDraft.isPublished)} onChange={(e) => updatePageDraft('isPublished', e.target.checked)} />
-                  Publish this page
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <button type="submit" className="btn-primary">Save Page</button>
-                  {selectedPageId !== 'new' && <button type="button" onClick={deleteCustomPage} className="btn-secondary text-red-600">Delete Page</button>}
-                </div>
               </form>
             </section>
           ) : (
@@ -1447,10 +1552,10 @@ export default function AdminPages() {
                     redoPageChange={redoPageChange}
                     onDrop={handlePreviewDrop}
                     emptyText="Drag a section from the right panel into the preview."
+                    insights={pageInsights}
                   />
                 )}
               </div>
-              <button type="submit" className="btn-primary">Save Page Edits</button>
             </form>
           )}
           </div>
@@ -1496,6 +1601,14 @@ export default function AdminPages() {
           setMessage('Media selected. Save to publish it.')
         }}
       />
+      <FloatingPageActions
+        isCustomPage={activeTab === 'Custom Pages'}
+        isSavedCustomPage={activeTab === 'Custom Pages' && selectedPageId !== 'new'}
+        isPublished={Boolean(pageDraft.isPublished)}
+        updatePublished={(value: boolean) => updatePageDraft('isPublished', value)}
+        savePage={saveActivePage}
+        deletePage={deleteCustomPage}
+      />
       {unsavedPrompt.open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
@@ -1520,7 +1633,70 @@ export default function AdminPages() {
   )
 }
 
-function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, highlightedSectionId, previewMode, setPreviewMode, canUndo, canRedo, undoPageChange, redoPageChange, onDrop, emptyText }: any) {
+function FloatingPageActions({ isCustomPage, isSavedCustomPage, isPublished, updatePublished, savePage, deletePage }: any) {
+  return (
+    <div className="fixed inset-x-3 bottom-3 z-[90] lg:inset-x-auto lg:bottom-5 lg:right-5">
+      <div className="ml-auto flex max-w-xl flex-wrap items-center gap-3 rounded-xl border bg-white/95 p-3 shadow-2xl backdrop-blur">
+        {isCustomPage && (
+          <label className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">
+            <input type="checkbox" checked={Boolean(isPublished)} onChange={(e) => updatePublished(e.target.checked)} />
+            Published
+          </label>
+        )}
+        {isSavedCustomPage && (
+          <button type="button" onClick={deletePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700 lg:flex-none">
+            <FiTrash2 />
+            Delete Page
+          </button>
+        )}
+        <button type="button" onClick={savePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700 lg:flex-none">
+          <FiSave />
+          Save Page
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PageScoreCard({ insights }: any) {
+  const scoreTone = (value: number) => value >= 90 ? 'text-green-700 bg-green-100' : value >= 75 ? 'text-yellow-700 bg-yellow-100' : 'text-red-700 bg-red-100'
+  return (
+    <div className="rounded-lg border bg-white p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">Page Score</h3>
+          <p className="text-sm text-gray-600">Live editor estimate for SEO, mobile, and speed while you build.</p>
+        </div>
+        <div className={`inline-flex h-14 w-14 items-center justify-center rounded-full text-lg font-black ${scoreTone(insights.overall)}`}>
+          {insights.overall}
+        </div>
+      </div>
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        {[
+          ['SEO', insights.seo],
+          ['Mobile', insights.mobile],
+          ['Speed', insights.speed]
+        ].map(([label, value]: any) => (
+          <div key={label} className="rounded-lg bg-gray-50 p-3 text-center">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{label}</p>
+            <p className="mt-1 text-xl font-bold text-gray-900">{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 space-y-2">
+        {insights.suggestions.map((item: any, index: number) => (
+          <div key={`${item.category}-${index}`} className="rounded-lg bg-gray-50 p-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{item.category}</p>
+            <p className="mt-1 text-sm text-gray-700">{item.text}</p>
+          </div>
+        ))}
+        {insights.suggestions.length === 0 && <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">This page is in a solid place. Keep an eye on compressed images and clean metadata as you publish updates.</p>}
+      </div>
+    </div>
+  )
+}
+
+function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, highlightedSectionId, previewMode, setPreviewMode, canUndo, canRedo, undoPageChange, redoPageChange, onDrop, emptyText, insights }: any) {
   const previewModes = [
     { value: 'desktop', label: 'Desktop', icon: FiMonitor, width: 'w-full' },
     { value: 'tablet', label: 'Tablet', icon: FiTablet, width: 'max-w-[820px]' },
@@ -1530,6 +1706,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
 
   return (
     <section className="card p-6 space-y-6">
+      <PageScoreCard insights={insights} />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Live Preview</h2>
@@ -1566,9 +1743,9 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
         onClick={() => clearSelection?.()}
-        className="min-h-[calc(100vh-24rem)] overflow-auto rounded-lg border bg-gray-100 p-3"
+        className="min-h-[26rem] overflow-auto rounded-lg border bg-gray-100 p-3 md:min-h-[calc(100vh-24rem)]"
       >
-        <div className={`mx-auto min-h-[calc(100vh-26rem)] overflow-hidden rounded-lg bg-white shadow-sm transition-all duration-300 ${activePreview.width}`}>
+        <div className={`mx-auto min-h-[24rem] overflow-hidden rounded-lg bg-white shadow-sm transition-all duration-300 md:min-h-[calc(100vh-26rem)] ${activePreview.width}`}>
         {(sections || []).length > 0 ? (
           <div>
             {(sections || []).map((section: any, index: number) => (
@@ -1608,7 +1785,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
             ))}
           </div>
         ) : (
-          <div className="flex min-h-[calc(100vh-24rem)] items-center justify-center p-8 text-center text-gray-600">
+          <div className="flex min-h-[24rem] items-center justify-center p-8 text-center text-gray-600 md:min-h-[calc(100vh-24rem)]">
             <div>
               <h3 className="text-xl font-bold text-gray-900">{title}</h3>
               <p className="mt-2">{emptyText}</p>
@@ -1738,24 +1915,6 @@ function PageSettingsInspector({ title, editor, isCustomPage, isSavedCustomPage,
       </button>
       <div className="min-h-0 flex-1 space-y-4 overflow-auto border-t p-4 pb-8">
         {editor}
-        {isCustomPage && (
-          <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
-            <input type="checkbox" checked={isPublished} onChange={(e) => updatePublished(e.target.checked)} />
-            Publish this page
-          </label>
-        )}
-      </div>
-      <div className="flex shrink-0 gap-3 border-t bg-white p-4">
-        {isSavedCustomPage && (
-          <button type="button" onClick={deletePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700">
-            <FiTrash2 />
-            Delete
-          </button>
-        )}
-        <button type="button" onClick={savePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700">
-          <FiSave />
-          Save
-        </button>
       </div>
     </section>
   )
@@ -1805,7 +1964,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button type="button" onClick={() => duplicateSection(index)} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50">
             <FiCopy />
             Duplicate
@@ -1814,10 +1973,15 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
             {section.isHidden ? <FiEye /> : <FiEyeOff />}
             {section.isHidden ? 'Show' : 'Hide'}
           </button>
+          <button type="button" onClick={() => removeSection(index)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50">
+            <FiTrash2 />
+            Delete
+          </button>
         </div>
 
         <SectionSpacingControls section={section} index={index} updateSection={updateSection} />
         <SectionColorControls section={section} index={index} updateSection={updateSection} />
+        {['banner', 'hero', 'cta', 'imageOverlay'].includes(section.type) && <SectionButtonControls section={section} index={index} updateSection={updateSection} />}
         <SectionTypographyControls section={section} index={index} updateSection={updateSection} />
         <SectionAnimationControls section={section} index={index} updateSection={updateSection} />
 
@@ -1956,24 +2120,6 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
         )}
       </div>
 
-      <div className="flex shrink-0 gap-3 border-t bg-white p-4">
-        <button
-          type="button"
-          onClick={() => removeSection(index)}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700"
-        >
-          <FiTrash2 />
-          Delete
-        </button>
-        <button
-          type="button"
-          onClick={savePage}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700"
-        >
-          <FiSave />
-          Save
-        </button>
-      </div>
     </section>
   )
 }
@@ -2544,6 +2690,54 @@ function SectionColorControls({ section, index, updateSection }: any) {
               </div>
             </label>
           ))}
+        </div>
+      </div>
+    </details>
+  )
+}
+
+function SectionButtonControls({ section, index, updateSection }: any) {
+  const colorValue = (value: string, fallback = '#2563eb') => /^#[0-9A-F]{6}$/i.test(value || '') ? value : fallback
+  const getNumericValue = (key: string, fallback = 0) => {
+    const value = Number(section[key] || fallback)
+    return Number.isFinite(value) ? value : fallback
+  }
+  const sliderControl = (key: string, label: string, min: number, max: number, fallback = 0) => (
+    <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+      <span className="font-semibold">{label}</span>
+      <input type="range" min={min} max={max} step="1" value={getNumericValue(key, fallback)} onChange={(e) => updateSection(index, key, e.target.value)} className="w-full accent-blue-600" />
+      <div className="flex items-center gap-1">
+        <input type="number" min={min} max={max * 2} value={section[key] ?? ''} onChange={(e) => updateSection(index, key, e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+        <span className="text-xs text-gray-500">px</span>
+      </div>
+    </label>
+  )
+
+  return (
+    <details className="mb-3 rounded-lg border bg-white p-3">
+      <summary className="cursor-pointer text-sm font-bold text-gray-800">Button</summary>
+      <div className="mt-3 space-y-5">
+        <div className="space-y-3">
+          <div className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
+            <span className="font-semibold">Hover background</span>
+            <input type="color" value={colorValue(section.buttonHoverBackgroundColor, section.buttonBackgroundColor || '#1d4ed8')} onChange={(e) => updateSection(index, 'buttonHoverBackgroundColor', e.target.value)} className="h-10 w-12 rounded border p-1" />
+            <input value={section.buttonHoverBackgroundColor || ''} onChange={(e) => updateSection(index, 'buttonHoverBackgroundColor', e.target.value)} placeholder="#1d4ed8" className="w-full rounded-lg border px-2 py-1" />
+          </div>
+          <label className="block text-sm font-semibold text-gray-700">
+            Hover effect
+            <select value={section.buttonHoverEffect || 'lift'} onChange={(e) => updateSection(index, 'buttonHoverEffect', e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+              <option value="lift">Lift</option>
+              <option value="grow">Grow</option>
+              <option value="glow">Glow</option>
+              <option value="none">None</option>
+            </select>
+          </label>
+        </div>
+        <div className="space-y-3 border-t pt-4">
+          <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">Shape And Padding</h4>
+          {sliderControl('buttonBorderRadius', 'Radius', 0, 48, 8)}
+          {sliderControl('buttonPaddingX', 'Pad X', 8, 48, 24)}
+          {sliderControl('buttonPaddingY', 'Pad Y', 8, 28, 12)}
         </div>
       </div>
     </details>
