@@ -2082,6 +2082,15 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
           </>
         )}
 
+        {section.type === 'section' && (
+          <>
+            <SectionPanelStyleControls section={section} index={index} updateSection={updateSection} prefix="textPanel" title="Text Panel" />
+            <SectionPanelAnimationControls section={section} index={index} updateSection={updateSection} prefix="textPanel" title="Text Panel" />
+            <SectionPanelStyleControls section={section} index={index} updateSection={updateSection} prefix="imagePanel" title="Image Panel" />
+            <SectionPanelAnimationControls section={section} index={index} updateSection={updateSection} prefix="imagePanel" title="Image Panel" />
+          </>
+        )}
+
         {(section.type === 'image' || section.type === 'section') && (
           <div className="space-y-3">
             <input value={section.imageUrl || ''} onChange={(e) => updateSection(index, 'imageUrl', e.target.value)} placeholder="Image URL" className="w-full px-4 py-2 border rounded-lg" />
@@ -2749,6 +2758,74 @@ function SectionColorControls({ section, index, updateSection }: any) {
   )
 }
 
+function SectionPanelStyleControls({ section, index, updateSection, prefix, title }: any) {
+  const colorValue = (value: string) => /^#[0-9A-F]{6}$/i.test(value || '') ? value : '#000000'
+  const radiusFields = [
+    { key: 'BorderTopLeftRadius', label: 'Top left' },
+    { key: 'BorderTopRightRadius', label: 'Top right' },
+    { key: 'BorderBottomRightRadius', label: 'Bottom right' },
+    { key: 'BorderBottomLeftRadius', label: 'Bottom left' }
+  ]
+  const getNumericValue = (key: string) => {
+    const value = Number(section[`${prefix}${key}`] || 0)
+    return Number.isFinite(value) ? value : 0
+  }
+  const shadowPresets = [
+    { label: 'No shadow', value: '' },
+    { label: 'Soft', value: '0 10px 25px rgba(15, 23, 42, 0.12)' },
+    { label: 'Medium', value: '0 18px 40px rgba(15, 23, 42, 0.18)' },
+    { label: 'Large', value: '0 28px 70px rgba(15, 23, 42, 0.24)' },
+    { label: 'Inner', value: 'inset 0 2px 14px rgba(15, 23, 42, 0.16)' }
+  ]
+
+  return (
+    <details className="mb-3 rounded-lg border bg-white p-3">
+      <summary className="cursor-pointer text-sm font-bold text-gray-800">{title} Border And Shadow</summary>
+      <div className="mt-3 space-y-5">
+        <label className="block text-sm font-semibold text-gray-700">
+          Box shadow
+          <select value={section[`${prefix}BoxShadow`] || ''} onChange={(e) => updateSection(index, `${prefix}BoxShadow`, e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+            {shadowPresets.map(preset => <option key={preset.label} value={preset.value}>{preset.label}</option>)}
+          </select>
+        </label>
+        <input value={section[`${prefix}BoxShadow`] || ''} onChange={(e) => updateSection(index, `${prefix}BoxShadow`, e.target.value)} placeholder="Custom box-shadow" className="w-full rounded-lg border px-3 py-2 text-sm" />
+        <div className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
+          <span className="font-semibold">Border color</span>
+          <input type="color" value={colorValue(section[`${prefix}BorderColor`])} onChange={(e) => updateSection(index, `${prefix}BorderColor`, e.target.value)} className="h-10 w-12 rounded border p-1" />
+          <input value={section[`${prefix}BorderColor`] || ''} onChange={(e) => updateSection(index, `${prefix}BorderColor`, e.target.value)} placeholder="#000000" className="w-full rounded-lg border px-2 py-1" />
+        </div>
+        <label className="block text-sm font-semibold text-gray-700">
+          Border style
+          <select value={section[`${prefix}BorderStyle`] || 'solid'} onChange={(e) => updateSection(index, `${prefix}BorderStyle`, e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+            <option value="double">Double</option>
+          </select>
+        </label>
+        <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+          <span className="font-semibold">Border</span>
+          <input type="range" min="0" max="24" step="1" value={getNumericValue('BorderWidth')} onChange={(e) => updateSection(index, `${prefix}BorderWidth`, e.target.value)} className="w-full accent-blue-600" />
+          <div className="flex items-center gap-1">
+            <input type="number" min="0" max="80" value={section[`${prefix}BorderWidth`] ?? ''} onChange={(e) => updateSection(index, `${prefix}BorderWidth`, e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+            <span className="text-xs text-gray-500">px</span>
+          </div>
+        </label>
+        {radiusFields.map(field => (
+          <label key={field.key} className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+            <span className="font-semibold">{field.label}</span>
+            <input type="range" min="0" max="80" step="1" value={getNumericValue(field.key)} onChange={(e) => updateSection(index, `${prefix}${field.key}`, e.target.value)} className="w-full accent-blue-600" />
+            <div className="flex items-center gap-1">
+              <input type="number" min="0" max="240" value={section[`${prefix}${field.key}`] ?? ''} onChange={(e) => updateSection(index, `${prefix}${field.key}`, e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+              <span className="text-xs text-gray-500">px</span>
+            </div>
+          </label>
+        ))}
+      </div>
+    </details>
+  )
+}
+
 function SectionButtonControls({ section, index, updateSection }: any) {
   const colorValue = (value: string, fallback = '#2563eb') => /^#[0-9A-F]{6}$/i.test(value || '') ? value : fallback
   const getNumericValue = (key: string, fallback = 0) => {
@@ -2974,6 +3051,66 @@ function SectionAnimationControls({ section, index, updateSection }: any) {
             <input type="range" min="0" max="1500" step="50" value={getNumericValue('animationDelay', 0)} onChange={(e) => updateSection(index, 'animationDelay', Number(e.target.value))} className="w-full accent-blue-600" />
             <div className="flex items-center gap-1">
               <input type="number" min="0" max="5000" step="50" value={section.animationDelay ?? 0} onChange={(e) => updateSection(index, 'animationDelay', Number(e.target.value || 0))} className="w-full rounded-lg border px-2 py-1 text-right" />
+              <span className="text-xs text-gray-500">ms</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </details>
+  )
+}
+
+function SectionPanelAnimationControls({ section, index, updateSection, prefix, title }: any) {
+  const getNumericValue = (key: string, fallback = 0) => {
+    const value = Number(section[`${prefix}${key}`] ?? fallback)
+    return Number.isFinite(value) ? value : fallback
+  }
+  const animationOptions = [
+    { label: 'None', value: '' },
+    { label: 'Fade in', value: 'fade-in' },
+    { label: 'Slide up', value: 'slide-up' },
+    { label: 'Slide left', value: 'slide-left' },
+    { label: 'Slide right', value: 'slide-right' },
+    { label: 'Zoom in', value: 'zoom-in' }
+  ]
+  const easingOptions = [
+    { label: 'Ease out', value: 'ease-out' },
+    { label: 'Ease in out', value: 'ease-in-out' },
+    { label: 'Smooth', value: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    { label: 'Snappy', value: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+    { label: 'Linear', value: 'linear' }
+  ]
+
+  return (
+    <details className="mb-3 rounded-lg border bg-white p-3">
+      <summary className="cursor-pointer text-sm font-bold text-gray-800">{title} Animation</summary>
+      <div className="mt-3 space-y-5">
+        <label className="block text-sm font-semibold text-gray-700">
+          Entrance animation
+          <select value={section[`${prefix}AnimationType`] || ''} onChange={(e) => updateSection(index, `${prefix}AnimationType`, e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+            {animationOptions.map(option => <option key={option.label} value={option.value}>{option.label}</option>)}
+          </select>
+        </label>
+        <label className="block text-sm font-semibold text-gray-700">
+          Easing
+          <select value={section[`${prefix}AnimationEasing`] || 'ease-out'} onChange={(e) => updateSection(index, `${prefix}AnimationEasing`, e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+            {easingOptions.map(option => <option key={option.label} value={option.value}>{option.label}</option>)}
+          </select>
+        </label>
+        <div className="space-y-3 border-t pt-4">
+          <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+            <span className="font-semibold">Duration</span>
+            <input type="range" min="150" max="2000" step="50" value={getNumericValue('AnimationDuration', 650)} onChange={(e) => updateSection(index, `${prefix}AnimationDuration`, Number(e.target.value))} className="w-full accent-blue-600" />
+            <div className="flex items-center gap-1">
+              <input type="number" min="0" max="5000" step="50" value={section[`${prefix}AnimationDuration`] ?? 650} onChange={(e) => updateSection(index, `${prefix}AnimationDuration`, Number(e.target.value || 0))} className="w-full rounded-lg border px-2 py-1 text-right" />
+              <span className="text-xs text-gray-500">ms</span>
+            </div>
+          </label>
+          <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+            <span className="font-semibold">Delay</span>
+            <input type="range" min="0" max="1500" step="50" value={getNumericValue('AnimationDelay', 0)} onChange={(e) => updateSection(index, `${prefix}AnimationDelay`, Number(e.target.value))} className="w-full accent-blue-600" />
+            <div className="flex items-center gap-1">
+              <input type="number" min="0" max="5000" step="50" value={section[`${prefix}AnimationDelay`] ?? 0} onChange={(e) => updateSection(index, `${prefix}AnimationDelay`, Number(e.target.value || 0))} className="w-full rounded-lg border px-2 py-1 text-right" />
               <span className="text-xs text-gray-500">ms</span>
             </div>
           </label>

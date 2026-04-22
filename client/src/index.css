@@ -325,6 +325,35 @@ html.dark-mode .rich-text-editor:empty::before {
   animation-name: sectionZoomIn;
 }
 
+.section-child-animated {
+  opacity: 0;
+  animation-duration: var(--section-animation-duration, 650ms);
+  animation-delay: var(--section-animation-delay, 0ms);
+  animation-timing-function: var(--section-animation-easing, ease-out);
+  animation-fill-mode: both;
+  will-change: opacity, transform;
+}
+
+.section-child-animated.is-visible[data-animation="fade-in"] {
+  animation-name: sectionFadeIn;
+}
+
+.section-child-animated.is-visible[data-animation="slide-up"] {
+  animation-name: sectionSlideUp;
+}
+
+.section-child-animated.is-visible[data-animation="slide-left"] {
+  animation-name: sectionSlideLeft;
+}
+
+.section-child-animated.is-visible[data-animation="slide-right"] {
+  animation-name: sectionSlideRight;
+}
+
+.section-child-animated.is-visible[data-animation="zoom-in"] {
+  animation-name: sectionZoomIn;
+}
+
 @keyframes sectionFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

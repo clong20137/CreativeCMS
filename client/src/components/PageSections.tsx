@@ -69,6 +69,48 @@ function getImageLayout(section: any) {
   }
 }
 
+function getPanelStyle(section: any, prefix: 'textPanel' | 'imagePanel') {
+  const toPixels = (value: any) => {
+    if (value === '' || value === null || value === undefined) return undefined
+    const number = Number(value)
+    return Number.isFinite(number) ? `${number}px` : undefined
+  }
+
+  return {
+    boxShadow: section[`${prefix}BoxShadow`] || undefined,
+    borderWidth: toPixels(section[`${prefix}BorderWidth`]),
+    borderColor: section[`${prefix}BorderColor`] || undefined,
+    borderStyle: section[`${prefix}BorderWidth`] ? (section[`${prefix}BorderStyle`] || 'solid') : undefined,
+    borderTopLeftRadius: toPixels(section[`${prefix}BorderTopLeftRadius`]),
+    borderTopRightRadius: toPixels(section[`${prefix}BorderTopRightRadius`]),
+    borderBottomRightRadius: toPixels(section[`${prefix}BorderBottomRightRadius`]),
+    borderBottomLeftRadius: toPixels(section[`${prefix}BorderBottomLeftRadius`]),
+    overflow: (
+      section[`${prefix}BorderTopLeftRadius`] ||
+      section[`${prefix}BorderTopRightRadius`] ||
+      section[`${prefix}BorderBottomRightRadius`] ||
+      section[`${prefix}BorderBottomLeftRadius`]
+    ) ? 'hidden' : undefined
+  } as CSSProperties
+}
+
+function getChildAnimationProps(section: any, prefix: 'textPanel' | 'imagePanel') {
+  const animationType = section[`${prefix}AnimationType`] || ''
+  const animationDuration = Number(section[`${prefix}AnimationDuration`] || 650)
+  const animationDelay = Number(section[`${prefix}AnimationDelay`] || 0)
+  const animationEasing = section[`${prefix}AnimationEasing`] || 'ease-out'
+
+  return {
+    className: animationType ? 'section-child-animated is-visible' : '',
+    dataAnimation: animationType || 'none',
+    style: {
+      '--section-animation-duration': `${animationDuration}ms`,
+      '--section-animation-delay': `${animationDelay}ms`,
+      '--section-animation-easing': animationEasing
+    } as CSSProperties
+  }
+}
+
 function AnimatedSection({ section, children }: { section: any; children: ReactNode }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const hasAnimation = Boolean(section.animationType && section.animationType !== 'none')
@@ -270,14 +312,22 @@ function PageSection({ section }: { section: any }) {
 
   if (section.type === 'section') {
     const isImageFirst = section.imageOrder === 'image-first'
+    const textPanelStyle = getPanelStyle(section, 'textPanel')
+    const imagePanelStyle = getPanelStyle(section, 'imagePanel')
+    const textAnimation = getChildAnimationProps(section, 'textPanel')
+    const imageAnimation = getChildAnimationProps(section, 'imagePanel')
     const textBlock = (
-      <div>
+      <div className={textAnimation.className} data-animation={textAnimation.dataAnimation} style={{ ...textPanelStyle, ...textAnimation.style }}>
         {section.title && <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>}
         {section.body && <RichTextContent html={section.body} className="mt-3 text-gray-600" />}
       </div>
     )
     const imageBlock = section.imageUrl
-      ? <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || ''} className="w-full rounded-lg object-cover" />
+      ? (
+        <div className={imageAnimation.className} data-animation={imageAnimation.dataAnimation} style={{ ...imagePanelStyle, ...imageAnimation.style }}>
+          <img src={resolveAssetUrl(section.imageUrl)} alt={section.alt || section.title || ''} className="w-full rounded-lg object-cover" />
+        </div>
+      )
       : null
 
     return (
