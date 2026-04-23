@@ -61,22 +61,22 @@ export default function ClientLayout({ title, children }: { title: string; child
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
-      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur">
+    <div className="client-portal-shell min-h-screen pb-24 md:pb-8">
+      <div className="client-portal-topbar sticky top-0 z-20 border-b shadow-sm backdrop-blur">
         <div className="container py-3 md:py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <Link to="/client-dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
+              <Link to="/client-dashboard" className="client-portal-link text-sm font-semibold">
                 Client Portal
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{title}</h1>
+              <h1 className="text-2xl font-bold md:text-3xl">{title}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-                <span className={`inline-flex items-center rounded-full px-3 py-1 font-semibold ${
+                <span className={`client-license-pill inline-flex items-center rounded-full px-3 py-1 font-semibold ${
                   licenseState.hasActiveLicense
-                    ? 'bg-green-100 text-green-800'
+                    ? 'client-license-pill-active'
                     : licenseState.loading
-                      ? 'bg-gray-100 text-gray-600'
-                      : 'bg-red-100 text-red-700'
+                      ? 'client-license-pill-loading'
+                      : 'client-license-pill-inactive'
                 }`}>
                   {licenseState.loading
                     ? 'Checking license...'
@@ -85,7 +85,7 @@ export default function ClientLayout({ title, children }: { title: string; child
                       : 'License Required'}
                 </span>
                 {licenseState.license?.renewalDate && (
-                  <span className="text-gray-500">
+                  <span className="client-portal-muted">
                     Renewal {new Date(licenseState.license.renewalDate).toLocaleDateString()}
                   </span>
                 )}
@@ -99,7 +99,7 @@ export default function ClientLayout({ title, children }: { title: string; child
             </button>
           </div>
 
-          <nav className="mt-4 hidden gap-2 overflow-x-auto pb-1 md:flex">
+          <nav className="client-portal-nav mt-4 hidden gap-2 overflow-x-auto pb-1 md:flex">
             {clientLinks.map((link) => {
               const Icon = link.icon
               return (
@@ -108,10 +108,10 @@ export default function ClientLayout({ title, children }: { title: string; child
                   to={link.path}
                   end={link.path === '/client-dashboard'}
                   className={({ isActive }) =>
-                    `inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                    `client-portal-nav-link inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition ${
                       isActive
                         ? 'btn-primary text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+                        : 'client-portal-nav-link-idle'
                     }`
                   }
                 >
@@ -126,14 +126,14 @@ export default function ClientLayout({ title, children }: { title: string; child
 
       <div className="container py-8">
         {!licenseState.loading && !licenseState.hasActiveLicense && (
-          <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">
+          <div className="client-license-banner mb-6 rounded-lg border p-4">
             Your CMS license is inactive. You can still navigate the client portal, and you can renew anytime from the license page.
           </div>
         )}
         {children}
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+      <nav className="client-portal-mobile-nav fixed inset-x-0 bottom-0 z-30 border-t px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
         <div className="grid grid-cols-4 gap-1">
           {clientLinks.map((link) => {
             const Icon = link.icon
@@ -143,8 +143,8 @@ export default function ClientLayout({ title, children }: { title: string; child
                 key={link.path}
                 to={link.path}
                 end={link.path === '/client-dashboard'}
-                className={`flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold transition ${
-                  isActive ? 'btn-primary text-white' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+                className={`client-portal-mobile-link flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold transition ${
+                  isActive ? 'btn-primary text-white' : 'client-portal-nav-link-idle'
                 }`}
               >
                 <Icon size={18} />

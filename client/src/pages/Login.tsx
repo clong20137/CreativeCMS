@@ -167,7 +167,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4">
+    <div className="login-page min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-12">
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
