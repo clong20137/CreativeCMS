@@ -197,6 +197,40 @@ function makeSlug(value: string) {
     .replace(/^-|-$/g, '')
 }
 
+function normalizeCustomSlug(value: string) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/^\/+/, '')
+    .split('/')
+    .map(segment => makeSlug(segment))
+    .filter(Boolean)
+    .join('/')
+}
+
+function normalizePagePath(value: string) {
+  const normalized = String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/^\/+/, '')
+    .split('/')
+    .map(segment => makeSlug(segment))
+    .filter(Boolean)
+    .join('/')
+
+  return normalized ? `/${normalized}` : ''
+}
+
+function getSectionSeoIssues(section: any) {
+  const issues: string[] = []
+  const imageStats = collectImageDiagnostics(section)
+  if (imageStats.missingAlt > 0) issues.push(`${imageStats.missingAlt} missing alt`)
+  const badLinks = collectSectionLinks(section).filter(looksBrokenInternalLink)
+  if (badLinks.length > 0) issues.push(`${badLinks.length} broken link${badLinks.length === 1 ? '' : 's'}`)
+  if (section?.type === 'header' && !String(section?.title || '').trim()) issues.push('Missing heading')
+  return issues
+}
+
 function makePageSection(type: string) {
   const defaultItems = () => {
     if (type === 'gallery') return [{ id: crypto.randomUUID(), title: '', description: '', image: '' }]
@@ -210,6 +244,7 @@ function makePageSection(type: string) {
     id: crypto.randomUUID(),
     type,
     title: '',
+    headingTag: type === 'header' ? 'h2' : '',
     body: '',
     imageUrl: '',
     mediaType: 'image',
@@ -514,7 +549,8 @@ function buildPageEditorInsights(page: any, sections: any[] = []) {
   const title = String(page?.title || page?.pageTitle || '').trim()
   const metaTitle = String(page?.metaTitle || '').trim()
   const metaDescription = String(page?.metaDescription || '').trim()
-  const slug = String(page?.slug || page?.pageUrl || '').trim()
+  const rawSlug = String(page?.slug || page?.pageUrl || '').trim()
+  const slug = rawSlug ? (rawSlug.startsWith('/') ? rawSlug : `/${rawSlug}`) : ''
   const headerTitle = String(page?.headerTitle || '').trim()
   const bodyText = sections.flatMap(section => collectSectionText(section)).join(' ').trim()
   const bodyWordCount = countWords(bodyText)
@@ -529,10 +565,17 @@ function buildPageEditorInsights(page: any, sections: any[] = []) {
   const missingAltCount = imageStats.missingAlt
   const internalLinks = sections.flatMap(section => collectSectionLinks(section))
   const brokenInternalLinks = internalLinks.filter(looksBrokenInternalLink)
-  const h1LikeSections = sections.filter(section => ['hero', 'banner', 'header'].includes(section?.type) && String(section?.title || '').trim())
+  const h1LikeSections = sections.filter(section => (
+    ['hero', 'banner'].includes(section?.type) || (section?.type === 'header' && (section?.headingTag || 'h2') === 'h1')
+  ) && String(section?.title || '').trim())
   const hasCanonicalVisibility = Boolean(slug && slug.startsWith('/'))
   const keywordSlug = slug.replace(/^\//, '')
   const hasKeywordSlug = keywordSlug.length >= 3 && !keywordSlug.includes('_')
+  const sectionIssueCounts = sections.reduce((acc: Record<string, number>, section: any, index: number) => {
+    const issues = getSectionSeoIssues(section)
+    if (issues.length > 0) acc[String(section?.id || index)] = issues.length
+    return acc
+  }, {})
 
   if (!title || title.length < 4) {
     seo -= 18
@@ -641,7 +684,8 @@ function buildPageEditorInsights(page: any, sections: any[] = []) {
       majorHeadingCount: h1LikeSections.length,
       sectionCount: sections.length,
       canonicalVisible: hasCanonicalVisibility
-    }
+    },
+    sectionIssueCounts
   }
 }
 
@@ -677,6 +721,7 @@ export default function AdminPages() {
   const [sectionsPanelOpen, setSectionsPanelOpen] = useState(true)
   const [savedSnapshot, setSavedSnapshot] = useState('')
   const [unsavedPrompt, setUnsavedPrompt] = useState<{ open: boolean; href?: string; action?: () => void }>({ open: false })
+  const [deletePromptOpen, setDeletePromptOpen] = useState(false)
   const [undoStack, setUndoStack] = useState<string[]>([])
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
@@ -762,13 +807,14 @@ export default function AdminPages() {
 
   const updatePageMetadata = (page: string, field: string, value: string) => {
     recordHistory()
+    const nextValue = field === 'pageUrl' ? normalizePagePath(value) : value
     setSettings(prev => ({
       ...prev,
       pageMetadata: {
         ...(prev.pageMetadata || {}),
         [page]: {
           ...(prev.pageMetadata?.[page] || {}),
-          [field]: value
+          [field]: nextValue
         }
       }
     }))
@@ -858,7 +904,7 @@ export default function AdminPages() {
     setPageDraft((current: any) => ({
       ...current,
       [field]: value,
-      ...(field === 'title' && !current.slug ? { slug: makeSlug(value) } : {})
+      ...(field === 'title' && !current.slug ? { slug: normalizeCustomSlug(value) } : {})
     }))
   }
 
@@ -1293,7 +1339,7 @@ export default function AdminPages() {
                 </div>
                 <div className="hidden grid-cols-1 gap-4 md:grid-cols-2">
                   <input value={pageDraft.title || ''} onChange={(e) => updatePageDraft('title', e.target.value)} placeholder="Page title" className="px-4 py-2 border rounded-lg" required />
-                  <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', makeSlug(e.target.value))} placeholder="page-url" className="px-4 py-2 border rounded-lg" required />
+                  <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', normalizeCustomSlug(e.target.value))} placeholder="page-url" className="px-4 py-2 border rounded-lg" required />
                   <input value={pageDraft.headerTitle || ''} onChange={(e) => updatePageDraft('headerTitle', e.target.value)} placeholder="Header title" className="px-4 py-2 border rounded-lg" />
                   <input type="number" value={pageDraft.sortOrder ?? 0} onChange={(e) => updatePageDraft('sortOrder', Number(e.target.value))} placeholder="Sort order" className="px-4 py-2 border rounded-lg" />
                   <textarea value={pageDraft.headerSubtitle || ''} onChange={(e) => updatePageDraft('headerSubtitle', e.target.value)} placeholder="Header subtitle" rows={2} className="px-4 py-2 border rounded-lg md:col-span-2" />
@@ -1390,7 +1436,19 @@ export default function AdminPages() {
                         )}
 
                         {(section.type === 'header' || section.type === 'section' || section.type === 'services') && (
-                          <input value={section.title || ''} onChange={(e) => updatePageSection(index, 'title', e.target.value)} placeholder="Section title" className="mb-3 w-full px-4 py-2 border rounded-lg" />
+                          <div className="mb-3 space-y-3">
+                            <input value={section.title || ''} onChange={(e) => updatePageSection(index, 'title', e.target.value)} placeholder="Section title" className="w-full px-4 py-2 border rounded-lg" />
+                            {section.type === 'header' && (
+                              <select value={section.headingTag || 'h2'} onChange={(e) => updatePageSection(index, 'headingTag', e.target.value)} className="w-full px-4 py-2 border rounded-lg">
+                                <option value="h1">H1</option>
+                                <option value="h2">H2</option>
+                                <option value="h3">H3</option>
+                                <option value="h4">H4</option>
+                                <option value="h5">H5</option>
+                                <option value="h6">H6</option>
+                              </select>
+                            )}
+                          </div>
                         )}
 
                         {(section.type === 'paragraph' || section.type === 'section' || section.type === 'services') && (
@@ -1698,8 +1756,24 @@ export default function AdminPages() {
         isPublished={Boolean(pageDraft.isPublished)}
         updatePublished={(value: boolean) => updatePageDraft('isPublished', value)}
         savePage={saveActivePage}
-        deletePage={deleteCustomPage}
+        deletePage={() => setDeletePromptOpen(true)}
       />
+      {deletePromptOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h2 className="text-2xl font-bold text-gray-900">Delete this page?</h2>
+            <p className="mt-3 text-gray-600">This will permanently remove the current custom page and its sections.</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button type="button" onClick={async () => { setDeletePromptOpen(false); await deleteCustomPage() }} className="inline-flex flex-1 items-center justify-center rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700">
+                Delete page
+              </button>
+              <button type="button" onClick={() => setDeletePromptOpen(false)} className="inline-flex flex-1 items-center justify-center rounded-lg border px-4 py-3 font-bold text-gray-700 transition hover:bg-gray-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {unsavedPrompt.open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
@@ -1759,6 +1833,7 @@ function PageScoreCard({ insights }: any) {
   const scoreTone = (value: number) => value >= 85 ? 'text-green-700 bg-green-100 ring-green-200' : value >= 65 ? 'text-orange-700 bg-orange-100 ring-orange-200' : 'text-red-700 bg-red-100 ring-red-200'
   const facts = insights?.facts || {}
   const diagnostics = insights?.diagnostics || { seo: [], mobile: [], speed: [] }
+  const issueSectionCount = Object.keys(insights?.sectionIssueCounts || {}).length
 
   useEffect(() => {
     const animateValue = (setter: (value: number) => void, target: number, duration = 520) => {
@@ -1811,6 +1886,11 @@ function PageScoreCard({ insights }: any) {
         <FactPill label="Canonical" value={facts.canonicalVisible ? 'Ready' : 'Check'} tone={facts.canonicalVisible ? 'good' : 'warn'} />
       </div>
       <div className="mt-3 space-y-2">
+        {issueSectionCount > 0 && (
+          <p className="rounded-lg bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700">
+            {issueSectionCount} section{issueSectionCount === 1 ? '' : 's'} in the preview are highlighted for SEO follow-up.
+          </p>
+        )}
         {insights.suggestions.slice(0, 4).map((item: any, index: number) => (
           <div key={`${item.category}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2">
             <div className="flex items-center justify-between gap-3">
@@ -1885,6 +1965,25 @@ function DeferredRichTextEditorField(props: any) {
   )
 }
 
+function SeoTitleCounter({ value }: { value?: string }) {
+  const length = String(value || '').trim().length
+  const isHealthy = length >= 20 && length <= 60
+  return (
+    <div className={`text-xs font-semibold ${isHealthy ? 'text-green-600' : 'text-red-600'}`}>
+      {length}/60 characters
+    </div>
+  )
+}
+
+function SeoTitleField({ value, onChange, placeholder }: { value?: string; onChange: (value: string) => void; placeholder: string }) {
+  return (
+    <div className="space-y-2">
+      <input value={value || ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 border rounded-lg" />
+      <SeoTitleCounter value={value} />
+    </div>
+  )
+}
+
 function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, highlightedSectionId, previewMode, setPreviewMode, canUndo, canRedo, undoPageChange, redoPageChange, onDrop, emptyText, insights }: any) {
   const previewModes = [
     { value: 'desktop', label: 'Desktop', icon: FiMonitor, width: 'w-full' },
@@ -1938,8 +2037,12 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
         {(sections || []).length > 0 ? (
           <div>
             {(sections || []).map((section: any, index: number) => (
+              (() => {
+                const sectionKey = String(section.id || index)
+                const seoIssueCount = Number(insights?.sectionIssueCounts?.[sectionKey] || 0)
+                return (
               <div
-                key={section.id || index}
+                key={sectionKey}
                 id={`preview-section-${section.id || index}`}
                 draggable
                 onClick={(e) => {
@@ -1957,12 +2060,17 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                   setDraggingSectionIndex(null)
                 }}
                 onDragEnd={() => setDraggingSectionIndex(null)}
-                className={`relative cursor-pointer transition ${draggingSectionIndex === index ? 'scale-[0.99] opacity-60 ring-2 ring-blue-500' : highlightedSectionId === (section.id || String(index)) ? 'animate-pulse ring-4 ring-blue-500 ring-offset-2' : 'hover:ring-2 hover:ring-blue-300'}`}
+                className={`relative cursor-pointer transition ${draggingSectionIndex === index ? 'scale-[0.99] opacity-60 ring-2 ring-blue-500' : highlightedSectionId === sectionKey ? 'animate-pulse ring-4 ring-blue-500 ring-offset-2' : seoIssueCount > 0 ? 'ring-2 ring-orange-300 hover:ring-orange-400' : 'hover:ring-2 hover:ring-blue-300'}`}
                 title={`Edit ${getSectionTitle(section, index)}`}
               >
                 <div className="absolute left-3 top-3 z-10 rounded bg-blue-600 px-2 py-1 text-xs font-bold text-white shadow">
                   {index + 1}
                 </div>
+                {seoIssueCount > 0 && (
+                  <div className="absolute right-3 top-3 z-10 rounded bg-orange-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow">
+                    SEO {seoIssueCount}
+                  </div>
+                )}
                 {section.isHidden ? (
                   <div className="border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-600">
                     <FiEyeOff className="mx-auto mb-2" />
@@ -1971,6 +2079,8 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                   </div>
                 ) : <PreviewSectionContent section={section} previewMode={previewMode} />}
               </div>
+                )
+              })()
             ))}
           </div>
         ) : (
@@ -2247,7 +2357,22 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
         )}
 
         {(section.type === 'header' || section.type === 'section' || section.type === 'services') && (
-          <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="w-full px-4 py-2 border rounded-lg" />
+          <div className="space-y-3">
+            <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="w-full px-4 py-2 border rounded-lg" />
+            {section.type === 'header' && (
+              <label className="block text-sm font-semibold text-gray-700">
+                Heading tag
+                <select value={section.headingTag || 'h2'} onChange={(e) => updateSection(index, 'headingTag', e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+                  <option value="h1">H1</option>
+                  <option value="h2">H2</option>
+                  <option value="h3">H3</option>
+                  <option value="h4">H4</option>
+                  <option value="h5">H5</option>
+                  <option value="h6">H6</option>
+                </select>
+              </label>
+            )}
+          </div>
         )}
 
         {(section.type === 'paragraph' || section.type === 'section' || section.type === 'services') && (
@@ -2571,7 +2696,19 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
             )}
 
             {(section.type === 'header' || section.type === 'section' || section.type === 'services') && (
-              <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="mb-3 w-full px-4 py-2 border rounded-lg" />
+              <div className="mb-3 space-y-3">
+                <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="w-full px-4 py-2 border rounded-lg" />
+                {section.type === 'header' && (
+                  <select value={section.headingTag || 'h2'} onChange={(e) => updateSection(index, 'headingTag', e.target.value)} className="w-full px-4 py-2 border rounded-lg">
+                    <option value="h1">H1</option>
+                    <option value="h2">H2</option>
+                    <option value="h3">H3</option>
+                    <option value="h4">H4</option>
+                    <option value="h5">H5</option>
+                    <option value="h6">H6</option>
+                  </select>
+                )}
+              </div>
             )}
 
             {(section.type === 'paragraph' || section.type === 'section' || section.type === 'services') && (
@@ -3584,14 +3721,14 @@ function CustomPageSettingsEditor({ pageDraft, updatePageDraft }: any) {
       <h3 className="mb-4 text-xl font-bold text-gray-900">Page Settings</h3>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <input value={pageDraft.title || ''} onChange={(e) => updatePageDraft('title', e.target.value)} placeholder="Page title" className="px-4 py-3 border rounded-lg" required />
-        <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', makeSlug(e.target.value))} placeholder="page-url" className="px-4 py-3 border rounded-lg" required />
+        <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', normalizeCustomSlug(e.target.value))} placeholder="page-url" className="px-4 py-3 border rounded-lg" required />
         <input value={pageDraft.headerTitle || ''} onChange={(e) => updatePageDraft('headerTitle', e.target.value)} placeholder="Header title" className="px-4 py-3 border rounded-lg" />
         <input type="number" value={pageDraft.sortOrder ?? 0} onChange={(e) => updatePageDraft('sortOrder', Number(e.target.value))} placeholder="Sort order" className="px-4 py-3 border rounded-lg" />
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-semibold text-gray-700">Header subtitle</label>
           <textarea value={pageDraft.headerSubtitle || ''} onChange={(e) => updatePageDraft('headerSubtitle', e.target.value)} placeholder="Short supporting text below the page heading" rows={4} className="min-h-28 w-full px-4 py-3 border rounded-lg" />
         </div>
-        <input value={pageDraft.metaTitle || ''} onChange={(e) => updatePageDraft('metaTitle', e.target.value)} placeholder="SEO title" className="px-4 py-3 border rounded-lg" />
+        <SeoTitleField value={pageDraft.metaTitle || ''} onChange={(value) => updatePageDraft('metaTitle', value)} placeholder="SEO title" />
         <input value={pageDraft.metaDescription || ''} onChange={(e) => updatePageDraft('metaDescription', e.target.value)} placeholder="SEO description" className="px-4 py-3 border rounded-lg" />
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-semibold text-gray-700">Fallback page content</label>
@@ -3618,7 +3755,7 @@ function PageMetadataEditor({ page, fallback, metadata, legacyHeader, updatePage
       <h3 className="mb-4 text-xl font-bold text-gray-900">Page Settings</h3>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <input value={pageTitle} onChange={(e) => updatePageMetadata(page, 'pageTitle', e.target.value)} placeholder="Page Title" className="px-4 py-3 border rounded-lg" />
-        <input value={pageUrl} onChange={(e) => updatePageMetadata(page, 'pageUrl', e.target.value)} placeholder="Page URL" className="px-4 py-3 border rounded-lg" />
+        <input value={pageUrl} onChange={(e) => updatePageMetadata(page, 'pageUrl', normalizePagePath(e.target.value))} placeholder="Page URL" className="px-4 py-3 border rounded-lg" />
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-semibold text-gray-700">Page description</label>
           <textarea value={description} onChange={(e) => updatePageMetadata(page, 'description', e.target.value)} placeholder="Short summary for the page and preview sections" rows={4} className="min-h-28 w-full px-4 py-3 border rounded-lg" />
@@ -3632,7 +3769,7 @@ function PageMetadataEditor({ page, fallback, metadata, legacyHeader, updatePage
           placeholder="Header Title"
           className="px-4 py-3 border rounded-lg"
         />
-        <input value={metadata.metaTitle || ''} onChange={(e) => updatePageMetadata(page, 'metaTitle', e.target.value)} placeholder="SEO Title" className="px-4 py-3 border rounded-lg" />
+        <SeoTitleField value={metadata.metaTitle || ''} onChange={(value) => updatePageMetadata(page, 'metaTitle', value)} placeholder="SEO Title" />
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-semibold text-gray-700">Header text</label>
           <textarea

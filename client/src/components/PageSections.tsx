@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, ElementType, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { FiArrowRight, FiCamera, FiCheck, FiMail, FiMapPin, FiMonitor, FiPenTool, FiPhone, FiVideo } from 'react-icons/fi'
 import Testimonials from './Testimonials'
@@ -361,10 +361,11 @@ function PageSection({ section }: { section: any }) {
 
   if (section.type === 'header') {
     const alignment = getAlignmentClasses(section.textAlign)
+    const HeadingTag = (section.headingTag || 'h2') as ElementType
     return (
       <section className="section-padding">
         <div className={`container ${alignment.container}`}>
-          <h2 className="mb-12 text-4xl font-bold text-gray-900">{section.title}</h2>
+          <HeadingTag className="mb-12 text-4xl font-bold text-gray-900">{section.title}</HeadingTag>
           {section.body && <RichTextContent html={section.body} className={`${alignment.body} -mt-8 max-w-3xl text-lg text-gray-600`.trim()} />}
         </div>
       </section>
