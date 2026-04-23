@@ -70,7 +70,7 @@ export default function ClientLayout({ title, children }: { title: string; child
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
-      <div className="sticky top-0 z-20 bg-white/95 shadow-sm backdrop-blur">
+      <div className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur">
         <div className="container py-3 md:py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -101,7 +101,7 @@ export default function ClientLayout({ title, children }: { title: string; child
             </div>
             <button
               onClick={handleLogout}
-              className="hidden items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white transition hover:bg-red-700 md:inline-flex"
+              className="hidden items-center justify-center gap-2 rounded-lg border border-red-500 bg-red-600 px-4 py-2 text-white transition hover:bg-red-700 md:inline-flex"
             >
               <FiLogOut /> Logout
             </button>
@@ -118,7 +118,7 @@ export default function ClientLayout({ title, children }: { title: string; child
                   className={({ isActive }) =>
                     `inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition ${
                       isActive
-                        ? 'bg-blue-600 text-white'
+                        ? 'btn-primary text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                     }`
                   }
@@ -152,7 +152,7 @@ export default function ClientLayout({ title, children }: { title: string; child
                 to={link.path}
                 end={link.path === '/client-dashboard'}
                 className={`flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold transition ${
-                  isActive ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+                  isActive ? 'btn-primary text-white' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
                 }`}
               >
                 <Icon size={18} />

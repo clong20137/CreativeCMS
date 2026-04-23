@@ -174,37 +174,89 @@ html.dark-mode .shadow-sm {
   font-family: var(--theme-font-family);
 }
 
+.site-theme,
+.site-theme body,
+.site-theme main,
+.site-theme section,
+.site-theme article,
+.site-theme aside {
+  background-color: var(--theme-background);
+}
+
 .site-theme main {
   background: var(--theme-background);
 }
 
-.site-theme main h1,
-.site-theme main h2,
-.site-theme main h3,
-.site-theme main h4,
-.site-theme main h5,
-.site-theme main h6,
-.site-theme main .text-gray-900,
-.site-theme main .text-gray-800,
-.site-theme main .text-gray-700 {
+.site-theme h1,
+.site-theme h2,
+.site-theme h3,
+.site-theme h4,
+.site-theme h5,
+.site-theme h6,
+.site-theme .text-gray-900,
+.site-theme .text-gray-800,
+.site-theme .text-gray-700 {
   color: var(--theme-heading);
 }
 
-.site-theme main p,
-.site-theme main li,
-.site-theme main .text-gray-600,
-.site-theme main .text-gray-500,
-.site-theme main .text-gray-400 {
+.site-theme p,
+.site-theme li,
+.site-theme label,
+.site-theme span,
+.site-theme .text-gray-600,
+.site-theme .text-gray-500,
+.site-theme .text-gray-400 {
   color: var(--theme-body);
 }
 
-.site-theme main a:not(.btn-primary):not(.btn-secondary):not(.section-button) {
+.site-theme a:not(.btn-primary):not(.btn-secondary):not(.section-button):not(.site-nav-link):not(.site-nav-brand):not(.site-nav-submenu-link) {
   color: var(--theme-link);
 }
 
-.site-theme main .bg-white,
-.site-theme main .card {
+.site-theme .bg-white,
+.site-theme .card {
   background-color: var(--theme-surface);
+}
+
+.site-theme .bg-gray-50 {
+  background-color: color-mix(in srgb, var(--theme-background) 88%, var(--theme-heading) 12%);
+}
+
+.site-theme .bg-gray-100,
+.site-theme .bg-gray-200 {
+  background-color: color-mix(in srgb, var(--theme-surface) 82%, var(--theme-heading) 18%);
+}
+
+.site-theme .border,
+.site-theme .border-gray-200,
+.site-theme .border-gray-300,
+.site-theme .border-gray-400 {
+  border-color: color-mix(in srgb, var(--theme-heading) 18%, transparent) !important;
+}
+
+.site-theme .text-blue-600,
+.site-theme .text-blue-700,
+.site-theme .text-blue-800 {
+  color: var(--theme-link) !important;
+}
+
+.site-theme .bg-blue-50 {
+  background-color: color-mix(in srgb, var(--theme-link) 10%, var(--theme-surface) 90%) !important;
+}
+
+.site-theme .bg-blue-100 {
+  background-color: color-mix(in srgb, var(--theme-link) 16%, var(--theme-surface) 84%) !important;
+}
+
+.site-theme .hover\:bg-blue-50:hover,
+.site-theme .hover\:bg-gray-50:hover,
+.site-theme .hover\:bg-white:hover {
+  background-color: color-mix(in srgb, var(--theme-link) 10%, var(--theme-surface) 90%) !important;
+}
+
+.site-theme .hover\:text-blue-700:hover,
+.site-theme .hover\:text-blue-800:hover {
+  color: var(--theme-link) !important;
 }
 
 .site-theme .site-nav {
@@ -258,49 +310,73 @@ html.dark-mode .site-theme main,
 html.dark-mode .site-theme .site-nav,
 html.dark-mode .site-theme .site-nav-panel,
 html.dark-mode .site-theme .site-nav-mobile-group,
-html.dark-mode .site-theme main .bg-white,
-html.dark-mode .site-theme main .card {
+html.dark-mode .site-theme .bg-white,
+html.dark-mode .site-theme .card {
   background-color: #1f2937 !important;
 }
 
-html.dark-mode .site-theme main .bg-gray-50 {
+html.dark-mode .site-theme,
+html.dark-mode .site-theme section,
+html.dark-mode .site-theme article,
+html.dark-mode .site-theme aside {
+  background-color: #111827;
+}
+
+html.dark-mode .site-theme .bg-gray-50 {
   background-color: #111827 !important;
 }
 
-html.dark-mode .site-theme main .bg-gray-100,
-html.dark-mode .site-theme main .bg-gray-200,
+html.dark-mode .site-theme .bg-gray-100,
+html.dark-mode .site-theme .bg-gray-200,
 html.dark-mode .site-theme .site-nav .site-nav-icon-button,
 html.dark-mode .site-theme .site-nav .site-nav-mobile-button {
   background-color: #374151 !important;
 }
 
-html.dark-mode .site-theme main h1,
-html.dark-mode .site-theme main h2,
-html.dark-mode .site-theme main h3,
-html.dark-mode .site-theme main h4,
-html.dark-mode .site-theme main h5,
-html.dark-mode .site-theme main h6,
-html.dark-mode .site-theme main .text-gray-900,
-html.dark-mode .site-theme main .text-gray-800,
-html.dark-mode .site-theme main .text-gray-700 {
+html.dark-mode .site-theme h1,
+html.dark-mode .site-theme h2,
+html.dark-mode .site-theme h3,
+html.dark-mode .site-theme h4,
+html.dark-mode .site-theme h5,
+html.dark-mode .site-theme h6,
+html.dark-mode .site-theme .text-gray-900,
+html.dark-mode .site-theme .text-gray-800,
+html.dark-mode .site-theme .text-gray-700 {
   color: #f9fafb;
 }
 
-html.dark-mode .site-theme main p,
-html.dark-mode .site-theme main li,
-html.dark-mode .site-theme main .text-gray-600,
-html.dark-mode .site-theme main .text-gray-500,
-html.dark-mode .site-theme main .text-gray-400 {
+html.dark-mode .site-theme p,
+html.dark-mode .site-theme li,
+html.dark-mode .site-theme label,
+html.dark-mode .site-theme span,
+html.dark-mode .site-theme .text-gray-600,
+html.dark-mode .site-theme .text-gray-500,
+html.dark-mode .site-theme .text-gray-400 {
   color: #d1d5db;
 }
 
-html.dark-mode .site-theme main .border,
-html.dark-mode .site-theme main .border-gray-200,
-html.dark-mode .site-theme main .border-gray-300,
-html.dark-mode .site-theme main .border-gray-400,
+html.dark-mode .site-theme .border,
+html.dark-mode .site-theme .border-gray-200,
+html.dark-mode .site-theme .border-gray-300,
+html.dark-mode .site-theme .border-gray-400,
 html.dark-mode .site-theme .site-nav .border,
 html.dark-mode .site-theme .site-nav .border-gray-200 {
   border-color: #374151 !important;
+}
+
+html.dark-mode .site-theme .bg-blue-50,
+html.dark-mode .site-theme .hover\:bg-blue-50:hover,
+html.dark-mode .site-theme .hover\:bg-gray-50:hover,
+html.dark-mode .site-theme .hover\:bg-white:hover {
+  background-color: rgba(59, 130, 246, 0.16) !important;
+}
+
+html.dark-mode .site-theme .text-blue-600,
+html.dark-mode .site-theme .text-blue-700,
+html.dark-mode .site-theme .text-blue-800,
+html.dark-mode .site-theme .hover\:text-blue-700:hover,
+html.dark-mode .site-theme .hover\:text-blue-800:hover {
+  color: #93c5fd !important;
 }
 
 html.dark-mode .site-theme .site-nav .site-nav-link {
