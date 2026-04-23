@@ -55,7 +55,7 @@ export default function TowingTransportSiteDemo() {
   if (notFound || !demo) return <NotFound />
 
   return (
-    <div className="bg-white text-gray-950">
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Towing & Heavy Transport Demo"
         description="Preview a towing, recovery, crane, and heavy transport website demo."

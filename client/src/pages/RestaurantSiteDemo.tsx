@@ -101,7 +101,7 @@ export default function RestaurantSiteDemo() {
   if (notFound || !demo) return <NotFound />
 
   return (
-    <div className="bg-white text-gray-950">
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Restaurant Website Demo"
         description="Preview a restaurant website demo powered by the editable Menu plugin."

@@ -44,7 +44,7 @@ export default function RealEstateSiteDemo() {
   if (notFound || !demo) return <NotFound />
 
   return (
-    <div className="bg-white text-gray-950">
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Real Estate Website Demo"
         description="Preview a real estate website demo for listings, neighborhoods, agents, and lead capture."

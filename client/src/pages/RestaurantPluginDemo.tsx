@@ -34,7 +34,7 @@ export default function RestaurantPluginDemo() {
   }, [items])
 
   return (
-    <div>
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Restaurant Menu Plugin Demo"
         description="Preview an editable restaurant menu plugin with item photos, descriptions, categories, and prices."

@@ -37,7 +37,7 @@ export default function EventsPluginDemo() {
   }, [])
 
   return (
-    <div>
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Events Plugin Demo"
         description="Preview an editable events plugin with titles, dates, descriptions, images, and action buttons."

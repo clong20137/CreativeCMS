@@ -210,6 +210,87 @@ html.dark-mode .site-footer .border-gray-800 {
   border-color: #374151 !important;
 }
 
+html.dark-mode .demo-page {
+  background-color: #030712 !important;
+  color: #f9fafb;
+}
+
+html.dark-mode .demo-page .bg-white,
+html.dark-mode .demo-page .bg-gray-50,
+html.dark-mode .demo-page .bg-gray-100,
+html.dark-mode .demo-page .card {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+html.dark-mode .demo-page .border-gray-200,
+html.dark-mode .demo-page .border-gray-300,
+html.dark-mode .demo-page .border-gray-800 {
+  border-color: #374151 !important;
+}
+
+html.dark-mode .demo-page .text-gray-900,
+html.dark-mode .demo-page .text-gray-800,
+html.dark-mode .demo-page .text-gray-700 {
+  color: #f3f4f6 !important;
+}
+
+html.dark-mode .demo-page .text-gray-600,
+html.dark-mode .demo-page .text-gray-500,
+html.dark-mode .demo-page .text-gray-400 {
+  color: #cbd5e1 !important;
+}
+
+html.dark-mode .demo-page .shadow,
+html.dark-mode .demo-page .shadow-lg,
+html.dark-mode .demo-page .shadow-xl,
+html.dark-mode .demo-page .shadow-sm {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark-mode .demo-page input,
+html.dark-mode .demo-page select,
+html.dark-mode .demo-page textarea {
+  background-color: #0f172a !important;
+  color: #f9fafb !important;
+  border-color: #4b5563 !important;
+}
+
+html.dark-mode .demo-page input::placeholder,
+html.dark-mode .demo-page textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.dark-mode .demo-page .bg-yellow-50,
+html.dark-mode .demo-page .bg-blue-50,
+html.dark-mode .demo-page .bg-red-100,
+html.dark-mode .demo-page .bg-green-100 {
+  color: #f9fafb !important;
+}
+
+html.dark-mode .demo-page .bg-yellow-50 {
+  background-color: rgba(234, 179, 8, 0.16) !important;
+}
+
+html.dark-mode .demo-page .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.16) !important;
+}
+
+html.dark-mode .demo-page .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.16) !important;
+}
+
+html.dark-mode .demo-page .bg-green-100 {
+  background-color: rgba(34, 197, 94, 0.16) !important;
+}
+
+html.dark-mode .demo-page .text-yellow-900,
+html.dark-mode .demo-page .text-blue-800,
+html.dark-mode .demo-page .text-red-700,
+html.dark-mode .demo-page .text-green-800 {
+  color: #f9fafb !important;
+}
+
 /* Smooth Page Transition */
 @keyframes fadeInUp {
   from {

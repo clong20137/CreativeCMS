@@ -80,7 +80,7 @@ export default function BookingPluginDemo() {
   const availableMeetingOptions = meetingOptions.filter(option => selectedSlot?.locationTypes?.includes(option.value))
 
   return (
-    <div>
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Booking Appointment Plugin Demo"
         description="Preview a booking plugin that lets visitors schedule appointments from available time slots."

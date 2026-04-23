@@ -101,7 +101,7 @@ export default function ProtectedContentPluginDemo() {
   }
 
   return (
-    <div>
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Protected Content Library Plugin Demo"
         description="Preview a protected content plugin that sells private videos, images, and documents to logged-in clients."

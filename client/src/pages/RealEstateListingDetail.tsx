@@ -53,7 +53,7 @@ export default function RealEstateListingDetail() {
   }
 
   return (
-    <div>
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title={`${listing.title} Real Estate Listing`}
         description={listing.description || `View details for ${listing.title}.`}

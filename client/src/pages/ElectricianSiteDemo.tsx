@@ -46,7 +46,7 @@ export default function ElectricianSiteDemo() {
   if (notFound || !demo) return <NotFound />
 
   return (
-    <div className="bg-white text-gray-950">
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Electrician Website Demo"
         description="Preview an electrician website demo for service calls, panel upgrades, lighting, inspections, and emergency requests."

@@ -51,7 +51,7 @@ export default function BarbershopSiteDemo() {
   if (notFound || !demo) return <NotFound />
 
   return (
-    <div className="bg-white text-gray-950">
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Barbershop Website Demo"
         description="Preview a modern barbershop website demo for cuts, beard trims, memberships, and booking."

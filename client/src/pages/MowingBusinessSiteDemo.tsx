@@ -49,7 +49,7 @@ export default function MowingBusinessSiteDemo() {
   if (notFound || !demo) return <NotFound />
 
   return (
-    <div className="bg-white text-gray-950">
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Mowing Business Website Demo"
         description="Preview a lawn mowing business website demo for recurring plans, seasonal cleanup, service areas, and quote requests."

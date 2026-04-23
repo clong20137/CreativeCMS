@@ -18,7 +18,7 @@ export default function CRMPluginDemo() {
   if (loading) return <div className="flex min-h-screen items-center justify-center"><PageSkeleton /></div>
 
   return (
-    <div className="bg-white">
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="CRM Quote System Plugin Demo"
         description="Preview a CRM quote request and lead capture plugin for service businesses."

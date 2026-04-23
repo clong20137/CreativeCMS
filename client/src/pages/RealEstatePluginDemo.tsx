@@ -34,7 +34,7 @@ export default function RealEstatePluginDemo() {
   }, [])
 
   return (
-    <div>
+    <div className="demo-page bg-white text-gray-950">
       <SEO
         title="Real Estate Listings Plugin Demo"
         description="Preview an editable real estate plugin with property photos, prices, descriptions, and more information buttons."
