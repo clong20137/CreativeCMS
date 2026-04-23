@@ -207,6 +207,48 @@ html.dark-mode .shadow-sm {
   background-color: var(--theme-surface);
 }
 
+.site-theme .site-nav {
+  background-color: var(--theme-surface);
+  color: var(--theme-body);
+}
+
+.site-theme .site-nav .site-nav-brand {
+  color: var(--theme-link);
+}
+
+.site-theme .site-nav .site-nav-link {
+  color: var(--theme-body);
+}
+
+.site-theme .site-nav .site-nav-link:hover,
+.site-theme .site-nav .site-nav-link-active,
+.site-theme .site-nav .site-nav-submenu-link:hover,
+.site-theme .site-nav .site-nav-submenu-link-active {
+  color: var(--theme-link);
+}
+
+.site-theme .site-nav .site-nav-link-active {
+  border-color: var(--theme-link);
+}
+
+.site-theme .site-nav .site-nav-panel,
+.site-theme .site-nav .site-nav-mobile-group {
+  background-color: var(--theme-surface);
+}
+
+.site-theme .site-nav .site-nav-icon-button,
+.site-theme .site-nav .site-nav-mobile-button {
+  background-color: var(--theme-secondary);
+  color: var(--theme-heading);
+  border-radius: var(--theme-button-radius);
+}
+
+.site-theme .site-nav .site-nav-icon-button:hover,
+.site-theme .site-nav .site-nav-mobile-button:hover {
+  background-color: var(--theme-secondary-hover);
+  color: var(--theme-link);
+}
+
 .site-theme .container {
   padding-left: calc(1rem * var(--theme-spacing-scale));
   padding-right: calc(1rem * var(--theme-spacing-scale));
@@ -236,7 +278,6 @@ html.dark-mode .shadow-sm {
   color: var(--section-heading-color, var(--theme-heading, inherit)) !important;
 }
 
-.page-section-render p,
 .page-section-render [class*="text-gray-600"],
 .page-section-render [class*="text-gray-700"],
 .page-section-render [class*="text-gray-500"] {
@@ -246,6 +287,16 @@ html.dark-mode .shadow-sm {
 .page-section-render .btn-primary {
   background-color: var(--section-button-bg, var(--theme-primary, #2563eb)) !important;
   color: var(--section-button-text, var(--theme-button-text, #ffffff)) !important;
+}
+
+.page-section-render .btn-secondary {
+  background-color: var(--theme-secondary, #e5e7eb) !important;
+  color: var(--theme-heading, #111827) !important;
+  border-radius: var(--theme-button-radius, 0.5rem) !important;
+}
+
+.page-section-render .btn-secondary:hover {
+  background-color: var(--theme-secondary-hover, #d1d5db) !important;
 }
 
 .page-section-render .section-button {
@@ -537,6 +588,12 @@ html.dark-mode .rich-text-editor:empty::before {
   padding: calc(0.75rem * var(--theme-spacing-scale)) calc(1.5rem * var(--theme-spacing-scale));
   background: var(--theme-secondary);
   color: var(--theme-heading);
+  border-radius: var(--theme-button-radius);
+}
+
+.site-theme .btn-primary,
+.site-theme .btn-secondary,
+.site-theme .section-button {
   border-radius: var(--theme-button-radius);
 }
 

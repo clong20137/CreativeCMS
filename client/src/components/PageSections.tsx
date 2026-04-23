@@ -696,14 +696,7 @@ function HeroSection({ section }: { section: any }) {
             {section.body && <RichTextContent html={section.body} className="mt-6 text-xl text-blue-100 md:text-2xl" />}
             <div className="mt-8 flex flex-wrap gap-4">
               {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="section-button inline-flex items-center justify-center gap-2">{section.buttonLabel} <FiArrowRight /></Link>}
-              {section.secondaryButtonLabel && section.secondaryButtonUrl && (
-                <Link
-                  to={section.secondaryButtonUrl}
-                  className="inline-flex items-center justify-center rounded-lg border border-white/35 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20"
-                >
-                  {section.secondaryButtonLabel}
-                </Link>
-              )}
+              {section.secondaryButtonLabel && section.secondaryButtonUrl && <Link to={section.secondaryButtonUrl} className="btn-secondary inline-flex items-center justify-center">{section.secondaryButtonLabel}</Link>}
             </div>
           </div>
           {hasHeroForm && (

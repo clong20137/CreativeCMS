@@ -129,14 +129,14 @@ export default function Navigation() {
 
   const linkClassName = (url: string) => {
     const active = url === '/plugins' ? isSectionActive(url) : isActive(url)
-    return `inline-flex h-10 items-center ${active ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`
+    return `site-nav-link inline-flex h-10 items-center border-b-2 border-transparent transition ${active ? 'site-nav-link-active' : ''}`
   }
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
+    <nav className="site-nav sticky top-0 z-50 shadow-lg">
       <div className="container">
         <div className="flex justify-between items-center min-h-16 py-2">
-          <Link to="/" className="flex items-center text-2xl font-bold text-blue-600">
+          <Link to="/" className="site-nav-brand flex items-center text-2xl font-bold">
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -170,22 +170,22 @@ export default function Navigation() {
                   onMouseLeave={() => setDesktopOpenDropdown(current => current === dropdownKey ? null : current)}
                 >
                   <div className="flex items-center gap-1">
-                    <Link to={item.url} className={`inline-flex h-10 items-center ${isParentActive ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}>
+                    <Link to={item.url} className={`site-nav-link inline-flex h-10 items-center border-b-2 border-transparent transition ${isParentActive ? 'site-nav-link-active' : ''}`}>
                       {item.label}
                     </Link>
                     <button
                       type="button"
                       onClick={() => setDesktopOpenDropdown(current => current === dropdownKey ? null : dropdownKey)}
-                      className={`inline-flex h-10 items-center justify-center ${isParentActive ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'} transition`}
+                      className={`site-nav-link inline-flex h-10 items-center justify-center transition ${isParentActive ? 'site-nav-link-active' : ''}`}
                       aria-label={`Toggle ${item.label} submenu`}
                     >
                       <FiChevronDown className={`transition-transform ${desktopOpenDropdown === dropdownKey ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
                   <div className={`absolute left-0 top-full z-50 min-w-[14rem] pt-2 transition ${desktopOpenDropdown === dropdownKey ? 'visible opacity-100 translate-y-0' : 'invisible -translate-y-1 opacity-0'}`}>
-                    <div className="rounded-lg border bg-white p-2 shadow-xl">
+                    <div className="site-nav-panel rounded-lg border p-2 shadow-xl">
                       {children.map((child: NavigationItem) => (
-                        <Link key={`${child.label}-${child.url}`} to={child.url} className={`block rounded-md px-3 py-2 text-sm font-medium transition ${isActive(child.url) || isSectionActive(child.url) ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'}`}>
+                        <Link key={`${child.label}-${child.url}`} to={child.url} className={`site-nav-submenu-link block rounded-md px-3 py-2 text-sm font-medium transition ${isActive(child.url) || isSectionActive(child.url) ? 'site-nav-submenu-link-active bg-blue-50' : 'hover:bg-gray-50'}`}>
                           {child.label}
                         </Link>
                       ))}
@@ -202,7 +202,7 @@ export default function Navigation() {
             </Link>
             <button
               onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition"
+              className="site-nav-icon-button inline-flex h-10 w-10 items-center justify-center transition"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
@@ -213,7 +213,7 @@ export default function Navigation() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-gray-700"
+            className="site-nav-mobile-button md:hidden inline-flex h-10 w-10 items-center justify-center transition"
           >
             {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
           </button>
@@ -232,8 +232,8 @@ export default function Navigation() {
                   <Link
                     key={dropdownKey}
                     to={item.url}
-                    className={`block rounded-xl px-2 py-3 text-base font-medium transition ${
-                      isParentActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
+                    className={`site-nav-link block rounded-xl px-2 py-3 text-base font-medium transition ${
+                      isParentActive ? 'site-nav-link-active bg-blue-50' : 'hover:bg-gray-50'
                     }`}
                   >
                     {item.label}
@@ -242,12 +242,12 @@ export default function Navigation() {
               }
 
               return (
-                <div key={dropdownKey} className="rounded-2xl bg-gray-50 p-1.5">
+                <div key={dropdownKey} className="site-nav-mobile-group rounded-2xl p-1.5">
                   <div className="flex items-center gap-2">
                     <Link
                       to={item.url}
-                      className={`min-w-0 flex-1 rounded-xl px-3 py-3 text-base font-semibold transition ${
-                        isParentActive ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-800 hover:bg-white hover:text-blue-600'
+                      className={`site-nav-link min-w-0 flex-1 rounded-xl px-3 py-3 text-base font-semibold transition ${
+                        isParentActive ? 'site-nav-link-active bg-white shadow-sm' : 'hover:bg-white'
                       }`}
                     >
                       <span className="block truncate">{item.label}</span>
@@ -255,10 +255,10 @@ export default function Navigation() {
                     <button
                       type="button"
                       onClick={() => setMobileOpenDropdown(current => current === dropdownKey ? null : dropdownKey)}
-                      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition ${
+                      className={`site-nav-mobile-button inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition ${
                         mobileOpenDropdown === dropdownKey || isParentActive
-                          ? 'bg-white text-blue-700 shadow-sm'
-                          : 'text-gray-700 hover:bg-white hover:text-blue-600'
+                          ? 'site-nav-link-active bg-white shadow-sm'
+                          : 'hover:bg-white'
                       }`}
                       aria-label={`Toggle ${item.label} submenu`}
                       aria-expanded={mobileOpenDropdown === dropdownKey}
@@ -267,15 +267,15 @@ export default function Navigation() {
                     </button>
                   </div>
                   {mobileOpenDropdown === dropdownKey && (
-                    <div className="mt-2 space-y-1 rounded-xl bg-white p-2 shadow-sm">
+                    <div className="site-nav-panel mt-2 space-y-1 rounded-xl p-2 shadow-sm">
                       {children.map((child: NavigationItem) => (
                         <Link
                           key={`${child.label}-${child.url}`}
                           to={child.url}
-                          className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                          className={`site-nav-submenu-link block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                             isActive(child.url) || isSectionActive(child.url)
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                              ? 'site-nav-submenu-link-active bg-blue-50'
+                              : 'hover:bg-gray-50'
                           }`}
                         >
                           {child.label}
@@ -286,12 +286,12 @@ export default function Navigation() {
                 </div>
               )
             })}
-            <Link to={userRole ? dashboardPath : '/login'} className="mt-2 block w-full rounded-xl bg-gray-100 px-3 py-3 text-left text-base font-semibold text-gray-800 transition hover:bg-gray-200">
+            <Link to={userRole ? dashboardPath : '/login'} className="btn-primary mt-2 block w-full rounded-xl px-3 py-3 text-left text-base font-semibold">
               {userRole ? 'Dashboard' : 'Client Login'}
             </Link>
             <button
               onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
-              className="block rounded-xl px-2 py-3 text-left text-base font-medium text-gray-700 transition hover:bg-gray-50 hover:text-blue-600"
+              className="site-nav-mobile-button block w-full rounded-xl px-2 py-3 text-left text-base font-medium transition"
             >
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </button>
