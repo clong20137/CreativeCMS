@@ -2,6 +2,7 @@ import express from 'express'
 import jwt from 'jsonwebtoken'
 import Ticket from '../models/Ticket.js'
 import User from '../models/User.js'
+import { ensureActiveUser } from '../utils/auth.js'
 
 const router = express.Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -19,7 +20,7 @@ const verifyToken = (req, res, next) => {
   }
 }
 
-router.get('/client', verifyToken, async (req, res) => {
+router.get('/client', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const tickets = await Ticket.findAll({
       where: { clientId: req.userId },
@@ -31,7 +32,7 @@ router.get('/client', verifyToken, async (req, res) => {
   }
 })
 
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const ticket = await Ticket.create({
       clientId: req.userId,
@@ -45,7 +46,7 @@ router.post('/', verifyToken, async (req, res) => {
   }
 })
 
-router.get('/admin', verifyToken, async (req, res) => {
+router.get('/admin', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     if (req.role !== 'admin') return res.status(403).json({ error: 'Admin access required' })
     const tickets = await Ticket.findAll({
@@ -58,7 +59,7 @@ router.get('/admin', verifyToken, async (req, res) => {
   }
 })
 
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     if (req.role !== 'admin') return res.status(403).json({ error: 'Admin access required' })
     const ticket = await Ticket.findByPk(req.params.id)

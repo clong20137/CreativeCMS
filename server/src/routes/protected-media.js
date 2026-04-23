@@ -7,6 +7,7 @@ import { DataTypes } from 'sequelize'
 import MediaAsset from '../models/MediaAsset.js'
 import ProtectedContentItem from '../models/ProtectedContentItem.js'
 import ProtectedContentPurchase from '../models/ProtectedContentPurchase.js'
+import User from '../models/User.js'
 
 const router = express.Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -62,6 +63,9 @@ router.get('/:assetId', async (req, res) => {
     await ensureProtectedMediaSchema()
     const decoded = verifyAccessToken(req)
     if (!decoded) return res.status(401).json({ error: 'Login required' })
+    const user = await User.findByPk(decoded.userId, { attributes: ['id', 'isActive'] })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
 
     const asset = await MediaAsset.findOne({
       where: { id: req.params.assetId, visibility: 'private' }

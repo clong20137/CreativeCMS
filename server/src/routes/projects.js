@@ -1,10 +1,11 @@
 import express from 'express'
 import Project from '../models/Project.js'
+import { ensureActiveUser, requireRole, requireSelfOrAdmin, verifyToken } from '../utils/auth.js'
 
 const router = express.Router()
 
 // Get all projects for a client
-router.get('/client/:clientId', async (req, res) => {
+router.get('/client/:clientId', verifyToken, ensureActiveUser, requireSelfOrAdmin((req) => req.params.clientId), async (req, res) => {
   try {
     const projects = await Project.findAll({
       where: { clientId: req.params.clientId },
@@ -17,10 +18,13 @@ router.get('/client/:clientId', async (req, res) => {
 })
 
 // Get single project
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const project = await Project.findByPk(req.params.id)
     if (!project) return res.status(404).json({ error: 'Project not found' })
+    if (req.userRole !== 'admin' && String(project.clientId) !== String(req.userId)) {
+      return res.status(403).json({ error: 'You do not have access to this project' })
+    }
     res.json(project)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -28,7 +32,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // Create project
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     const project = await Project.create(req.body)
     res.status(201).json(project)
@@ -38,7 +42,7 @@ router.post('/', async (req, res) => {
 })
 
 // Update project
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     const project = await Project.findByPk(req.params.id)
     if (!project) return res.status(404).json({ error: 'Project not found' })
@@ -50,7 +54,7 @@ router.put('/:id', async (req, res) => {
 })
 
 // Delete project
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     const project = await Project.findByPk(req.params.id)
     if (!project) return res.status(404).json({ error: 'Project not found' })

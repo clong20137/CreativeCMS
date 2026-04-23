@@ -13,6 +13,7 @@ import ProtectedContentItem from '../models/ProtectedContentItem.js'
 import ProtectedContentPurchase from '../models/ProtectedContentPurchase.js'
 import CRMLead from '../models/CRMLead.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
+import User from '../models/User.js'
 
 const router = express.Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
@@ -33,6 +34,17 @@ async function ensureProtectedContentSchema() {
   }
 
   protectedContentSchemaReady = true
+}
+
+async function ensureActiveClient(req, res, next) {
+  try {
+    const user = await User.findByPk(req.userId, { attributes: ['id', 'isActive'] })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
+    next()
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 }
 
 function verifyClient(req, res, next) {
@@ -332,7 +344,7 @@ export async function ensureDemoPlugins() {
   ])
 }
 
-router.get('/client', verifyClient, async (req, res) => {
+router.get('/client', verifyClient, ensureActiveClient, async (req, res) => {
   try {
     await ensureDemoPlugins()
     const [plugins, purchases] = await Promise.all([
@@ -363,7 +375,7 @@ router.get('/', async (req, res) => {
   }
 })
 
-router.post('/:slug/checkout-session', verifyClient, async (req, res) => {
+router.post('/:slug/checkout-session', verifyClient, ensureActiveClient, async (req, res) => {
   try {
     await ensureDemoPlugins()
     const plugin = await Plugin.findOne({ where: { slug: req.params.slug } })
@@ -426,7 +438,7 @@ router.post('/:slug/checkout-session', verifyClient, async (req, res) => {
   }
 })
 
-router.post('/protected-content/items/:id/checkout-session', verifyClient, async (req, res) => {
+router.post('/protected-content/items/:id/checkout-session', verifyClient, ensureActiveClient, async (req, res) => {
   try {
     await ensureProtectedContentSchema()
     const plugin = await getOrCreateProtectedContentPlugin()
@@ -597,7 +609,7 @@ router.get('/protected-content/items', optionalClient, async (req, res) => {
   }
 })
 
-router.get('/protected-content/items/:id', verifyClient, async (req, res) => {
+router.get('/protected-content/items/:id', verifyClient, ensureActiveClient, async (req, res) => {
   try {
     await ensureProtectedContentSchema()
     await getOrCreateProtectedContentPlugin()

@@ -3,6 +3,7 @@ import Subscription from '../models/Subscription.js'
 import SubscriptionPlan from '../models/SubscriptionPlan.js'
 import CMSLicense from '../models/CMSLicense.js'
 import { DataTypes } from 'sequelize'
+import { ensureActiveUser, requireRole, requireSelfOrAdmin, verifyToken } from '../utils/auth.js'
 
 const router = express.Router()
 let subscriptionSchemaReady = false
@@ -206,7 +207,7 @@ async function migrateLegacySubscriptionLicense(clientId) {
 }
 
 // Get subscription for a client
-router.get('/client/:clientId', async (req, res) => {
+router.get('/client/:clientId', verifyToken, ensureActiveUser, requireSelfOrAdmin((req) => req.params.clientId), async (req, res) => {
   try {
     await ensureSubscriptionSchema()
     const subscription = await Subscription.findOne({
@@ -219,7 +220,7 @@ router.get('/client/:clientId', async (req, res) => {
   }
 })
 
-router.get('/client/:clientId/license', async (req, res) => {
+router.get('/client/:clientId/license', verifyToken, ensureActiveUser, requireSelfOrAdmin((req) => req.params.clientId), async (req, res) => {
   try {
     await ensureCmsLicenseSchema()
     await migrateLegacySubscriptionLicense(req.params.clientId)
@@ -248,11 +249,14 @@ router.get('/client/:clientId/license', async (req, res) => {
 })
 
 // Get single subscription
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     await ensureSubscriptionSchema()
     const subscription = await Subscription.findByPk(req.params.id)
     if (!subscription) return res.status(404).json({ error: 'Subscription not found' })
+    if (req.userRole !== 'admin' && String(subscription.clientId) !== String(req.userId)) {
+      return res.status(403).json({ error: 'You do not have access to this subscription' })
+    }
     res.json(subscription)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -260,7 +264,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // Create subscription
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     await ensureSubscriptionSchema()
     const subscription = await Subscription.create(req.body)
@@ -271,7 +275,7 @@ router.post('/', async (req, res) => {
 })
 
 // Update subscription
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     await ensureSubscriptionSchema()
     const subscription = await Subscription.findByPk(req.params.id)
@@ -284,11 +288,14 @@ router.put('/:id', async (req, res) => {
 })
 
 // Cancel subscription
-router.put('/:id/cancel', async (req, res) => {
+router.put('/:id/cancel', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     await ensureSubscriptionSchema()
     const subscription = await Subscription.findByPk(req.params.id)
     if (!subscription) return res.status(404).json({ error: 'Subscription not found' })
+    if (req.userRole !== 'admin' && String(subscription.clientId) !== String(req.userId)) {
+      return res.status(403).json({ error: 'You do not have access to this subscription' })
+    }
     await subscription.update({ status: 'cancelled', endDate: new Date() })
     res.json(subscription)
   } catch (error) {
@@ -297,7 +304,7 @@ router.put('/:id/cancel', async (req, res) => {
 })
 
 // Delete subscription
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     await ensureSubscriptionSchema()
     const subscription = await Subscription.findByPk(req.params.id)

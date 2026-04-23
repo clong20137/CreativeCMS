@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import Invoice from '../models/Invoice.js'
 import User from '../models/User.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
+import { ensureActiveUser, requireRole, requireSelfOrAdmin, verifyToken } from '../utils/auth.js'
 
 const router = express.Router()
 
@@ -138,7 +139,7 @@ function createTransporter() {
 }
 
 // Get all invoices for a client
-router.get('/client/:clientId', async (req, res) => {
+router.get('/client/:clientId', verifyToken, ensureActiveUser, requireSelfOrAdmin((req) => req.params.clientId), async (req, res) => {
   try {
     const invoices = await Invoice.findAll({
       where: { clientId: req.params.clientId },
@@ -151,10 +152,13 @@ router.get('/client/:clientId', async (req, res) => {
 })
 
 // Get single invoice
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id)
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+    if (req.userRole !== 'admin' && String(invoice.clientId) !== String(req.userId)) {
+      return res.status(403).json({ error: 'You do not have access to this invoice' })
+    }
     res.json(invoice)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -162,10 +166,13 @@ router.get('/:id', async (req, res) => {
 })
 
 // Download invoice as printable HTML
-router.get('/:id/download', async (req, res) => {
+router.get('/:id/download', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const invoice = await findInvoiceWithClient(req.params.id)
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+    if (req.userRole !== 'admin' && String(invoice.clientId) !== String(req.userId)) {
+      return res.status(403).json({ error: 'You do not have access to this invoice' })
+    }
 
     const html = buildInvoiceHtml(invoice, invoice.User)
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
@@ -177,7 +184,7 @@ router.get('/:id/download', async (req, res) => {
 })
 
 // Email invoice to client
-router.post('/:id/send', async (req, res) => {
+router.post('/:id/send', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     const invoice = await findInvoiceWithClient(req.params.id)
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
@@ -210,10 +217,13 @@ router.post('/:id/send', async (req, res) => {
   }
 })
 
-router.post('/:id/checkout-session', async (req, res) => {
+router.post('/:id/checkout-session', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const invoice = await findInvoiceWithClient(req.params.id)
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+    if (req.userRole !== 'admin' && String(invoice.clientId) !== String(req.userId)) {
+      return res.status(403).json({ error: 'You do not have access to this invoice' })
+    }
 
     const stripe = await getStripeClient()
     if (!stripe) return res.status(400).json({ error: 'Stripe is not configured' })
@@ -251,7 +261,7 @@ router.post('/:id/checkout-session', async (req, res) => {
 })
 
 // Create invoice
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     const invoiceData = {
       ...req.body,
@@ -265,7 +275,7 @@ router.post('/', async (req, res) => {
 })
 
 // Update invoice
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id)
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
@@ -277,7 +287,7 @@ router.put('/:id', async (req, res) => {
 })
 
 // Mark invoice as paid
-router.put('/:id/pay', async (req, res) => {
+router.put('/:id/pay', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id)
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
@@ -289,7 +299,7 @@ router.put('/:id/pay', async (req, res) => {
 })
 
 // Delete invoice
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, ensureActiveUser, requireRole('admin'), async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id)
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' })

@@ -4,35 +4,9 @@ import bcryptjs from 'bcryptjs'
 import crypto from 'crypto'
 import User from '../models/User.js'
 import { base32Encode, verifyTotp } from './auth.js'
+import { ensureActiveUser, verifyToken } from '../utils/auth.js'
 
 const router = express.Router()
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
-
-// Middleware to verify token
-const verifyToken = (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1]
-    if (!token) return res.status(401).json({ error: 'No token provided' })
-    
-    const decoded = jwt.verify(token, JWT_SECRET)
-    req.userId = decoded.userId
-    req.userRole = decoded.role
-    next()
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' })
-  }
-}
-
-const ensureActiveUser = async (req, res, next) => {
-  try {
-    const user = await User.findByPk(req.userId, { attributes: ['id', 'isActive'] })
-    if (!user) return res.status(404).json({ error: 'User not found' })
-    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
-    next()
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-}
 
 // Get user profile
 router.get('/profile', verifyToken, ensureActiveUser, async (req, res) => {
@@ -133,7 +107,7 @@ router.post('/two-factor/setup', verifyToken, ensureActiveUser, async (req, res)
   }
 })
 
-router.post('/two-factor/confirm', verifyToken, async (req, res) => {
+router.post('/two-factor/confirm', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const user = await User.findByPk(req.userId)
     if (!user) return res.status(404).json({ error: 'User not found' })
@@ -156,7 +130,7 @@ router.post('/two-factor/confirm', verifyToken, async (req, res) => {
   }
 })
 
-router.put('/two-factor', verifyToken, async (req, res) => {
+router.put('/two-factor', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const user = await User.findByPk(req.userId)
     if (!user) return res.status(404).json({ error: 'User not found' })
@@ -179,7 +153,7 @@ router.put('/two-factor', verifyToken, async (req, res) => {
 })
 
 // Get user preferences (notifications, privacy, etc)
-router.get('/preferences', verifyToken, async (req, res) => {
+router.get('/preferences', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const user = await User.findByPk(req.userId)
     if (!user) return res.status(404).json({ error: 'User not found' })
@@ -196,7 +170,7 @@ router.get('/preferences', verifyToken, async (req, res) => {
 })
 
 // Update preferences
-router.put('/preferences', verifyToken, async (req, res) => {
+router.put('/preferences', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const { emailNotifications, invoiceReminders, marketingEmails, privacyLevel } = req.body
     
