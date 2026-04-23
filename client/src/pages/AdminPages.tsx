@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiLink, FiList, FiMonitor, FiMove, FiRotateCcw, FiRotateCw, FiSave, FiSearch, FiSmartphone, FiTablet, FiTrash2, FiType } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
-import MediaPicker from '../components/MediaPicker'
-import PageSections from '../components/PageSections'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI, resolveAssetUrl } from '../services/api'
 import { normalizeRichTextHtml, sanitizeRichTextHtml } from '../utils/richText'
+
+const MediaPicker = lazy(() => import('../components/MediaPicker'))
+const PageSections = lazy(() => import('../components/PageSections'))
 
 const publicPages = [
   { id: 'home', label: 'Homepage', url: '/' },
@@ -1623,15 +1624,19 @@ export default function AdminPages() {
           </aside>
         </div>
       )}
-      <MediaPicker
-        isOpen={mediaPicker.open}
-        type={mediaPicker.type}
-        onClose={() => setMediaPicker({ open: false, type: 'image', onSelect: null })}
-        onSelect={(url) => {
-          mediaPicker.onSelect?.(url)
-          setMessage('Media selected. Save to publish it.')
-        }}
-      />
+      {mediaPicker.open && (
+        <Suspense fallback={null}>
+          <MediaPicker
+            isOpen={mediaPicker.open}
+            type={mediaPicker.type}
+            onClose={() => setMediaPicker({ open: false, type: 'image', onSelect: null })}
+            onSelect={(url) => {
+              mediaPicker.onSelect?.(url)
+              setMessage('Media selected. Save to publish it.')
+            }}
+          />
+        </Suspense>
+      )}
       <FloatingPageActions
         isCustomPage={activeTab === 'Custom Pages'}
         isSavedCustomPage={activeTab === 'Custom Pages' && selectedPageId !== 'new'}
@@ -1753,6 +1758,14 @@ function PageScoreCard({ insights }: any) {
   )
 }
 
+const PreviewSectionContent = memo(function PreviewSectionContent({ section }: { section: any }) {
+  return (
+    <Suspense fallback={<div className="min-h-[12rem] animate-pulse bg-gray-100" />}>
+      <PageSections sections={[section]} />
+    </Suspense>
+  )
+})
+
 function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, highlightedSectionId, previewMode, setPreviewMode, canUndo, canRedo, undoPageChange, redoPageChange, onDrop, emptyText, insights }: any) {
   const previewModes = [
     { value: 'desktop', label: 'Desktop', icon: FiMonitor, width: 'w-full' },
@@ -1837,7 +1850,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                     <p className="font-bold">{getSectionTitle(section, index)} is hidden</p>
                     <p className="text-sm">It will not appear on the live page until you show it again.</p>
                   </div>
-                ) : <PageSections sections={[section]} />}
+                ) : <PreviewSectionContent section={section} />}
               </div>
             ))}
           </div>
