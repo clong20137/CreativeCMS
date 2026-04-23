@@ -653,7 +653,7 @@ async function storeUpload(dataUrl, originalName = '', visibility = 'public') {
   }
 
   const buffer = Buffer.from(match[2], 'base64')
-  if (buffer.length > 25 * 1024 * 1024) {
+  if (buffer.length > 45 * 1024 * 1024) {
     const error = new Error('Upload is too large')
     error.statusCode = 413
     throw error

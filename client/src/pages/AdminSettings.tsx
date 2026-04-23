@@ -94,10 +94,10 @@ const pageHeaderLabels: Record<string, string> = {
   plugins: 'Plugins',
   contact: 'Contact'
 }
-const MAX_DATA_URL_LENGTH = 80_000
-const MAX_IMAGE_WIDTH = 900
-const MAX_IMAGE_HEIGHT = 600
-const IMAGE_QUALITY = 0.65
+const MAX_DATA_URL_LENGTH = 2_500_000
+const MAX_IMAGE_WIDTH = 1600
+const MAX_IMAGE_HEIGHT = 1200
+const IMAGE_QUALITY = 0.78
 const IMAGE_SETTING_KEYS = ['faviconUrl', 'logoUrl', 'heroMediaUrl']
 const IMAGE_LIST_KEYS = ['featuredWork', 'services', 'testimonials']
 

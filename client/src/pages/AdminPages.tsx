@@ -103,7 +103,7 @@ const nestedBlockOptions = [
 
 const MAX_IMAGE_WIDTH = 1200
 const MAX_IMAGE_HEIGHT = 800
-const MAX_UPLOAD_DATA_URL_LENGTH = 640_000
+const MAX_UPLOAD_DATA_URL_LENGTH = 3_000_000
 
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -146,7 +146,7 @@ async function getUploadDataUrl(file: File) {
       quality = Math.max(0.52, quality - 0.06)
     }
 
-    throw new Error('This image is still too large after compression. Please use a smaller image.')
+    throw new Error('This image is still too large after compression. Please use a smaller image or a hosted image URL.')
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
