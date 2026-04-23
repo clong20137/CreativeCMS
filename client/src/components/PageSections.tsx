@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { FiArrowRight, FiCamera, FiCheck, FiMail, FiMapPin, FiMonitor, FiPenTool, FiPhone, FiVideo } from 'react-icons/fi'
@@ -17,17 +17,105 @@ const pluginLabels: Record<string, string> = {
   plugins: 'Website Plugins'
 }
 
-const columnClasses: Record<number, string> = {
-  1: 'md:grid-cols-1',
-  2: 'md:grid-cols-2',
-  3: 'md:grid-cols-3',
-  4: 'md:grid-cols-2 lg:grid-cols-4',
-  5: 'md:grid-cols-2 lg:grid-cols-5',
-  6: 'md:grid-cols-3 lg:grid-cols-6'
+function clampColumns(value: any, fallback = 1) {
+  const numeric = Number(value || fallback)
+  if (!Number.isFinite(numeric)) return fallback
+  return Math.min(6, Math.max(1, Math.round(numeric)))
 }
 
-export default function PageSections({ sections }: { sections?: any[] }) {
-  const visibleSections = Array.isArray(sections) ? sections.filter(section => !section?.isHidden) : []
+function getResponsiveGridStyle(section: any, fallback = 1) {
+  const desktop = clampColumns(section?.columns, fallback)
+  const tablet = clampColumns(section?.tabletColumns, desktop)
+  const mobile = clampColumns(section?.mobileColumns, 1)
+
+  return {
+    '--responsive-cols-desktop': String(desktop),
+    '--responsive-cols-tablet': String(tablet),
+    '--responsive-cols-mobile': String(mobile)
+  } as CSSProperties
+}
+
+type ResponsiveMode = 'desktop' | 'tablet' | 'mobile'
+
+const RESPONSIVE_FIELD_KEYS = [
+  'marginTop',
+  'marginRight',
+  'marginBottom',
+  'marginLeft',
+  'paddingTop',
+  'paddingRight',
+  'paddingBottom',
+  'paddingLeft',
+  'textAlign',
+  'headingFontSize',
+  'bodyFontSize',
+  'buttonFontSize',
+  'cardMetaFontSize',
+  'cardHeadingFontSize',
+  'cardBodyFontSize',
+  'columns',
+  'imageWidth',
+  'imageHeight',
+  'imageAlignX',
+  'imageAlignY'
+]
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+function getResponsiveModeFromWidth(width: number): ResponsiveMode {
+  if (width < 768) return 'mobile'
+  if (width < 1024) return 'tablet'
+  return 'desktop'
+}
+
+function getResponsiveValue(section: any, key: string, mode: ResponsiveMode) {
+  if (mode === 'desktop') return section?.[key]
+  const overrideKey = `${mode}${capitalize(key)}`
+  const overrideValue = section?.[overrideKey]
+  return overrideValue === '' || overrideValue === null || overrideValue === undefined ? section?.[key] : overrideValue
+}
+
+function resolveResponsiveSection(section: any, mode: ResponsiveMode) {
+  if (!section || mode === 'desktop') return section
+  const nextSection = { ...section }
+  RESPONSIVE_FIELD_KEYS.forEach((key) => {
+    nextSection[key] = getResponsiveValue(section, key, mode)
+  })
+  return nextSection
+}
+
+function isSectionVisible(section: any, mode: ResponsiveMode) {
+  if (!section || section.isHidden) return false
+  if (mode === 'mobile' && section.hideOnMobile) return false
+  if (mode === 'tablet' && section.hideOnTablet) return false
+  if (mode === 'desktop' && section.hideOnDesktop) return false
+  return true
+}
+
+export default function PageSections({ sections, previewMode }: { sections?: any[]; previewMode?: ResponsiveMode }) {
+  const [responsiveMode, setResponsiveMode] = useState<ResponsiveMode>(() => previewMode || (typeof window !== 'undefined' ? getResponsiveModeFromWidth(window.innerWidth) : 'desktop'))
+
+  useEffect(() => {
+    if (previewMode) {
+      setResponsiveMode(previewMode)
+      return
+    }
+    if (typeof window === 'undefined') return
+    const handleResize = () => setResponsiveMode(getResponsiveModeFromWidth(window.innerWidth))
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [previewMode])
+
+  const visibleSections = useMemo(() => {
+    const list = Array.isArray(sections) ? sections : []
+    return list
+      .filter(section => isSectionVisible(section, responsiveMode))
+      .map(section => resolveResponsiveSection(section, responsiveMode))
+  }, [sections, responsiveMode])
+
   if (visibleSections.length === 0) return null
 
   return (
@@ -396,7 +484,7 @@ function ColumnsSection({ section }: { section: any }) {
     <section className="py-16">
       <div className="container">
         <SectionHeading section={section} fallbackTitle="" />
-        <div className={`grid grid-cols-1 gap-6 ${columnClasses[count] || columnClasses[2]}`}>
+        <div className="responsive-grid gap-6" style={getResponsiveGridStyle(section, count || 2)}>
           {columns.slice(0, count).map((column: any, index: number) => (
             <div key={column.id || index} className="space-y-5">
               {(column.sections || []).map((block: any, blockIndex: number) => (
@@ -458,7 +546,7 @@ function ColumnPluginsListBlock({ block }: { block: any }) {
       {loading ? (
         <div className="text-gray-600">Loading plugins...</div>
       ) : (
-        <div className={`grid grid-cols-1 gap-4 ${columnClasses[count] || columnClasses[1]}`}>
+        <div className="responsive-grid gap-4" style={getResponsiveGridStyle(block, count || 1)}>
           {plugins.slice(0, limit).map((plugin) => (
             <div key={plugin.id} className="rounded-lg border bg-white p-5 shadow-sm">
               <h3 className="text-xl font-bold text-gray-900">{plugin.name}</h3>
@@ -492,7 +580,7 @@ function ColumnSiteDemosBlock({ block }: { block: any }) {
       {loading ? (
         <div className="text-gray-600">Loading site demos...</div>
       ) : (
-        <div className={`grid grid-cols-1 gap-4 ${columnClasses[count] || columnClasses[1]}`}>
+        <div className="responsive-grid gap-4" style={getResponsiveGridStyle(block, count || 1)}>
           {demos.slice(0, limit).map((demo) => (
             <article key={demo.id || demo.slug} className="overflow-hidden rounded-lg border bg-white shadow-sm">
               {demo.previewImage && <img src={resolveAssetUrl(demo.previewImage)} alt={demo.name} loading="lazy" decoding="async" className="h-48 w-full object-cover" />}
@@ -520,7 +608,7 @@ function ImageCardsSection({ section }: { section: any }) {
     <section className="py-16">
       <div className="container">
         <SectionHeading section={section} fallbackTitle="Image Cards" />
-        <div className={`grid grid-cols-1 gap-8 ${columnClasses[Number(section.columns || 2)] || columnClasses[2]}`}>
+        <div className="responsive-grid gap-8" style={getResponsiveGridStyle(section, 2)}>
           {items.map((item: any, index: number) => <ImageCard key={item.id || index} item={item} />)}
           {items.length === 0 && <div className="rounded-lg border p-6 text-center text-gray-600 md:col-span-2">No image cards have been added yet.</div>}
         </div>
@@ -571,7 +659,7 @@ function GallerySection({ section }: { section: any }) {
     <section className="py-16">
       <div className="container">
         <SectionHeading section={section} fallbackTitle="Gallery" />
-        <div className={`grid grid-cols-1 gap-4 ${columnClasses[Number(section.columns || 3)] || columnClasses[3]}`}>
+        <div className="responsive-grid gap-4" style={getResponsiveGridStyle(section, 3)}>
           {items.map((item: any, index: number) => (
             <figure key={item.id || index} className="group overflow-hidden rounded-lg bg-gray-100">
               {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title || section.title || ''} loading="lazy" decoding="async" className="h-72 w-full object-cover transition duration-300 group-hover:scale-105" />}
@@ -714,7 +802,7 @@ function PortfolioSection({ section }: { section: any }) {
   return (
     <section className="section-padding">
       <div className="container">
-        <div className={`grid grid-cols-1 gap-6 ${columnClasses[Number(section.columns || 4)] || columnClasses[4]}`}>
+        <div className="responsive-grid gap-6" style={getResponsiveGridStyle(section, 4)}>
           {items.slice(0, Number(section.itemLimit || 8)).map((item) => (
             <article key={item.id} className="card overflow-hidden">
               {item.image && <img src={resolveAssetUrl(item.image)} alt={item.title} className="h-56 w-full object-contain p-2" />}
@@ -961,7 +1049,7 @@ function FaqSection({ section }: { section: any }) {
     <section className="py-16">
       <div className={`container ${columns > 1 ? 'max-w-5xl' : 'max-w-2xl'}`}>
         <SectionHeading section={section} fallbackTitle="Frequently Asked Questions" />
-        <div className={`grid grid-cols-1 gap-6 ${columns > 1 ? 'md:grid-cols-2' : ''}`}>
+        <div className="responsive-grid gap-6" style={getResponsiveGridStyle(section, columns > 1 ? 2 : 1)}>
           {visibleItems.map((faq: any, index: number) => (
             <div key={index} className="card p-6">
               <h3 className="text-lg font-bold text-gray-900">{faq.q || faq.question}</h3>
@@ -1093,7 +1181,7 @@ function SiteDemosSection({ section }: { section: any }) {
         {loading ? (
           <div className="text-gray-600">Loading site demos...</div>
         ) : (
-          <div className={`grid grid-cols-1 gap-6 ${columnClasses[Number(section.columns || 3)] || columnClasses[3]}`}>
+          <div className="responsive-grid gap-6" style={getResponsiveGridStyle(section, 3)}>
             {demos.slice(0, limit).map(demo => (
               <article key={demo.id || demo.slug} className="group overflow-hidden rounded-lg bg-white shadow transition hover:-translate-y-1 hover:shadow-xl">
                 {demo.previewImage && <img src={resolveAssetUrl(demo.previewImage)} alt={demo.name} loading="lazy" decoding="async" className="h-64 w-full object-cover transition duration-300 group-hover:scale-105" />}

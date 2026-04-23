@@ -242,6 +242,23 @@ html.dark-mode .shadow-sm {
   line-height: var(--section-card-body-line-height, 1.5) !important;
 }
 
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--responsive-cols-mobile, 1), minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .responsive-grid {
+    grid-template-columns: repeat(var(--responsive-cols-tablet, var(--responsive-cols-desktop, 1)), minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(var(--responsive-cols-desktop, 1), minmax(0, 1fr));
+  }
+}
+
 .rich-text-content > * + *,
 .rich-text-editor > * + * {
   margin-top: 0.75rem;

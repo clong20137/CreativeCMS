@@ -1595,10 +1595,10 @@ function PageScoreCard({ insights }: any) {
   )
 }
 
-const PreviewSectionContent = memo(function PreviewSectionContent({ section }: { section: any }) {
+const PreviewSectionContent = memo(function PreviewSectionContent({ section, previewMode }: { section: any; previewMode: 'desktop' | 'tablet' | 'mobile' }) {
   return (
     <Suspense fallback={<div className="min-h-[12rem] animate-pulse bg-gray-100" />}>
-      <PageSections sections={[section]} />
+      <PageSections sections={[section]} previewMode={previewMode} />
     </Suspense>
   )
 })
@@ -1695,7 +1695,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                     <p className="font-bold">{getSectionTitle(section, index)} is hidden</p>
                     <p className="text-sm">It will not appear on the live page until you show it again.</p>
                   </div>
-                ) : <PreviewSectionContent section={section} />}
+                ) : <PreviewSectionContent section={section} previewMode={previewMode} />}
               </div>
             ))}
           </div>
@@ -1884,6 +1884,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
         </div>
 
         <SectionSpacingControls section={section} index={index} updateSection={updateSection} />
+        <SectionResponsiveControls section={section} index={index} updateSection={updateSection} />
         <SectionColorControls section={section} index={index} updateSection={updateSection} />
         {['banner', 'hero', 'cta', 'imageOverlay'].includes(section.type) && <SectionButtonControls section={section} index={index} updateSection={updateSection} />}
         <SectionTypographyControls section={section} index={index} updateSection={updateSection} />
@@ -2621,6 +2622,139 @@ function SectionSpacingControls({ section, index, updateSection }: any) {
                 </div>
               </label>
             ))}
+          </div>
+        ))}
+      </div>
+    </details>
+  )
+}
+
+function SectionResponsiveControls({ section, index, updateSection }: any) {
+  const devices: Array<{ key: 'tablet' | 'mobile'; label: string }> = [
+    { key: 'tablet', label: 'Tablet' },
+    { key: 'mobile', label: 'Mobile' }
+  ]
+  const spacingFields = [
+    { key: 'marginTop', label: 'Margin top' },
+    { key: 'marginBottom', label: 'Margin bottom' },
+    { key: 'paddingTop', label: 'Padding top' },
+    { key: 'paddingBottom', label: 'Padding bottom' }
+  ]
+  const hasColumns = ['columns', 'gallery', 'imageCards', 'portfolio', 'siteDemos', 'pluginsList', 'faq'].includes(section.type)
+  const hasImageSizing = section.type === 'image'
+  const hasTypography = !['divider'].includes(section.type)
+  const getFieldKey = (device: 'tablet' | 'mobile', key: string) => `${device}${key.charAt(0).toUpperCase()}${key.slice(1)}`
+  const getNumericValue = (device: 'tablet' | 'mobile', key: string, fallback = 0) => {
+    const value = Number(section[getFieldKey(device, key)] || fallback)
+    return Number.isFinite(value) ? value : fallback
+  }
+  const sliderControl = (device: 'tablet' | 'mobile', key: string, label: string, min: number, max: number, suffix = 'px') => (
+    <label className="grid grid-cols-[6rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+      <span className="font-semibold">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step="1"
+        value={getNumericValue(device, key)}
+        onChange={(e) => updateSection(index, getFieldKey(device, key), e.target.value)}
+        className="w-full accent-blue-600"
+      />
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          min={min}
+          max={max * 2}
+          value={section[getFieldKey(device, key)] ?? ''}
+          onChange={(e) => updateSection(index, getFieldKey(device, key), e.target.value)}
+          className="w-full rounded-lg border px-2 py-1 text-right"
+        />
+        <span className="text-xs text-gray-500">{suffix}</span>
+      </div>
+    </label>
+  )
+
+  return (
+    <details className="mb-3 rounded-lg border bg-white p-3">
+      <summary className="cursor-pointer text-sm font-bold text-gray-800">Responsive</summary>
+      <div className="mt-3 space-y-5">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <label className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">
+            <input type="checkbox" checked={Boolean(section.hideOnDesktop)} onChange={(e) => updateSection(index, 'hideOnDesktop', e.target.checked)} />
+            Hide on desktop
+          </label>
+          <label className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">
+            <input type="checkbox" checked={Boolean(section.hideOnTablet)} onChange={(e) => updateSection(index, 'hideOnTablet', e.target.checked)} />
+            Hide on tablet
+          </label>
+          <label className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">
+            <input type="checkbox" checked={Boolean(section.hideOnMobile)} onChange={(e) => updateSection(index, 'hideOnMobile', e.target.checked)} />
+            Hide on mobile
+          </label>
+        </div>
+
+        {devices.map((device) => (
+          <div key={device.key} className="space-y-4 rounded-lg border bg-gray-50 p-4">
+            <h4 className="text-sm font-bold text-gray-900">{device.label} Overrides</h4>
+
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700">
+                Text alignment
+                <select value={section[getFieldKey(device.key, 'textAlign')] || ''} onChange={(e) => updateSection(index, getFieldKey(device.key, 'textAlign'), e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+                  <option value="">Use default</option>
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="space-y-3 border-t pt-4">
+              <h5 className="text-xs font-bold uppercase tracking-wide text-gray-500">Spacing</h5>
+              {spacingFields.map((field) => sliderControl(device.key, field.key, field.label, 0, 160))}
+            </div>
+
+            {hasTypography && (
+              <div className="space-y-3 border-t pt-4">
+                <h5 className="text-xs font-bold uppercase tracking-wide text-gray-500">Typography</h5>
+                {sliderControl(device.key, 'headingFontSize', 'Heading', 16, 96)}
+                {sliderControl(device.key, 'bodyFontSize', 'Body', 12, 36)}
+                {sliderControl(device.key, 'buttonFontSize', 'Button', 12, 28)}
+                {section.type === 'siteDemos' && (
+                  <>
+                    {sliderControl(device.key, 'cardMetaFontSize', 'Category', 10, 22)}
+                    {sliderControl(device.key, 'cardHeadingFontSize', 'Card title', 14, 48)}
+                    {sliderControl(device.key, 'cardBodyFontSize', 'Card body', 12, 28)}
+                  </>
+                )}
+              </div>
+            )}
+
+            {hasColumns && (
+              <div className="space-y-3 border-t pt-4">
+                <h5 className="text-xs font-bold uppercase tracking-wide text-gray-500">Layout</h5>
+                <label className="grid grid-cols-[6rem_1fr] items-center gap-3 text-sm text-gray-700">
+                  <span className="font-semibold">Columns</span>
+                  <select value={section[getFieldKey(device.key, 'columns')] || ''} onChange={(e) => updateSection(index, getFieldKey(device.key, 'columns'), e.target.value)} className="rounded-lg border px-3 py-2">
+                    <option value="">Use default</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                  </select>
+                </label>
+              </div>
+            )}
+
+            {hasImageSizing && (
+              <div className="space-y-3 border-t pt-4">
+                <h5 className="text-xs font-bold uppercase tracking-wide text-gray-500">Image</h5>
+                {sliderControl(device.key, 'imageWidth', 'Width', 10, 100, '%')}
+                {sliderControl(device.key, 'imageHeight', 'Height', 120, 1200)}
+              </div>
+            )}
           </div>
         ))}
       </div>
