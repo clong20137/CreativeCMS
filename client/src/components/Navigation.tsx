@@ -219,38 +219,63 @@ export default function Navigation() {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden pb-4 space-y-2">
+          <div className="md:hidden pb-4 space-y-1">
             {visibleNavigationItems.map(item => {
               const children = Array.isArray(item.children) ? item.children : []
               const dropdownKey = `${item.label}-${item.url}`
+              const isParentActive = isSectionActive(item.url) || children.some((child: NavigationItem) => isActive(child.url) || isSectionActive(child.url))
 
               if (children.length === 0) {
                 return (
-                  <Link key={dropdownKey} to={item.url} className="block py-2 text-gray-700 hover:text-blue-600">
+                  <Link
+                    key={dropdownKey}
+                    to={item.url}
+                    className={`block rounded-xl px-2 py-3 text-base font-medium transition ${
+                      isParentActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'
+                    }`}
+                  >
                     {item.label}
                   </Link>
                 )
               }
 
               return (
-                <div key={dropdownKey} className="rounded-lg border border-gray-200 px-3 py-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <Link to={item.url} className="block py-1 text-gray-700 hover:text-blue-600">
-                      {item.label}
+                <div key={dropdownKey} className="rounded-2xl bg-gray-50 p-1.5">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to={item.url}
+                      className={`min-w-0 flex-1 rounded-xl px-3 py-3 text-base font-semibold transition ${
+                        isParentActive ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-800 hover:bg-white hover:text-blue-600'
+                      }`}
+                    >
+                      <span className="block truncate">{item.label}</span>
                     </Link>
                     <button
                       type="button"
                       onClick={() => setMobileOpenDropdown(current => current === dropdownKey ? null : dropdownKey)}
-                      className="inline-flex h-8 w-8 items-center justify-center text-gray-700"
+                      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition ${
+                        mobileOpenDropdown === dropdownKey || isParentActive
+                          ? 'bg-white text-blue-700 shadow-sm'
+                          : 'text-gray-700 hover:bg-white hover:text-blue-600'
+                      }`}
                       aria-label={`Toggle ${item.label} submenu`}
+                      aria-expanded={mobileOpenDropdown === dropdownKey}
                     >
                       <FiChevronDown className={`transition-transform ${mobileOpenDropdown === dropdownKey ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
                   {mobileOpenDropdown === dropdownKey && (
-                    <div className="mt-2 space-y-1 border-t pt-2">
+                    <div className="mt-2 space-y-1 rounded-xl bg-white p-2 shadow-sm">
                       {children.map((child: NavigationItem) => (
-                        <Link key={`${child.label}-${child.url}`} to={child.url} className="block rounded-md px-2 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600">
+                        <Link
+                          key={`${child.label}-${child.url}`}
+                          to={child.url}
+                          className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                            isActive(child.url) || isSectionActive(child.url)
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                          }`}
+                        >
                           {child.label}
                         </Link>
                       ))}
@@ -259,12 +284,12 @@ export default function Navigation() {
                 </div>
               )
             })}
-            <Link to={userRole ? dashboardPath : '/login'} className="block py-2 btn-secondary w-full text-left">
+            <Link to={userRole ? dashboardPath : '/login'} className="mt-2 block w-full rounded-xl bg-gray-100 px-3 py-3 text-left text-base font-semibold text-gray-800 transition hover:bg-gray-200">
               {userRole ? 'Dashboard' : 'Client Login'}
             </Link>
             <button
               onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
-              className="block py-2 text-gray-700 hover:text-blue-600"
+              className="block rounded-xl px-2 py-3 text-left text-base font-medium text-gray-700 transition hover:bg-gray-50 hover:text-blue-600"
             >
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </button>
