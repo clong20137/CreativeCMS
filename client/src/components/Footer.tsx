@@ -110,7 +110,7 @@ export default function Footer() {
   }, [])
 
   return (
-    <footer className="site-footer bg-gray-900 py-12 text-white">
+    <footer className="site-footer py-12">
       <div className="container">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_2fr_1fr] mb-8">
           {/* Company Info */}

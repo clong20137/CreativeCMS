@@ -1537,7 +1537,7 @@ function CrmQuoteForm({ section, compact = false }: { section: any; compact?: bo
   const [error, setError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState('')
 
-  const services = String(section.crmServices || 'Heavy-duty towing\nFlatbed towing\nAccident recovery\nEquipment transport')
+  const services = String(section.crmServices || 'Web Design\nPhotography\nVideography\nBranding\nGeneral Inquiry')
     .split('\n')
     .map((item: string) => item.trim())
     .filter(Boolean)

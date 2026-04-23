@@ -2337,6 +2337,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
                 {section.heroFormEnabled && (
                   <>
                     <input value={section.crmFormTitle || ''} onChange={(e) => updateSection(index, 'crmFormTitle', e.target.value)} placeholder="Form title" className="w-full px-4 py-2 border rounded-lg" />
+                    <textarea value={section.crmServices || ''} onChange={(e) => updateSection(index, 'crmServices', e.target.value)} placeholder="Services interested in, one per line" rows={4} className="w-full px-4 py-2 border rounded-lg" />
                     <div className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
                       <span className="font-semibold">CRM background</span>
                       <input type="color" value={section.crmBackgroundColor || '#ffffff'} onChange={(e) => updateSection(index, 'crmBackgroundColor', e.target.value)} className="h-10 w-12 rounded border p-1" />
@@ -2608,6 +2609,7 @@ function SectionInspector({ title, section, index, updateSection, removeSection,
             {section.pluginSlug === 'crm' && (
               <>
                 <input value={section.crmFormTitle || ''} onChange={(e) => updateSection(index, 'crmFormTitle', e.target.value)} placeholder="Form title" className="w-full px-4 py-2 border rounded-lg" />
+                <textarea value={section.crmServices || ''} onChange={(e) => updateSection(index, 'crmServices', e.target.value)} placeholder="Services interested in, one per line" rows={4} className="w-full px-4 py-2 border rounded-lg" />
                 <div className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
                   <span className="font-semibold">Form background</span>
                   <input type="color" value={section.crmBackgroundColor || '#ffffff'} onChange={(e) => updateSection(index, 'crmBackgroundColor', e.target.value)} className="h-10 w-12 rounded border p-1" />

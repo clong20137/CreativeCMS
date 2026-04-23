@@ -182,8 +182,18 @@ html.dark-mode .admin-shell .admin-mobile-footer .bg-white\/95 {
 }
 
 .site-footer {
-  background-color: #111827;
-  color: #f9fafb;
+  background-color: #ffffff;
+  color: #111827;
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.site-footer .text-gray-400,
+.site-footer .text-gray-500 {
+  color: #4b5563 !important;
+}
+
+.site-footer .border-gray-800 {
+  border-color: rgba(17, 24, 39, 0.08) !important;
 }
 
 html.dark-mode .site-footer {
