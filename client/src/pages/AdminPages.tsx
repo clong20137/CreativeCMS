@@ -4,6 +4,7 @@ import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiCopy, F
 import AdminLayout from '../components/AdminLayout'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI, resolveAssetUrl } from '../services/api'
+import { cloneDemoStarterSections, demoStarterSections } from '../utils/demoStarterTemplates'
 
 const MediaPicker = lazy(() => import('../components/MediaPicker'))
 const PageSections = lazy(() => import('../components/PageSections'))
@@ -708,6 +709,7 @@ export default function AdminPages() {
   const [activeTab, setActiveTab] = useState('home')
   const [settings, setSettings] = useState(emptySettings)
   const [pages, setPages] = useState<any[]>([])
+  const [siteDemos, setSiteDemos] = useState<any[]>([])
   const [portfolioItems, setPortfolioItems] = useState<any[]>([])
   const [servicePackages, setServicePackages] = useState<any[]>([])
   const [selectedPageId, setSelectedPageId] = useState<string>('new')
@@ -735,9 +737,11 @@ export default function AdminPages() {
   const [savedSnapshot, setSavedSnapshot] = useState('')
   const [unsavedPrompt, setUnsavedPrompt] = useState<{ open: boolean; href?: string; action?: () => void }>({ open: false })
   const [deletePromptOpen, setDeletePromptOpen] = useState(false)
+  const [newPageTemplatePromptOpen, setNewPageTemplatePromptOpen] = useState(false)
   const [undoStack, setUndoStack] = useState<string[]>([])
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
+  const skipNextNewPagePromptRef = useRef(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -769,15 +773,16 @@ export default function AdminPages() {
   }, [activeTab, activeBuiltInHeader.title, activeBuiltInMetadata, activeBuiltInPageKey, activeBuiltInSections, pageDraft])
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const [settingsData, pagesData] = await Promise.all([adminAPI.getSiteSettings(), adminAPI.getPages()])
-        setSettings({ ...emptySettings, ...settingsData })
-        setPages(pagesData)
-        const [portfolioData, serviceData] = await Promise.all([
-          adminAPI.getPortfolioItems(),
-          adminAPI.getServicePackages()
+      const fetchData = async () => {
+        try {
+          setLoading(true)
+          const [settingsData, pagesData, demosData] = await Promise.all([adminAPI.getSiteSettings(), adminAPI.getPages(), adminAPI.getSiteDemos()])
+          setSettings({ ...emptySettings, ...settingsData })
+          setPages(pagesData)
+          setSiteDemos(demosData)
+          const [portfolioData, serviceData] = await Promise.all([
+            adminAPI.getPortfolioItems(),
+            adminAPI.getServicePackages()
         ])
         setPortfolioItems(portfolioData)
         setServicePackages(serviceData)
@@ -863,10 +868,11 @@ export default function AdminPages() {
     }
   }
 
-  const startNewPage = (syncUrl = true) => {
-    setActiveTab('Custom Pages')
-    setSelectedPageId('new')
-    setPageDraft({
+  const startNewPage = (syncUrl = true, promptForTemplate = true) => {
+      if (syncUrl && !promptForTemplate) skipNextNewPagePromptRef.current = true
+      setActiveTab('Custom Pages')
+      setSelectedPageId('new')
+      setPageDraft({
       title: '',
       slug: '',
       headerTitle: '',
@@ -875,25 +881,61 @@ export default function AdminPages() {
       content: '',
       sections: [],
       metaTitle: '',
-      metaDescription: '',
-      isPublished: false,
-      sortOrder: pages.length * 10
-    })
-    if (syncUrl) navigate('/admin/pages?page=new')
+        metaDescription: '',
+        isPublished: false,
+        sortOrder: pages.length * 10
+      })
+      setNewPageTemplatePromptOpen(promptForTemplate)
+      if (syncUrl) navigate('/admin/pages?page=new')
+    }
+
+  const applyTemplateToNewPage = (template: any) => {
+    const sections = Array.isArray(template.sections) && template.sections.length > 0
+      ? template.sections.map((section: any) => cloneSectionWithNewIds(section))
+      : [cloneSectionWithNewIds(template.section || template)]
+    setPageDraft((current: any) => ({
+      ...current,
+      title: current.title || template.name || '',
+      headerTitle: current.headerTitle || template.name || '',
+      metaTitle: current.metaTitle || template.name || '',
+      sections
+    }))
+    if (sections[0]?.id) markNewSection(sections[0].id)
+    setNewPageTemplatePromptOpen(false)
+    setMessage(`Started the page with ${template.name}. Save when you're ready to keep it.`)
+  }
+
+  const applyDemoStarterToNewPage = (demo: any) => {
+    const sections = cloneDemoStarterSections(demo.slug)
+    setPageDraft((current: any) => ({
+      ...current,
+      title: current.title || `${demo.name} Starter`,
+      slug: current.slug || normalizeCustomSlug(demo.slug),
+      headerTitle: current.headerTitle || demo.name,
+      headerSubtitle: current.headerSubtitle || demo.description || '',
+      metaTitle: current.metaTitle || `${demo.name} Starter`,
+      metaDescription: current.metaDescription || demo.description || '',
+      sections
+    }))
+    if (sections[0]?.id) markNewSection(sections[0].id)
+    setNewPageTemplatePromptOpen(false)
+    setMessage(`Started the page with the ${demo.name} demo template. Save when you're ready to keep it.`)
   }
 
   useEffect(() => {
     if (loading) return
 
     const params = new URLSearchParams(location.search)
-    const pageParam = params.get('page')
-    const customParam = params.get('custom')
+      const pageParam = params.get('page')
+      const customParam = params.get('custom')
 
-    if (pageParam === 'new') {
-      setEditingSectionId('')
-      startNewPage(false)
-      return
-    }
+      if (pageParam === 'new') {
+        const promptForTemplate = !skipNextNewPagePromptRef.current
+        skipNextNewPagePromptRef.current = false
+        setEditingSectionId('')
+        startNewPage(false, promptForTemplate)
+        return
+      }
 
     if (pageParam && publicPages.some(page => page.id === pageParam)) {
       setEditingSectionId('')
@@ -1125,6 +1167,8 @@ export default function AdminPages() {
   const editorGridColumns = `minmax(0, 1fr) ${sectionsPanelOpen ? '23rem' : '3.25rem'}`
   const activePageSnapshot = useMemo(() => JSON.stringify(activeTab === 'Custom Pages' ? pageDraft : getActivePayload(settings, activeTab)), [activeTab, pageDraft, settings])
   const hasUnsavedChanges = Boolean(savedSnapshot) && savedSnapshot !== activePageSnapshot
+  const starterTemplates = useMemo(() => (settings.reusableSections || []).filter((template: any) => template.kind === 'layout' || Array.isArray(template.sections)), [settings.reusableSections])
+  const starterDemos = useMemo(() => siteDemos.filter((demo: any) => demoStarterSections[demo.slug]), [siteDemos])
   const applySnapshot = (snapshot: string) => {
     const parsed = JSON.parse(snapshot)
     if (activeTab === 'Custom Pages') {
@@ -1261,13 +1305,13 @@ export default function AdminPages() {
   const deleteCustomPage = async () => {
     if (selectedPageId === 'new') return
 
-    try {
-      await adminAPI.deletePage(selectedPageId)
-      setPages(current => current.filter(page => String(page.id) !== selectedPageId))
-      startNewPage()
-      window.dispatchEvent(new Event('admin-pages-refresh'))
-      setMessage('Custom page deleted')
-    } catch (err: any) {
+      try {
+        await adminAPI.deletePage(selectedPageId)
+        setPages(current => current.filter(page => String(page.id) !== selectedPageId))
+        startNewPage(true, false)
+        window.dispatchEvent(new Event('admin-pages-refresh'))
+        setMessage('Custom page deleted')
+      } catch (err: any) {
       setError(err.error || 'Failed to delete custom page')
     }
   }
@@ -1763,17 +1807,105 @@ export default function AdminPages() {
           />
         </Suspense>
       )}
-      <FloatingPageActions
-        isCustomPage={activeTab === 'Custom Pages'}
-        isSavedCustomPage={activeTab === 'Custom Pages' && selectedPageId !== 'new'}
-        isPublished={Boolean(pageDraft.isPublished)}
-        updatePublished={(value: boolean) => updatePageDraft('isPublished', value)}
-        savePage={saveActivePage}
-        deletePage={() => setDeletePromptOpen(true)}
-      />
-      {deletePromptOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <FloatingPageActions
+          isCustomPage={activeTab === 'Custom Pages'}
+          isSavedCustomPage={activeTab === 'Custom Pages' && selectedPageId !== 'new'}
+          isPublished={Boolean(pageDraft.isPublished)}
+          updatePublished={(value: boolean) => updatePageDraft('isPublished', value)}
+          savePage={saveActivePage}
+          deletePage={() => setDeletePromptOpen(true)}
+        />
+        {newPageTemplatePromptOpen && activeTab === 'Custom Pages' && selectedPageId === 'new' && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+            <div className="max-h-[85vh] w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl">
+              <div className="border-b px-6 py-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Start with a template?</h2>
+                    <p className="mt-1 text-sm text-gray-600">Choose a reusable layout, start from one of your demo sites, or jump in with a blank page.</p>
+                  </div>
+                  <button type="button" onClick={() => setNewPageTemplatePromptOpen(false)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                    Start Blank
+                  </button>
+                </div>
+              </div>
+              <div className="grid max-h-[calc(85vh-5.5rem)] grid-cols-1 gap-0 overflow-y-auto lg:grid-cols-2">
+                <section className="border-b p-6 lg:border-b-0 lg:border-r">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">Reusable Layouts</h3>
+                      <p className="text-sm text-gray-600">Saved layouts from pages you've already built.</p>
+                    </div>
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">{starterTemplates.length}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {starterTemplates.length > 0 ? starterTemplates.map((template: any) => (
+                      <button
+                        key={template.id}
+                        type="button"
+                        onClick={() => applyTemplateToNewPage(template)}
+                        className="w-full rounded-xl border p-4 text-left transition hover:border-blue-300 hover:bg-blue-50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{template.name}</h4>
+                            <p className="mt-1 text-sm text-gray-600">
+                              {(template.sectionCount || template.sections?.length || 1)} section{Number(template.sectionCount || template.sections?.length || 1) === 1 ? '' : 's'}
+                              {template.sourcePage ? ` from ${template.sourcePage}` : ''}
+                            </p>
+                          </div>
+                          <span className="rounded-full bg-gray-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                            {template.kind === 'layout' ? 'Layout' : 'Template'}
+                          </span>
+                        </div>
+                      </button>
+                    )) : (
+                      <div className="rounded-xl border border-dashed p-5 text-sm text-gray-600">
+                        No reusable layouts yet. Save a page layout first and it will show up here.
+                      </div>
+                    )}
+                  </div>
+                </section>
+                <section className="p-6">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">Demo Site Starters</h3>
+                      <p className="text-sm text-gray-600">Use your demo site structures as a fast starting point.</p>
+                    </div>
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">{starterDemos.length}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {starterDemos.length > 0 ? starterDemos.map((demo: any) => (
+                      <button
+                        key={demo.id}
+                        type="button"
+                        onClick={() => applyDemoStarterToNewPage(demo)}
+                        className="w-full rounded-xl border p-4 text-left transition hover:border-blue-300 hover:bg-blue-50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{demo.name}</h4>
+                            <p className="mt-1 text-sm text-gray-600">{demo.description || 'Use this demo as the structural starting point for your new page.'}</p>
+                          </div>
+                          <span className="rounded-full bg-blue-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                            Demo
+                          </span>
+                        </div>
+                      </button>
+                    )) : (
+                      <div className="rounded-xl border border-dashed p-5 text-sm text-gray-600">
+                        No demo starters are available yet. Activate or create site demos to use them here.
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        )}
+        {deletePromptOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
             <h2 className="text-2xl font-bold text-gray-900">Delete this page?</h2>
             <p className="mt-3 text-gray-600">This will permanently remove the current custom page and its sections.</p>
             <div className="mt-6 flex flex-wrap gap-3">
