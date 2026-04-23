@@ -210,14 +210,14 @@ export default function AdminMediaLibrary() {
 
   return (
     <AdminLayout title="Media Library">
-      {message && <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800">{message}</div>}
-      {error && <div className="mb-6 rounded-lg border border-red-400 bg-red-100 p-4 text-red-700">{error}</div>}
+      {message && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 md:mb-6">{message}</div>}
+      {error && <div className="mb-4 rounded-lg border border-red-400 bg-red-100 p-4 text-sm text-red-700 md:mb-6">{error}</div>}
 
-      <section className="card mb-6 p-6">
+      <section className="card mb-4 p-4 md:mb-6 md:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Assets</h2>
-            <p className="text-gray-600">Upload and reuse images, videos, PDFs, and documents across the admin portal.</p>
+            <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Assets</h2>
+            <p className="text-sm text-gray-600 md:text-base">Upload and reuse images, videos, PDFs, and documents across the admin portal.</p>
           </div>
           <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 font-bold text-white transition hover:bg-blue-700">
             <FiUpload />
@@ -235,7 +235,7 @@ export default function AdminMediaLibrary() {
             />
           </label>
         </div>
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[12rem_12rem_12rem_12rem_12rem_1fr]">
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-[12rem_12rem_12rem_12rem_12rem_1fr]">
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-lg border px-4 py-2">
             <option value="all">All media</option>
             <option value="image">Images</option>
@@ -269,14 +269,14 @@ export default function AdminMediaLibrary() {
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search media" className="w-full border-0 bg-transparent p-0 outline-none" />
           </label>
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input value={uploadFolder} onChange={(e) => setUploadFolder(e.target.value)} placeholder="Upload folder" className="rounded-lg border px-4 py-2" />
           <input value={uploadTags} onChange={(e) => setUploadTags(e.target.value)} placeholder="Upload tags, comma separated" className="rounded-lg border px-4 py-2" />
         </div>
       </section>
 
       {!loading && (
-        <section className="card mb-6 p-4">
+        <section className="card mb-4 p-4 md:mb-6">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" onClick={selectVisibleAssets} className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50">
@@ -284,14 +284,14 @@ export default function AdminMediaLibrary() {
               </button>
               <span className="text-sm font-semibold text-gray-600">{selectedAssetIds.length} selected / {sortedAssets.length} visible</span>
             </div>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-[12rem_1fr_auto_auto_auto]">
+            <div className="grid grid-cols-1 gap-2 lg:grid-cols-[12rem_1fr_auto_auto_auto]">
               <input value={bulkFolder} onChange={(e) => setBulkFolder(e.target.value)} placeholder="Move to folder" className="rounded-lg border px-3 py-2" />
               <input value={bulkTags} onChange={(e) => setBulkTags(e.target.value)} placeholder="Tags, comma separated" className="rounded-lg border px-3 py-2" />
               <button type="button" onClick={bulkMoveFolder} disabled={selectedAssetIds.length === 0 || !bulkFolder.trim()} className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40">Move</button>
               <button type="button" onClick={() => bulkUpdateTags('add')} disabled={selectedAssetIds.length === 0 || normalizeTags(bulkTags).length === 0} className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40">Add Tags</button>
               <button type="button" onClick={() => bulkUpdateTags('remove')} disabled={selectedAssetIds.length === 0 || normalizeTags(bulkTags).length === 0} className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40">Remove Tags</button>
             </div>
-            <button type="button" onClick={bulkDeleteAssets} disabled={selectedAssetIds.length === 0} className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-40">
+            <button type="button" onClick={bulkDeleteAssets} disabled={selectedAssetIds.length === 0} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-40 xl:w-auto">
               <FiTrash2 /> Delete Selected
             </button>
           </div>
@@ -299,7 +299,7 @@ export default function AdminMediaLibrary() {
       )}
 
       {loading ? <PageSkeleton /> : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-5">
           {sortedAssets.map(asset => (
             <article key={asset.id} className={`card overflow-hidden transition ${selectedAssetIds.map(String).includes(String(asset.id)) ? 'ring-2 ring-blue-600' : ''}`}>
               <label className="flex cursor-pointer items-center gap-2 border-b bg-white px-4 py-3 text-sm font-bold text-gray-700">
@@ -318,7 +318,7 @@ export default function AdminMediaLibrary() {
                   </div>
                 )}
               </div>
-              <div className="space-y-3 p-5">
+              <div className="space-y-3 p-4 md:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase text-blue-600">{asset.mediaType} / {formatBytes(Number(asset.size || 0))}</p>
@@ -342,10 +342,10 @@ export default function AdminMediaLibrary() {
                   {normalizeTags(asset.tags).map(tag => <span key={tag} className="rounded bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{tag}</span>)}
                 </div>
                 <p className="break-all rounded-lg bg-gray-50 p-3 text-xs text-gray-600">{asset.url}</p>
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => copyUrl(asset.url)} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold hover:bg-gray-50"><FiCopy /> Copy URL</button>
-                  <a href={getPreviewUrl(asset)} download className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold hover:bg-gray-50"><FiDownload /> Download</a>
-                  <button type="button" onClick={() => deleteAsset(asset)} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50"><FiTrash2 /> Delete</button>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <button type="button" onClick={() => copyUrl(asset.url)} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold hover:bg-gray-50"><FiCopy /> Copy URL</button>
+                  <a href={getPreviewUrl(asset)} download className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold hover:bg-gray-50"><FiDownload /> Download</a>
+                  <button type="button" onClick={() => deleteAsset(asset)} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50"><FiTrash2 /> Delete</button>
                 </div>
               </div>
             </article>

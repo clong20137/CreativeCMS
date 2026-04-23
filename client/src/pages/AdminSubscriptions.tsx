@@ -155,18 +155,18 @@ export default function AdminSubscriptions() {
 
   return (
     <AdminLayout title="Subscriptions">
-      {message && <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">{message}</div>}
-      {error && <div className="mb-6 p-4 bg-red-100 border border-red-400 rounded-lg text-red-700">{error}</div>}
+      {message && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 md:mb-6">{message}</div>}
+      {error && <div className="mb-4 rounded-lg border border-red-400 bg-red-100 p-4 text-sm text-red-700 md:mb-6">{error}</div>}
 
       {loading ? (
         <PageSkeleton />
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-6 pb-28 md:space-y-10">
           <section>
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Subscription Plans</h2>
-                <p className="text-gray-600">Manage the plans clients can be assigned to.</p>
+                <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Subscription Plans</h2>
+                <p className="text-sm text-gray-600 md:text-base">Manage the plans clients can be assigned to.</p>
               </div>
               <button
                 onClick={() => {
@@ -181,7 +181,7 @@ export default function AdminSubscriptions() {
             </div>
 
             {showPlanForm && (
-              <form onSubmit={handlePlanSubmit} className="card p-6 mb-6 space-y-4">
+              <form onSubmit={handlePlanSubmit} className="card mb-6 space-y-4 p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
                     type="text"
@@ -270,20 +270,20 @@ export default function AdminSubscriptions() {
                   />
                   Active plan
                 </label>
-                <div className="flex gap-2">
-                  <button type="submit" className="btn-primary">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button type="submit" className="btn-primary w-full sm:w-auto">
                     {editingPlanId ? 'Save Plan' : 'Create Plan'}
                   </button>
-                  <button type="button" onClick={resetPlanForm} className="btn-secondary">
+                  <button type="button" onClick={resetPlanForm} className="btn-secondary w-full sm:w-auto">
                     <FiX className="inline mr-1" /> Cancel
                   </button>
                 </div>
               </form>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
               {plans.map((plan) => (
-                <div key={plan.id} className="card p-6">
+                <div key={plan.id} className="card p-4 md:p-6">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
                       <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
@@ -303,11 +303,11 @@ export default function AdminSubscriptions() {
                       <li key={index} className="text-sm text-gray-700">- {feature}</li>
                     ))}
                   </ul>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleEditPlan(plan)} className="inline-flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button onClick={() => handleEditPlan(plan)} className="inline-flex items-center justify-center gap-1 rounded-lg bg-blue-100 px-3 py-2 text-blue-700 hover:bg-blue-200">
                       <FiEdit /> Edit
                     </button>
-                    <button onClick={() => handleDeletePlan(String(plan.id))} className="inline-flex items-center gap-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">
+                    <button onClick={() => handleDeletePlan(String(plan.id))} className="inline-flex items-center justify-center gap-1 rounded-lg bg-red-100 px-3 py-2 text-red-700 hover:bg-red-200">
                       <FiTrash2 /> Delete
                     </button>
                   </div>
@@ -317,9 +317,9 @@ export default function AdminSubscriptions() {
             </div>
           </section>
 
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <form onSubmit={handleAssign} className="card p-6 space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900">Assign to Client</h2>
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+            <form onSubmit={handleAssign} className="card space-y-4 p-4 md:p-6">
+              <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Assign to Client</h2>
               <select
                 value={assignment.clientId}
                 onChange={(e) => setAssignment({ ...assignment, clientId: e.target.value })}
@@ -362,7 +362,42 @@ export default function AdminSubscriptions() {
               </button>
             </form>
 
-            <div className="lg:col-span-2 overflow-x-auto bg-white rounded-lg shadow">
+            <div className="lg:col-span-2">
+              <div className="space-y-3 md:hidden">
+                {subscriptions.map((subscription) => (
+                  <article key={subscription.id} className="rounded-xl border bg-white p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-gray-900">{subscription.User?.name || 'Unknown'}</p>
+                        <p className="text-sm text-gray-600">{subscription.planName}</p>
+                      </div>
+                      <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold capitalize text-gray-700">{subscription.status}</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-gray-500">Type</p>
+                        <p className="font-semibold text-gray-900">{subscription.productType === 'cms-license' ? 'CMS License' : 'Service'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Renewal</p>
+                        <p className="font-semibold text-gray-900">{subscription.renewalDate ? new Date(subscription.renewalDate).toLocaleDateString() : '-'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-gray-500">Billing</p>
+                        <p className="font-semibold text-gray-900">${Number(subscription.price || 0).toLocaleString()} / {subscription.billingCycle}</p>
+                      </div>
+                    </div>
+                    {subscription.status === 'active' && (
+                      <button onClick={() => handleCancelSubscription(String(subscription.id))} className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-red-100 px-3 py-2 font-semibold text-red-700 hover:bg-red-200">
+                        Cancel
+                      </button>
+                    )}
+                  </article>
+                ))}
+                {subscriptions.length === 0 && <div className="rounded-xl border bg-white p-6 text-center text-gray-600 shadow-sm">No client subscriptions yet.</div>}
+              </div>
+
+              <div className="hidden overflow-x-auto rounded-lg bg-white shadow md:block">
               <table className="w-full">
                 <thead>
                     <tr className="border-b">
@@ -410,12 +445,13 @@ export default function AdminSubscriptions() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </section>
 
           <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <div className="card p-6">
-              <h2 className="text-2xl font-bold text-gray-900">Service Plans</h2>
+            <div className="card p-4 md:p-6">
+              <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Service Plans</h2>
               <p className="mt-2 text-sm text-gray-600">These plans power normal recurring services and do not control CMS access.</p>
               <div className="mt-4 space-y-3">
                 {servicePlans.map((plan) => (
@@ -435,8 +471,8 @@ export default function AdminSubscriptions() {
               </div>
             </div>
 
-            <div className="card p-6">
-              <h2 className="text-2xl font-bold text-gray-900">CMS License Plans</h2>
+            <div className="card p-4 md:p-6">
+              <h2 className="text-xl font-bold text-gray-900 md:text-2xl">CMS License Plans</h2>
               <p className="mt-2 text-sm text-gray-600">These unlock the CMS itself and are tracked separately from service subscriptions.</p>
               <div className="mt-4 space-y-3">
                 {licensePlans.map((plan) => (
@@ -457,9 +493,9 @@ export default function AdminSubscriptions() {
             </div>
           </section>
 
-          <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr,1.6fr]">
-            <div className="card p-6 space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900">CMS Licenses</h2>
+          <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr,1.6fr] xl:gap-6">
+            <div className="card space-y-4 p-4 md:p-6">
+              <h2 className="text-xl font-bold text-gray-900 md:text-2xl">CMS Licenses</h2>
               <p className="text-sm text-gray-600">
                 Active CMS licenses unlock the full client-side CMS experience, separately from service subscriptions.
               </p>
@@ -468,7 +504,39 @@ export default function AdminSubscriptions() {
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-lg bg-white shadow">
+            <div>
+              <div className="space-y-3 md:hidden">
+                {licenses.map((license) => (
+                  <article key={license.id} className="rounded-xl border bg-white p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-gray-900">{license.User?.name || 'Unknown'}</p>
+                        <p className="text-sm text-gray-600">{license.planName}</p>
+                      </div>
+                      <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold capitalize text-gray-700">{license.status}</span>
+                    </div>
+                    <p className="mt-3 break-all font-mono text-xs text-gray-500">{license.licenseKey}</p>
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-gray-500">Domain</p>
+                        <p className="font-semibold text-gray-900">{license.licensedDomain || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Renewal</p>
+                        <p className="font-semibold text-gray-900">{license.renewalDate ? new Date(license.renewalDate).toLocaleDateString() : '-'}</p>
+                      </div>
+                    </div>
+                    {license.status === 'active' && (
+                      <button onClick={() => handleCancelLicense(String(license.id))} className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-red-100 px-3 py-2 font-semibold text-red-700 hover:bg-red-200">
+                        Cancel
+                      </button>
+                    )}
+                  </article>
+                ))}
+                {licenses.length === 0 && <div className="rounded-xl border bg-white p-6 text-center text-gray-600 shadow-sm">No CMS licenses assigned yet.</div>}
+              </div>
+
+              <div className="hidden overflow-x-auto rounded-lg bg-white shadow md:block">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
@@ -509,6 +577,7 @@ export default function AdminSubscriptions() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </section>
         </div>

@@ -650,6 +650,19 @@ export default function AdminPages() {
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const syncMobileEditor = () => {
+      if (window.innerWidth < 768) {
+        setPreviewMode('mobile')
+        setSectionsPanelOpen(false)
+      }
+    }
+    syncMobileEditor()
+    window.addEventListener('resize', syncMobileEditor)
+    return () => window.removeEventListener('resize', syncMobileEditor)
+  }, [])
+
   const activeBuiltInPageKey = publicPages.some(page => page.id === activeTab) ? activeTab : ''
   const activeBuiltInMetadata: Record<string, any> = activeBuiltInPageKey ? (settings.pageMetadata?.[activeBuiltInPageKey] || {}) : {}
   const activeBuiltInHeader: Record<string, any> = activeBuiltInPageKey ? (settings.pageHeaders?.[activeBuiltInPageKey] || {}) : {}
@@ -1148,12 +1161,12 @@ export default function AdminPages() {
 
   return (
     <AdminLayout title="Website Pages">
-      {message && <div className="mx-4 mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">{message}</div>}
-      {error && <div className="mx-4 mb-6 p-4 bg-red-100 border border-red-400 rounded-lg text-red-700">{error}</div>}
+      {message && <div className="mx-2 mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 md:mx-4 md:mb-6">{message}</div>}
+      {error && <div className="mx-2 mb-4 rounded-lg border border-red-400 bg-red-100 p-4 text-sm text-red-700 md:mx-4 md:mb-6">{error}</div>}
       {loading ? <PageSkeleton /> : (
-        <div className="grid min-h-[calc(100vh-12rem)] grid-cols-1 items-start gap-4 transition-all duration-300 xl:grid-cols-[var(--editor-grid)]" style={{ '--editor-grid': editorGridColumns } as any}>
-          <div className="space-y-6 px-1">
-            <section className="sticky top-0 z-20 rounded-lg border bg-white p-4 shadow-sm">
+        <div className="grid min-h-[calc(100vh-12rem)] grid-cols-1 items-start gap-3 transition-all duration-300 xl:grid-cols-[var(--editor-grid)]" style={{ '--editor-grid': editorGridColumns } as any}>
+          <div className="space-y-4 px-1 md:space-y-6">
+            <section className="z-20 rounded-lg border bg-white p-3 shadow-sm xl:sticky xl:top-0 xl:p-4">
               <SectionBlockLibrary
                 addSection={addActiveSection}
                 reusableSections={settings.reusableSections || []}
@@ -1585,7 +1598,7 @@ export default function AdminPages() {
           )}
           </div>
 
-          <aside className={`h-[calc(100vh-12rem)] overflow-hidden rounded-none border border-r-0 bg-white shadow transition-all duration-300 ease-in-out xl:sticky xl:top-4 ${sectionsPanelOpen ? 'opacity-100' : 'opacity-95'}`}>
+          <aside className={`overflow-hidden rounded-xl border bg-white shadow transition-all duration-300 ease-in-out md:max-h-[70vh] xl:sticky xl:top-4 xl:h-[calc(100vh-12rem)] xl:max-h-none xl:rounded-none xl:border-r-0 ${sectionsPanelOpen ? 'opacity-100' : 'opacity-95'}`}>
             {selectedSection ? (
               <SectionInspector
                 title="Section Settings"
@@ -1654,22 +1667,24 @@ export default function AdminPages() {
 function FloatingPageActions({ isCustomPage, isSavedCustomPage, isPublished, updatePublished, savePage, deletePage }: any) {
   return (
     <div className="fixed inset-x-3 bottom-3 z-[90] lg:inset-x-auto lg:bottom-5 lg:right-5">
-      <div className="ml-auto flex max-w-xl flex-wrap items-center gap-3 rounded-xl border bg-white/95 p-3 shadow-2xl backdrop-blur">
+      <div className="ml-auto flex max-w-xl flex-wrap items-center gap-2 rounded-xl border bg-white/95 p-2.5 shadow-2xl backdrop-blur md:gap-3 md:p-3">
         {isCustomPage && (
-          <label className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700">
+          <label className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold text-gray-700 md:text-sm">
             <input type="checkbox" checked={Boolean(isPublished)} onChange={(e) => updatePublished(e.target.checked)} />
             Published
           </label>
         )}
         {isSavedCustomPage && (
-          <button type="button" onClick={deletePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700 lg:flex-none">
+          <button type="button" onClick={deletePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-3 text-sm font-bold text-white transition hover:bg-red-700 lg:flex-none">
             <FiTrash2 />
-            Delete Page
+            <span className="hidden sm:inline">Delete Page</span>
+            <span className="sm:hidden">Delete</span>
           </button>
         )}
-        <button type="button" onClick={savePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700 lg:flex-none">
+        <button type="button" onClick={savePage} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-3 text-sm font-bold text-white transition hover:bg-blue-700 lg:flex-none">
           <FiSave />
-          Save Page
+          <span className="hidden sm:inline">Save Page</span>
+          <span className="sm:hidden">Save</span>
         </button>
       </div>
     </div>
@@ -1747,15 +1762,15 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
   const activePreview = previewModes.find(mode => mode.value === previewMode) || previewModes[0]
 
   return (
-    <section className="card p-6 space-y-6">
+    <section className="card space-y-4 p-4 md:space-y-6 md:p-6">
       <PageScoreCard insights={insights} />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Live Preview</h2>
-          <p className="text-gray-600">Drag section pieces here, reorder them in place, and click a section to edit it on the right.</p>
+          <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Live Preview</h2>
+          <p className="text-sm text-gray-600 md:text-base">Drag section pieces here, reorder them in place, and click a section to edit it on the right.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-        <div className="flex rounded-lg border bg-gray-50 p-1">
+        <div className="flex w-full rounded-lg border bg-gray-50 p-1 sm:w-auto">
           {previewModes.map(mode => {
             const Icon = mode.icon
             return (
@@ -1763,10 +1778,10 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                 key={mode.value}
                 type="button"
                 onClick={() => setPreviewMode(mode.value)}
-                className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-bold transition ${previewMode === mode.value ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-white'}`}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-bold transition sm:flex-none sm:text-sm ${previewMode === mode.value ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-white'}`}
               >
                 <Icon />
-                {mode.label}
+                <span className="hidden sm:inline">{mode.label}</span>
               </button>
             )
           })}

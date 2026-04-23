@@ -156,14 +156,14 @@ export default function AdminNavigation() {
 
   return (
     <AdminLayout title="Navigation">
-      {message && <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">{message}</div>}
-      {error && <div className="mb-6 p-4 bg-red-100 border border-red-400 rounded-lg text-red-700">{error}</div>}
+      {message && <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 md:mb-6">{message}</div>}
+      {error && <div className="mb-4 rounded-lg border border-red-400 bg-red-100 p-4 text-sm text-red-700 md:mb-6">{error}</div>}
       {loading ? <PageSkeleton /> : (
-        <form onSubmit={saveNavigation} className="space-y-6 pb-24">
-          <div className="card p-6 space-y-4">
+        <form onSubmit={saveNavigation} className="space-y-4 pb-28 md:space-y-6 md:pb-24">
+          <div className="card space-y-4 p-4 md:p-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Public Website Menu</h2>
-              <p className="text-gray-600">Choose which links appear in the main navigation and where they go.</p>
+              <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Public Website Menu</h2>
+              <p className="text-sm text-gray-600 md:text-base">Choose which links appear in the main navigation and where they go.</p>
             </div>
 
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
@@ -171,14 +171,14 @@ export default function AdminNavigation() {
               <p className="mt-1 text-sm text-blue-800">Use the <span className="font-bold">Add Subnav</span> button on any main navigation item to create dropdown links under it.</p>
             </div>
 
-            <div className="max-h-[calc(100vh-22rem)] space-y-3 overflow-y-auto pr-1">
+            <div className="space-y-3 md:max-h-[calc(100vh-22rem)] md:overflow-y-auto md:pr-1">
               {items.map((item, index) => (
-                <div key={index} className="space-y-4 rounded-lg border p-4">
-                  <div className="flex items-center justify-between gap-3">
+                <div key={index} className="space-y-4 rounded-xl border p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-bold text-gray-900">Main Navigation Item</p>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Dropdown parent</p>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_7rem_auto_auto_auto] md:items-center">
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1fr_7rem_auto_auto_auto] xl:items-center">
                     <input
                       value={item.label || ''}
                       onChange={(e) => updateItem(index, 'label', e.target.value)}
@@ -206,23 +206,23 @@ export default function AdminNavigation() {
                       />
                       Active
                     </label>
-                    <button type="button" onClick={() => addChildItem(index)} className="btn-secondary">
+                    <button type="button" onClick={() => addChildItem(index)} className="btn-secondary w-full xl:w-auto">
                       Add Subnav
                     </button>
-                    <button type="button" onClick={() => removeItem(index)} className="btn-secondary text-red-600">
+                    <button type="button" onClick={() => removeItem(index)} className="btn-secondary w-full text-red-600 xl:w-auto">
                       Remove
                     </button>
                   </div>
 
                   <div className="space-y-3 rounded-lg bg-gray-50 p-4">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-sm font-bold text-gray-700">Dropdown Items</p>
                       <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Subnavigation</span>
                     </div>
                     {(item.children || []).length > 0 ? (
                       <>
                       {(item.children || []).map((child: NavigationItem, childIndex: number) => (
-                        <div key={`${index}-${childIndex}`} className="grid grid-cols-1 gap-3 rounded-lg border bg-white p-3 md:grid-cols-[1fr_1fr_7rem_auto_auto] md:items-center">
+                        <div key={`${index}-${childIndex}`} className="grid grid-cols-1 gap-3 rounded-lg border bg-white p-3 xl:grid-cols-[1fr_1fr_7rem_auto_auto] xl:items-center">
                           <input
                             value={child.label || ''}
                             onChange={(e) => updateChildItem(index, childIndex, 'label', e.target.value)}
@@ -250,7 +250,7 @@ export default function AdminNavigation() {
                             />
                             Active
                           </label>
-                          <button type="button" onClick={() => removeChildItem(index, childIndex)} className="btn-secondary text-red-600">
+                          <button type="button" onClick={() => removeChildItem(index, childIndex)} className="btn-secondary w-full text-red-600 xl:w-auto">
                             Remove
                           </button>
                         </div>
@@ -271,15 +271,15 @@ export default function AdminNavigation() {
             </button>
           </div>
 
-          <div className="card p-6 space-y-4">
+          <div className="card space-y-4 p-4 md:p-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Footer Links</h2>
-              <p className="text-gray-600">Choose which links appear in the footer quick links area.</p>
+              <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Footer Links</h2>
+              <p className="text-sm text-gray-600 md:text-base">Choose which links appear in the footer quick links area.</p>
             </div>
 
-            <div className="max-h-[calc(100vh-28rem)] space-y-3 overflow-y-auto pr-1">
+            <div className="space-y-3 md:max-h-[calc(100vh-28rem)] md:overflow-y-auto md:pr-1">
               {footerItems.map((item, index) => (
-                <div key={`footer-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border p-4 md:grid-cols-[1fr_1fr_7rem_auto_auto] md:items-center">
+                <div key={`footer-${index}`} className="grid grid-cols-1 gap-3 rounded-xl border p-4 xl:grid-cols-[1fr_1fr_7rem_auto_auto] xl:items-center">
                   <input
                     value={item.label || ''}
                     onChange={(e) => updateFooterItem(index, 'label', e.target.value)}
@@ -307,7 +307,7 @@ export default function AdminNavigation() {
                     />
                     Active
                   </label>
-                  <button type="button" onClick={() => removeFooterItem(index)} className="btn-secondary text-red-600">
+                  <button type="button" onClick={() => removeFooterItem(index)} className="btn-secondary w-full text-red-600 xl:w-auto">
                     Remove
                   </button>
                 </div>
@@ -319,8 +319,8 @@ export default function AdminNavigation() {
             </button>
           </div>
 
-          <div className="fixed bottom-6 right-6 z-30">
-            <button type="submit" className="btn-primary shadow-xl">Save Navigation</button>
+          <div className="fixed inset-x-3 bottom-3 z-30 md:inset-x-auto md:bottom-6 md:right-6">
+            <button type="submit" className="btn-primary w-full shadow-xl md:w-auto">Save Navigation</button>
           </div>
         </form>
       )}
