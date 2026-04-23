@@ -371,76 +371,243 @@ function stripHtml(value: string) {
   return String(value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+function countWords(value: string) {
+  const trimmed = stripHtml(value)
+  return trimmed ? trimmed.split(/\s+/).length : 0
+}
+
+function collectSectionText(section: any): string[] {
+  if (!section || typeof section !== 'object') return []
+  const values: string[] = []
+  const maybePush = (value: any) => {
+    const text = stripHtml(String(value || ''))
+    if (text) values.push(text)
+  }
+
+  maybePush(section.title)
+  maybePush(section.body)
+  maybePush(section.description)
+  maybePush(section.headerTitle)
+  maybePush(section.headerSubtitle)
+  maybePush(section.content)
+  maybePush(section.fallbackContent)
+
+  if (Array.isArray(section.items)) {
+    section.items.forEach((item: any) => {
+      if (item?.sections) {
+        item.sections.forEach((nested: any) => {
+          values.push(...collectSectionText(nested))
+        })
+      } else {
+        maybePush(item?.title)
+        maybePush(item?.body)
+        maybePush(item?.description)
+        maybePush(item?.desc)
+        maybePush(item?.q)
+        maybePush(item?.a)
+        maybePush(item?.question)
+        maybePush(item?.answer)
+      }
+    })
+  }
+
+  return values
+}
+
+function collectImageDiagnostics(section: any) {
+  let total = 0
+  let missingAlt = 0
+
+  const inspect = (imageUrl: any, alt: any) => {
+    if (!String(imageUrl || '').trim()) return
+    total += 1
+    if (!String(alt || '').trim()) missingAlt += 1
+  }
+
+  inspect(section?.imageUrl, section?.alt)
+
+  if (Array.isArray(section?.items)) {
+    section.items.forEach((item: any) => {
+      inspect(item?.image || item?.imageUrl, item?.alt || item?.title)
+      if (Array.isArray(item?.sections)) {
+        item.sections.forEach((nested: any) => {
+          const nestedImages = collectImageDiagnostics(nested)
+          total += nestedImages.total
+          missingAlt += nestedImages.missingAlt
+        })
+      }
+    })
+  }
+
+  return { total, missingAlt }
+}
+
+function collectLinksFromText(value: string) {
+  const html = String(value || '')
+  const matches = [...html.matchAll(/href\s*=\s*["']([^"']+)["']/gi)]
+  return matches.map((match) => String(match[1] || '').trim()).filter(Boolean)
+}
+
+function collectSectionLinks(section: any): string[] {
+  if (!section || typeof section !== 'object') return []
+  const links = [
+    ...collectLinksFromText(section.body),
+    ...collectLinksFromText(section.description),
+    ...collectLinksFromText(section.content)
+  ]
+
+  if (section.buttonUrl) links.push(String(section.buttonUrl))
+  if (section.secondaryButtonUrl) links.push(String(section.secondaryButtonUrl))
+  if (section.url) links.push(String(section.url))
+  if (section.pageUrl) links.push(String(section.pageUrl))
+
+  if (Array.isArray(section.items)) {
+    section.items.forEach((item: any) => {
+      links.push(...collectLinksFromText(item?.body))
+      links.push(...collectLinksFromText(item?.description))
+      if (item?.buttonUrl) links.push(String(item.buttonUrl))
+      if (item?.url) links.push(String(item.url))
+      if (Array.isArray(item?.sections)) {
+        item.sections.forEach((nested: any) => {
+          links.push(...collectSectionLinks(nested))
+        })
+      }
+    })
+  }
+
+  return links.filter(Boolean)
+}
+
+function looksBrokenInternalLink(value: string) {
+  const link = String(value || '').trim()
+  if (!link || link.startsWith('http://') || link.startsWith('https://') || link.startsWith('mailto:') || link.startsWith('tel:') || link.startsWith('#')) return false
+  return !link.startsWith('/')
+}
+
 function buildPageEditorInsights(page: any, sections: any[] = []) {
   let seo = 100
   let mobile = 100
   let speed = 100
   const suggestions: Array<{ category: 'SEO' | 'Mobile' | 'Speed'; text: string; priority: 'high' | 'medium' }> = []
+  const diagnostics = {
+    seo: [] as string[],
+    mobile: [] as string[],
+    speed: [] as string[]
+  }
 
   const title = String(page?.title || page?.pageTitle || '').trim()
   const metaTitle = String(page?.metaTitle || '').trim()
   const metaDescription = String(page?.metaDescription || '').trim()
   const slug = String(page?.slug || page?.pageUrl || '').trim()
   const headerTitle = String(page?.headerTitle || '').trim()
-  const bodyText = sections.map(section => stripHtml(section?.body || '')).join(' ').trim()
+  const bodyText = sections.flatMap(section => collectSectionText(section)).join(' ').trim()
+  const bodyWordCount = countWords(bodyText)
   const heroSections = sections.filter(section => section?.type === 'hero')
   const imageSections = sections.filter(section => ['image', 'gallery', 'imageCards', 'imageOverlay', 'portfolio', 'portfolioGallery'].includes(section?.type))
-  const missingAltCount = sections.filter(section => section?.imageUrl && !String(section?.alt || '').trim()).length
+  const imageStats = sections.reduce((totals, section) => {
+    const next = collectImageDiagnostics(section)
+    totals.total += next.total
+    totals.missingAlt += next.missingAlt
+    return totals
+  }, { total: 0, missingAlt: 0 })
+  const missingAltCount = imageStats.missingAlt
+  const internalLinks = sections.flatMap(section => collectSectionLinks(section))
+  const brokenInternalLinks = internalLinks.filter(looksBrokenInternalLink)
+  const h1LikeSections = sections.filter(section => ['hero', 'banner', 'header'].includes(section?.type) && String(section?.title || '').trim())
+  const hasCanonicalVisibility = Boolean(slug && slug.startsWith('/'))
+  const keywordSlug = slug.replace(/^\//, '')
+  const hasKeywordSlug = keywordSlug.length >= 3 && !keywordSlug.includes('_')
 
   if (!title || title.length < 4) {
     seo -= 18
     suggestions.push({ category: 'SEO', priority: 'high', text: 'Add a clear page title so search engines and visitors know what this page is about.' })
+    diagnostics.seo.push('Missing or weak page title')
   }
   if (!metaTitle || metaTitle.length < 20 || metaTitle.length > 60) {
     seo -= 14
     suggestions.push({ category: 'SEO', priority: 'high', text: 'Keep the SEO title between about 20 and 60 characters so it has a better chance of showing cleanly in Google.' })
+    diagnostics.seo.push(`SEO title length is ${metaTitle.length || 0} characters`)
   }
   if (!metaDescription || metaDescription.length < 70 || metaDescription.length > 160) {
     seo -= 12
     suggestions.push({ category: 'SEO', priority: 'medium', text: 'Write a meta description around 70 to 160 characters to improve click-through rate from search.' })
+    diagnostics.seo.push(`Meta description length is ${metaDescription.length || 0} characters`)
   }
   if (!slug || !slug.startsWith('/')) {
     seo -= 8
     suggestions.push({ category: 'SEO', priority: 'medium', text: 'Use a clean URL path that starts with a slash, like /services or /locations.' })
+    diagnostics.seo.push('URL path should start with /')
   }
   if (!headerTitle && !heroSections.length) {
     seo -= 10
     suggestions.push({ category: 'SEO', priority: 'medium', text: 'Add a visible heading or hero title so the page has a strong main heading.' })
+    diagnostics.seo.push('No strong visible primary heading')
   }
-  if (bodyText.length < 140) {
+  if (h1LikeSections.length > 1) {
+    seo -= 6
+    suggestions.push({ category: 'SEO', priority: 'medium', text: 'This page has multiple large hero/header titles. Keep one primary heading and make the rest secondary where possible.' })
+    diagnostics.seo.push(`${h1LikeSections.length} major heading sections detected`)
+  }
+  if (bodyText.length < 140 || bodyWordCount < 60) {
     seo -= 10
     suggestions.push({ category: 'SEO', priority: 'medium', text: 'This page is still light on content. Add more useful copy to help it rank for real searches.' })
+    diagnostics.seo.push(`Only about ${bodyWordCount} words of body content`)
   }
   if (missingAltCount > 0) {
     seo -= Math.min(12, missingAltCount * 4)
     suggestions.push({ category: 'SEO', priority: 'medium', text: `Add alt text to ${missingAltCount} image${missingAltCount === 1 ? '' : 's'} so the page is more accessible and better described.` })
+    diagnostics.seo.push(`${missingAltCount} image${missingAltCount === 1 ? '' : 's'} missing alt text`)
+  }
+  if (brokenInternalLinks.length > 0) {
+    seo -= Math.min(10, brokenInternalLinks.length * 3)
+    suggestions.push({ category: 'SEO', priority: 'high', text: 'Some internal links do not start with /. Update them so they point to valid site paths instead of broken relative URLs.' })
+    diagnostics.seo.push(`${brokenInternalLinks.length} internal link${brokenInternalLinks.length === 1 ? '' : 's'} may be broken`)
+  }
+  if (!hasKeywordSlug) {
+    seo -= 5
+    suggestions.push({ category: 'SEO', priority: 'medium', text: 'Use a short descriptive URL slug with hyphens, like /web-design or /service-areas.' })
+    diagnostics.seo.push('Slug could be cleaner for search')
+  }
+  if (!hasCanonicalVisibility) {
+    diagnostics.seo.push('Canonical path is unclear until the URL is cleaned up')
   }
 
   if (heroSections.some(section => Number(section?.heroHeight || 0) > 760)) {
     mobile -= 14
     suggestions.push({ category: 'Mobile', priority: 'medium', text: 'The hero is very tall. Shortening it a bit will show more content above the fold on phones.' })
+    diagnostics.mobile.push('Hero height is likely too tall for phones')
   }
   if (sections.some(section => Number(section?.columns || 1) >= 3)) {
     mobile -= 10
     suggestions.push({ category: 'Mobile', priority: 'medium', text: 'Three-column layouts can feel cramped on phones. Check mobile preview and reduce columns where needed.' })
+    diagnostics.mobile.push('Three-column layouts need mobile review')
   }
   if (sections.length > 10) {
     mobile -= 8
     speed -= 6
     suggestions.push({ category: 'Mobile', priority: 'medium', text: 'This page is getting long. Combine lighter sections where possible to keep mobile scrolling focused.' })
+    diagnostics.mobile.push(`Long page with ${sections.length} sections`)
+    diagnostics.speed.push(`Long page with ${sections.length} sections`)
+  }
+  if (imageSections.length >= 6) {
+    mobile -= 6
+    diagnostics.mobile.push(`Image-heavy layout with ${imageSections.length} media sections`)
   }
 
   if (heroSections.some(section => section?.mediaType === 'video')) {
     speed -= 18
     suggestions.push({ category: 'Speed', priority: 'high', text: 'Hero videos are expensive on mobile. Use them sparingly or fall back to a compressed image.' })
+    diagnostics.speed.push('Hero video increases load cost')
   }
   if (imageSections.length >= 4) {
     speed -= 10
     suggestions.push({ category: 'Speed', priority: 'medium', text: 'This page uses a lot of imagery. Make sure uploaded images are compressed and sized close to how they render.' })
+    diagnostics.speed.push(`${imageSections.length} image-heavy sections found`)
   }
   if (sections.some(section => section?.animationType && section.animationType !== 'none')) {
     speed -= 6
     suggestions.push({ category: 'Speed', priority: 'medium', text: 'Multiple entrance animations can add extra work on slower devices. Use them where they matter most.' })
+    diagnostics.speed.push('Entrance animations are enabled')
   }
 
   return {
@@ -448,7 +615,17 @@ function buildPageEditorInsights(page: any, sections: any[] = []) {
     seo: clampScore(seo),
     mobile: clampScore(mobile),
     speed: clampScore(speed),
-    suggestions: suggestions.slice(0, 6)
+    suggestions: suggestions.slice(0, 8),
+    diagnostics,
+    facts: {
+      wordCount: bodyWordCount,
+      imageCount: imageStats.total,
+      missingAltCount,
+      brokenInternalLinks: brokenInternalLinks.length,
+      majorHeadingCount: h1LikeSections.length,
+      sectionCount: sections.length,
+      canonicalVisible: hasCanonicalVisibility
+    }
   }
 }
 
@@ -1564,6 +1741,8 @@ function PageScoreCard({ insights }: any) {
   const [displayMobile, setDisplayMobile] = useState(0)
   const [displaySpeed, setDisplaySpeed] = useState(0)
   const scoreTone = (value: number) => value >= 85 ? 'text-green-700 bg-green-100 ring-green-200' : value >= 65 ? 'text-orange-700 bg-orange-100 ring-orange-200' : 'text-red-700 bg-red-100 ring-red-200'
+  const facts = insights?.facts || {}
+  const diagnostics = insights?.diagnostics || { seo: [], mobile: [], speed: [] }
 
   useEffect(() => {
     const animateValue = (setter: (value: number) => void, target: number, duration = 520) => {
@@ -1583,8 +1762,8 @@ function PageScoreCard({ insights }: any) {
   }, [insights?.overall, insights?.seo, insights?.mobile, insights?.speed])
 
   return (
-    <div className="rounded-lg border bg-white p-3">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="rounded-lg border bg-white p-3 md:p-4">
+      <div className="flex flex-wrap items-start gap-3">
         <div className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black ring-2 ${scoreTone(displayOverall)}`}>
           {displayOverall}
         </div>
@@ -1607,15 +1786,69 @@ function PageScoreCard({ insights }: any) {
           </div>
         </div>
       </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+        <FactPill label="Words" value={facts.wordCount ?? 0} />
+        <FactPill label="Images" value={facts.imageCount ?? 0} />
+        <FactPill label="Missing Alt" value={facts.missingAltCount ?? 0} tone={(facts.missingAltCount || 0) === 0 ? 'good' : 'warn'} />
+        <FactPill label="Bad Links" value={facts.brokenInternalLinks ?? 0} tone={(facts.brokenInternalLinks || 0) === 0 ? 'good' : 'bad'} />
+        <FactPill label="Headings" value={facts.majorHeadingCount ?? 0} tone={(facts.majorHeadingCount || 0) <= 1 ? 'good' : 'warn'} />
+        <FactPill label="Canonical" value={facts.canonicalVisible ? 'Ready' : 'Check'} tone={facts.canonicalVisible ? 'good' : 'warn'} />
+      </div>
       <div className="mt-3 space-y-2">
-        {insights.suggestions.slice(0, 3).map((item: any, index: number) => (
+        {insights.suggestions.slice(0, 4).map((item: any, index: number) => (
           <div key={`${item.category}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-gray-500">{item.category}</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-gray-500">{item.category}</p>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${item.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
+                {item.priority}
+              </span>
+            </div>
             <p className="mt-1 text-xs text-gray-700">{item.text}</p>
           </div>
         ))}
         {insights.suggestions.length === 0 && <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">This page is in a solid place. Keep an eye on images and metadata as you publish updates.</p>}
       </div>
+      <div className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-3">
+        <DiagnosticList title="SEO Diagnostics" items={diagnostics.seo} />
+        <DiagnosticList title="Mobile Diagnostics" items={diagnostics.mobile} />
+        <DiagnosticList title="Speed Diagnostics" items={diagnostics.speed} />
+      </div>
+    </div>
+  )
+}
+
+function FactPill({ label, value, tone = 'neutral' }: { label: string; value: string | number; tone?: 'neutral' | 'good' | 'warn' | 'bad' }) {
+  const toneClass = tone === 'good'
+    ? 'bg-green-50 text-green-700'
+    : tone === 'warn'
+      ? 'bg-orange-50 text-orange-700'
+      : tone === 'bad'
+        ? 'bg-red-50 text-red-700'
+        : 'bg-gray-50 text-gray-700'
+
+  return (
+    <div className={`rounded-lg px-3 py-2 ${toneClass}`}>
+      <p className="text-[10px] font-bold uppercase tracking-wide opacity-70">{label}</p>
+      <p className="mt-1 text-sm font-bold">{value}</p>
+    </div>
+  )
+}
+
+function DiagnosticList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="rounded-lg border bg-gray-50 p-3">
+      <h4 className="text-xs font-bold uppercase tracking-wide text-gray-600">{title}</h4>
+      {items.length > 0 ? (
+        <ul className="mt-2 space-y-1 text-xs text-gray-700">
+          {items.slice(0, 4).map((item, index) => (
+            <li key={`${title}-${index}`} className="rounded bg-white px-2 py-1.5">
+              {item}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-xs text-gray-600">No issues flagged right now.</p>
+      )}
     </div>
   )
 }
