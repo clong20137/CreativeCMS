@@ -317,6 +317,12 @@ function makePageSection(type: string) {
     cardMetaFontSize: '',
     cardHeadingFontSize: '',
     cardBodyFontSize: '',
+    headingTextShadow: '',
+    bodyTextShadow: '',
+    buttonTextShadow: '',
+    cardMetaTextShadow: '',
+    cardHeadingTextShadow: '',
+    cardBodyTextShadow: '',
     headingFontWeight: '',
     bodyFontWeight: '',
     buttonFontWeight: '',
@@ -3609,6 +3615,30 @@ function SectionTypographyControls({ section, index, updateSection }: any) {
     </label>
   )
 
+  const textShadowPresets = [
+    { label: 'None', value: '' },
+    { label: 'Soft', value: '0 1px 2px rgba(15, 23, 42, 0.18)' },
+    { label: 'Medium', value: '0 2px 6px rgba(15, 23, 42, 0.24)' },
+    { label: 'Strong', value: '0 4px 12px rgba(15, 23, 42, 0.32)' }
+  ]
+
+  const textShadowControl = (key: string, label: string) => {
+    const currentValue = section[key] || ''
+    const selectedValue = textShadowPresets.some((preset) => preset.value === currentValue) ? currentValue : '__custom__'
+    return (
+      <div className="grid gap-2 md:grid-cols-[5rem_1fr] md:items-center">
+        <span className="text-sm font-semibold text-gray-700">{label}</span>
+        <div className="space-y-2">
+          <select value={selectedValue} onChange={(e) => updateSection(index, key, e.target.value === '__custom__' ? currentValue : e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm">
+            {textShadowPresets.map((preset) => <option key={preset.label} value={preset.value}>{preset.label}</option>)}
+            <option value="__custom__">Custom</option>
+          </select>
+          <input value={currentValue} onChange={(e) => updateSection(index, key, e.target.value)} placeholder="Custom text-shadow, e.g. 0 2px 8px rgba(0,0,0,0.25)" className="w-full rounded-lg border px-3 py-2 text-sm" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <details className="mb-3 rounded-lg border bg-white p-3">
       <summary className="cursor-pointer text-sm font-bold text-gray-800">Typography</summary>
@@ -3638,6 +3668,20 @@ function SectionTypographyControls({ section, index, updateSection }: any) {
             {sizeControl('cardBodyFontSize', 'Card body', 12, 28)}
           </div>
         )}
+
+        <div className="space-y-3 border-t pt-4">
+          <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">Text Shadow</h4>
+          {textShadowControl('headingTextShadow', 'Heading')}
+          {textShadowControl('bodyTextShadow', 'Body')}
+          {textShadowControl('buttonTextShadow', 'Button')}
+          {section.type === 'siteDemos' && (
+            <>
+              {textShadowControl('cardMetaTextShadow', 'Category')}
+              {textShadowControl('cardHeadingTextShadow', 'Card title')}
+              {textShadowControl('cardBodyTextShadow', 'Card body')}
+            </>
+          )}
+        </div>
 
         <div className="space-y-3 border-t pt-4">
           <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">Weight</h4>

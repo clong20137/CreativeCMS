@@ -83,6 +83,22 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.DECIMAL(4, 2),
     defaultValue: 1
   },
+  cmsCurrentVersion: {
+    type: DataTypes.STRING,
+    defaultValue: '1.0.0'
+  },
+  cmsReleaseChannel: {
+    type: DataTypes.ENUM('stable', 'early-access'),
+    defaultValue: 'stable'
+  },
+  cmsVersionName: {
+    type: DataTypes.STRING,
+    defaultValue: 'Creative CMS'
+  },
+  cmsReleaseNotes: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
   contactEmail: {
     type: DataTypes.STRING,
     defaultValue: 'hello@creativestudio.com'

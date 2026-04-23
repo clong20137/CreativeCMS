@@ -32,6 +32,7 @@ const ClientPortalLicense = lazy(() => import('./pages/ClientPortalLicense'))
 const ClientPortalPlugins = lazy(() => import('./pages/ClientPortalPlugins'))
 const ClientPortalSettings = lazy(() => import('./pages/ClientPortalSettings'))
 const ClientTickets = lazy(() => import('./pages/ClientTickets'))
+const ClientPortalUpdates = lazy(() => import('./pages/ClientPortalUpdates'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminClients = lazy(() => import('./pages/AdminClients'))
 const AdminProjects = lazy(() => import('./pages/AdminProjects'))
@@ -97,6 +98,7 @@ function AppRoutes() {
             <Route path="/client-dashboard/license" element={<ClientPortalLicense />} />
             <Route path="/client-dashboard/billing" element={<ClientPortalBilling />} />
             <Route path="/client-dashboard/plugins" element={<ClientPortalPlugins />} />
+            <Route path="/client-dashboard/updates" element={<ClientPortalUpdates />} />
             <Route path="/client-dashboard/settings" element={<ClientPortalSettings />} />
             <Route path="/client-dashboard/tickets" element={<ClientTickets />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />

@@ -528,7 +528,11 @@ async function ensureSiteSettingsSchema() {
     ['pageSpeedUrl', { type: DataTypes.STRING, allowNull: true }],
     ['pageSpeedApiKey', { type: DataTypes.STRING, allowNull: true }],
     ['footerNavigationItems', { type: DataTypes.JSON, allowNull: true }],
-    ['footerNavigationColumns', { type: DataTypes.JSON, allowNull: true }]
+    ['footerNavigationColumns', { type: DataTypes.JSON, allowNull: true }],
+    ['cmsCurrentVersion', { type: DataTypes.STRING, allowNull: true }],
+    ['cmsVersionName', { type: DataTypes.STRING, allowNull: true }],
+    ['cmsReleaseChannel', { type: DataTypes.ENUM('stable', 'early-access'), allowNull: true }],
+    ['cmsReleaseNotes', { type: DataTypes.JSON, allowNull: true }]
   ]
 
   for (const [name, definition] of columns) {
@@ -554,6 +558,22 @@ export async function getOrCreateSiteSettings() {
   let changed = false
   if (!settings.reusableSections) {
     settings.reusableSections = []
+    changed = true
+  }
+  if (!settings.cmsCurrentVersion) {
+    settings.cmsCurrentVersion = '1.0.0'
+    changed = true
+  }
+  if (!settings.cmsVersionName) {
+    settings.cmsVersionName = 'Creative CMS'
+    changed = true
+  }
+  if (!settings.cmsReleaseChannel) {
+    settings.cmsReleaseChannel = 'stable'
+    changed = true
+  }
+  if (!Array.isArray(settings.cmsReleaseNotes)) {
+    settings.cmsReleaseNotes = []
     changed = true
   }
   if (!Array.isArray(settings.footerNavigationColumns) || settings.footerNavigationColumns.length === 0) {
@@ -588,6 +608,10 @@ function publicSiteSettings(settings) {
     'themeCardRadius',
     'themeShadowPreset',
     'themeSpacingScale',
+    'cmsCurrentVersion',
+    'cmsReleaseChannel',
+    'cmsVersionName',
+    'cmsReleaseNotes',
     'contactEmail',
     'phone',
     'hours',

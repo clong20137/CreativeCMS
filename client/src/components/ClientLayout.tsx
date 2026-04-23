@@ -1,7 +1,7 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { FiFileText, FiGrid, FiHelpCircle, FiHome, FiKey, FiLogOut, FiSettings } from 'react-icons/fi'
+import { FiClock, FiFileText, FiGrid, FiHelpCircle, FiHome, FiKey, FiLogOut, FiSettings } from 'react-icons/fi'
 import type { ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { licensesAPI } from '../services/api'
 
 const clientLinks = [
@@ -9,6 +9,7 @@ const clientLinks = [
   { label: 'License', path: '/client-dashboard/license', icon: FiKey },
   { label: 'Billing', path: '/client-dashboard/billing', icon: FiFileText },
   { label: 'Plugins', path: '/client-dashboard/plugins', icon: FiGrid },
+  { label: 'Updates', path: '/client-dashboard/updates', icon: FiClock },
   { label: 'Tickets', path: '/client-dashboard/tickets', icon: FiHelpCircle },
   { label: 'Settings', path: '/client-dashboard/settings', icon: FiSettings }
 ]
@@ -133,7 +134,7 @@ export default function ClientLayout({ title, children }: { title: string; child
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-4 gap-1">
           {clientLinks.map((link) => {
             const Icon = link.icon
             const isActive = currentPath === link.path

@@ -23,6 +23,10 @@ const emptySettings = {
   themeCardRadius: 8,
   themeShadowPreset: 'medium',
   themeSpacingScale: 1,
+  cmsCurrentVersion: '1.0.0',
+  cmsReleaseChannel: 'stable',
+  cmsVersionName: 'Creative CMS',
+  cmsReleaseNotes: [] as any[],
   contactEmail: '',
   phone: '',
   hours: '',
@@ -86,7 +90,7 @@ const emptySettings = {
   turnstileSecretKey: ''
 }
 
-const tabs = ['General', 'Theme', 'Contact', 'SEO', 'Payments', 'Security']
+const tabs = ['General', 'Theme', 'Releases', 'Contact', 'SEO', 'Payments', 'Security']
 const pageHeaderLabels: Record<string, string> = {
   portfolio: 'Portfolio',
   services: 'Services',
@@ -230,6 +234,7 @@ function getActiveTabPayload(settings: typeof emptySettings, activeTab: string) 
       'themeShadowPreset',
       'themeSpacingScale'
     ],
+    Releases: ['cmsCurrentVersion', 'cmsReleaseChannel', 'cmsVersionName', 'cmsReleaseNotes'],
     Contact: [
       'contactEmail',
       'phone',
@@ -338,6 +343,72 @@ export default function AdminSettings() {
         }
       }
     }))
+  }
+
+  const updateReleaseNote = (index: number, field: string, value: any) => {
+    setSettings(prev => {
+      const notes = [...(prev.cmsReleaseNotes || [])]
+      notes[index] = { ...notes[index], [field]: value }
+      return { ...prev, cmsReleaseNotes: notes }
+    })
+  }
+
+  const addReleaseNote = () => {
+    setSettings(prev => ({
+      ...prev,
+      cmsReleaseNotes: [
+        ...(prev.cmsReleaseNotes || []),
+        {
+          id: `release-${Date.now()}`,
+          version: prev.cmsCurrentVersion || '',
+          releasedAt: new Date().toISOString().slice(0, 10),
+          title: '',
+          summary: '',
+          highlights: ['']
+        }
+      ]
+    }))
+  }
+
+  const removeReleaseNote = (index: number) => {
+    setSettings(prev => ({
+      ...prev,
+      cmsReleaseNotes: (prev.cmsReleaseNotes || []).filter((_: any, i: number) => i !== index)
+    }))
+  }
+
+  const updateReleaseHighlight = (releaseIndex: number, highlightIndex: number, value: string) => {
+    setSettings(prev => {
+      const notes = [...(prev.cmsReleaseNotes || [])]
+      const release = { ...(notes[releaseIndex] || {}) }
+      const highlights = Array.isArray(release.highlights) ? [...release.highlights] : []
+      highlights[highlightIndex] = value
+      release.highlights = highlights
+      notes[releaseIndex] = release
+      return { ...prev, cmsReleaseNotes: notes }
+    })
+  }
+
+  const addReleaseHighlight = (releaseIndex: number) => {
+    setSettings(prev => {
+      const notes = [...(prev.cmsReleaseNotes || [])]
+      const release = { ...(notes[releaseIndex] || {}) }
+      const highlights = Array.isArray(release.highlights) ? [...release.highlights] : []
+      release.highlights = [...highlights, '']
+      notes[releaseIndex] = release
+      return { ...prev, cmsReleaseNotes: notes }
+    })
+  }
+
+  const removeReleaseHighlight = (releaseIndex: number, highlightIndex: number) => {
+    setSettings(prev => {
+      const notes = [...(prev.cmsReleaseNotes || [])]
+      const release = { ...(notes[releaseIndex] || {}) }
+      const highlights = Array.isArray(release.highlights) ? [...release.highlights] : []
+      release.highlights = highlights.filter((_: any, i: number) => i !== highlightIndex)
+      notes[releaseIndex] = release
+      return { ...prev, cmsReleaseNotes: notes }
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -587,6 +658,75 @@ export default function AdminSettings() {
                         <span style={{ color: settings.themeLinkColor, textDecoration: 'underline' }}>Sample link color</span>
                       </p>
                     </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'Releases' && (
+              <section className="space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Release and Version Management</h2>
+                  <p className="text-gray-600">Track the current CMS version, release channel, and the update history shown to clients.</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <label className="space-y-2">
+                    <span className="block text-sm font-semibold text-gray-700">Product name</span>
+                    <input value={settings.cmsVersionName || ''} onChange={(e) => handleChange('cmsVersionName', e.target.value)} placeholder="Creative CMS" className="w-full px-4 py-2 border rounded-lg" />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="block text-sm font-semibold text-gray-700">Current version</span>
+                    <input value={settings.cmsCurrentVersion || ''} onChange={(e) => handleChange('cmsCurrentVersion', e.target.value)} placeholder="1.0.0" className="w-full px-4 py-2 border rounded-lg" />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="block text-sm font-semibold text-gray-700">Release channel</span>
+                    <select value={settings.cmsReleaseChannel || 'stable'} onChange={(e) => handleChange('cmsReleaseChannel', e.target.value)} className="w-full px-4 py-2 border rounded-lg">
+                      <option value="stable">Stable</option>
+                      <option value="early-access">Early Access</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="space-y-4 rounded-lg border p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">Release History</h3>
+                      <p className="text-sm text-gray-600">These notes show up in the client updates area and give you a simple internal changelog.</p>
+                    </div>
+                    <button type="button" onClick={addReleaseNote} className="btn-primary w-full sm:w-auto">Add Release</button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {(settings.cmsReleaseNotes || []).map((release: any, index: number) => (
+                      <div key={release.id || index} className="space-y-4 rounded-xl border bg-gray-50 p-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                          <input value={release.version || ''} onChange={(e) => updateReleaseNote(index, 'version', e.target.value)} placeholder="Version, e.g. 1.2.0" className="px-4 py-2 border rounded-lg" />
+                          <input type="date" value={release.releasedAt || ''} onChange={(e) => updateReleaseNote(index, 'releasedAt', e.target.value)} className="px-4 py-2 border rounded-lg" />
+                          <button type="button" onClick={() => removeReleaseNote(index)} className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-semibold text-red-700 hover:bg-red-100">Remove Release</button>
+                        </div>
+                        <input value={release.title || ''} onChange={(e) => updateReleaseNote(index, 'title', e.target.value)} placeholder="Release title" className="w-full px-4 py-2 border rounded-lg" />
+                        <textarea value={release.summary || ''} onChange={(e) => updateReleaseNote(index, 'summary', e.target.value)} placeholder="Release summary" rows={3} className="w-full px-4 py-2 border rounded-lg" />
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-gray-700">Highlights</p>
+                            <button type="button" onClick={() => addReleaseHighlight(index)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-white">Add Highlight</button>
+                          </div>
+                          {(Array.isArray(release.highlights) ? release.highlights : []).map((highlight: string, highlightIndex: number) => (
+                            <div key={`${release.id || index}-highlight-${highlightIndex}`} className="flex gap-2">
+                              <input value={highlight || ''} onChange={(e) => updateReleaseHighlight(index, highlightIndex, e.target.value)} placeholder="Release highlight" className="min-w-0 flex-1 px-4 py-2 border rounded-lg" />
+                              <button type="button" onClick={() => removeReleaseHighlight(index, highlightIndex)} className="shrink-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700 hover:bg-red-100">Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    {(settings.cmsReleaseNotes || []).length === 0 && (
+                      <div className="rounded-xl border border-dashed p-6 text-center text-sm text-gray-500">
+                        No releases yet. Add your first release to start version tracking and the client-facing update history.
+                      </div>
+                    )}
                   </div>
                 </div>
               </section>
