@@ -3717,26 +3717,61 @@ function SectionPanelAnimationControls({ section, index, updateSection, prefix, 
 
 function CustomPageSettingsEditor({ pageDraft, updatePageDraft }: any) {
   return (
-    <section className="rounded-lg border p-5">
-      <h3 className="mb-4 text-xl font-bold text-gray-900">Page Settings</h3>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <input value={pageDraft.title || ''} onChange={(e) => updatePageDraft('title', e.target.value)} placeholder="Page title" className="px-4 py-3 border rounded-lg" required />
-        <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', normalizeCustomSlug(e.target.value))} placeholder="page-url" className="px-4 py-3 border rounded-lg" required />
-        <input value={pageDraft.headerTitle || ''} onChange={(e) => updatePageDraft('headerTitle', e.target.value)} placeholder="Header title" className="px-4 py-3 border rounded-lg" />
-        <input type="number" value={pageDraft.sortOrder ?? 0} onChange={(e) => updatePageDraft('sortOrder', Number(e.target.value))} placeholder="Sort order" className="px-4 py-3 border rounded-lg" />
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-semibold text-gray-700">Header subtitle</label>
-          <textarea value={pageDraft.headerSubtitle || ''} onChange={(e) => updatePageDraft('headerSubtitle', e.target.value)} placeholder="Short supporting text below the page heading" rows={4} className="min-h-28 w-full px-4 py-3 border rounded-lg" />
+    <section className="rounded-lg border bg-white p-5">
+      <div className="mb-5">
+        <h3 className="text-xl font-bold text-gray-900">Page Settings</h3>
+        <p className="mt-1 text-sm text-gray-600">Set the page basics, SEO details, and optional page header before arranging sections.</p>
+      </div>
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">Page title</span>
+            <input value={pageDraft.title || ''} onChange={(e) => updatePageDraft('title', e.target.value)} placeholder="Westfield" className="w-full rounded-lg border px-4 py-3" required />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">Page URL</span>
+            <input value={pageDraft.slug || ''} onChange={(e) => updatePageDraft('slug', normalizeCustomSlug(e.target.value))} placeholder="westfield" className="w-full rounded-lg border px-4 py-3" required />
+          </label>
         </div>
-        <SeoTitleField value={pageDraft.metaTitle || ''} onChange={(value) => updatePageDraft('metaTitle', value)} placeholder="SEO title" />
-        <input value={pageDraft.metaDescription || ''} onChange={(e) => updatePageDraft('metaDescription', e.target.value)} placeholder="SEO description" className="px-4 py-3 border rounded-lg" />
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-semibold text-gray-700">Fallback page content</label>
-          <textarea value={pageDraft.content || ''} onChange={(e) => updatePageDraft('content', e.target.value)} placeholder="Used if this page has no custom sections yet" rows={6} className="min-h-40 w-full px-4 py-3 border rounded-lg" />
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">Header title</span>
+            <input value={pageDraft.headerTitle || ''} onChange={(e) => updatePageDraft('headerTitle', e.target.value)} placeholder="Westfield" className="w-full rounded-lg border px-4 py-3" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">Sort order</span>
+            <input type="number" value={pageDraft.sortOrder ?? 0} onChange={(e) => updatePageDraft('sortOrder', Number(e.target.value))} placeholder="20" className="w-full rounded-lg border px-4 py-3" />
+          </label>
         </div>
-        <label className="inline-flex items-center gap-2 rounded-lg border px-4 py-3 font-semibold text-gray-700">
-          <input type="checkbox" checked={pageDraft.showPageHeader !== false} onChange={(e) => updatePageDraft('showPageHeader', e.target.checked)} />
-          Show top page header banner
+
+        <label className="space-y-2 block">
+          <span className="text-sm font-semibold text-gray-700">Header subtitle</span>
+          <textarea value={pageDraft.headerSubtitle || ''} onChange={(e) => updatePageDraft('headerSubtitle', e.target.value)} placeholder="Short supporting text below the page heading" rows={4} className="min-h-28 w-full rounded-lg border px-4 py-3" />
+        </label>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">SEO title</span>
+            <SeoTitleField value={pageDraft.metaTitle || ''} onChange={(value) => updatePageDraft('metaTitle', value)} placeholder="Web Design & Development" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">SEO description</span>
+            <textarea value={pageDraft.metaDescription || ''} onChange={(e) => updatePageDraft('metaDescription', e.target.value)} placeholder="Describe what this page helps visitors find." rows={4} className="min-h-28 w-full rounded-lg border px-4 py-3" />
+          </label>
+        </div>
+
+        <label className="space-y-2 block">
+          <span className="text-sm font-semibold text-gray-700">Fallback page content</span>
+          <textarea value={pageDraft.content || ''} onChange={(e) => updatePageDraft('content', e.target.value)} placeholder="Used if this page has no custom sections yet" rows={6} className="min-h-40 w-full rounded-lg border px-4 py-3" />
+        </label>
+
+        <label className="flex items-start gap-3 rounded-lg border bg-gray-50 px-4 py-4 font-semibold text-gray-700">
+          <input className="mt-1" type="checkbox" checked={pageDraft.showPageHeader !== false} onChange={(e) => updatePageDraft('showPageHeader', e.target.checked)} />
+          <span>
+            <span className="block">Show top page header banner</span>
+            <span className="mt-1 block text-sm font-normal text-gray-500">Turn this off if the page should begin directly with the first custom section.</span>
+          </span>
         </label>
       </div>
     </section>
@@ -3751,27 +3786,49 @@ function PageMetadataEditor({ page, fallback, metadata, legacyHeader, updatePage
   const headerSubtitle = metadata.headerSubtitle || legacyHeader.subtitle || ''
 
   return (
-    <section className="rounded-lg border p-5">
-      <h3 className="mb-4 text-xl font-bold text-gray-900">Page Settings</h3>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <input value={pageTitle} onChange={(e) => updatePageMetadata(page, 'pageTitle', e.target.value)} placeholder="Page Title" className="px-4 py-3 border rounded-lg" />
-        <input value={pageUrl} onChange={(e) => updatePageMetadata(page, 'pageUrl', normalizePagePath(e.target.value))} placeholder="Page URL" className="px-4 py-3 border rounded-lg" />
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-semibold text-gray-700">Page description</label>
-          <textarea value={description} onChange={(e) => updatePageMetadata(page, 'description', e.target.value)} placeholder="Short summary for the page and preview sections" rows={4} className="min-h-28 w-full px-4 py-3 border rounded-lg" />
+    <section className="rounded-lg border bg-white p-5">
+      <div className="mb-5">
+        <h3 className="text-xl font-bold text-gray-900">Page Settings</h3>
+        <p className="mt-1 text-sm text-gray-600">Fine-tune the public page title, heading copy, and SEO details for this built-in page.</p>
+      </div>
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">Page title</span>
+            <input value={pageTitle} onChange={(e) => updatePageMetadata(page, 'pageTitle', e.target.value)} placeholder="Services" className="w-full rounded-lg border px-4 py-3" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">Page URL</span>
+            <input value={pageUrl} onChange={(e) => updatePageMetadata(page, 'pageUrl', normalizePagePath(e.target.value))} placeholder="/services" className="w-full rounded-lg border px-4 py-3" />
+          </label>
         </div>
-        <input
-          value={headerTitle}
-          onChange={(e) => {
-            updatePageMetadata(page, 'headerTitle', e.target.value)
-            updatePageHeader(page, 'title', e.target.value)
-          }}
-          placeholder="Header Title"
-          className="px-4 py-3 border rounded-lg"
-        />
-        <SeoTitleField value={metadata.metaTitle || ''} onChange={(value) => updatePageMetadata(page, 'metaTitle', value)} placeholder="SEO Title" />
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-semibold text-gray-700">Header text</label>
+
+        <label className="space-y-2 block">
+          <span className="text-sm font-semibold text-gray-700">Page description</span>
+          <textarea value={description} onChange={(e) => updatePageMetadata(page, 'description', e.target.value)} placeholder="Short summary for the page and preview sections" rows={4} className="min-h-28 w-full rounded-lg border px-4 py-3" />
+        </label>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">Header title</span>
+            <input
+              value={headerTitle}
+              onChange={(e) => {
+                updatePageMetadata(page, 'headerTitle', e.target.value)
+                updatePageHeader(page, 'title', e.target.value)
+              }}
+              placeholder="Custom Websites & Branding"
+              className="w-full rounded-lg border px-4 py-3"
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-gray-700">SEO title</span>
+            <SeoTitleField value={metadata.metaTitle || ''} onChange={(value) => updatePageMetadata(page, 'metaTitle', value)} placeholder="SEO Title" />
+          </label>
+        </div>
+
+        <label className="space-y-2 block">
+          <span className="text-sm font-semibold text-gray-700">Header text</span>
           <textarea
             value={headerSubtitle}
             onChange={(e) => {
@@ -3780,13 +3837,14 @@ function PageMetadataEditor({ page, fallback, metadata, legacyHeader, updatePage
             }}
             placeholder="Supporting copy for the page heading"
             rows={4}
-            className="min-h-28 w-full px-4 py-3 border rounded-lg"
+            className="min-h-28 w-full rounded-lg border px-4 py-3"
           />
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-semibold text-gray-700">SEO description</label>
-          <textarea value={metadata.metaDescription || ''} onChange={(e) => updatePageMetadata(page, 'metaDescription', e.target.value)} placeholder="Search result description for this page" rows={4} className="min-h-28 w-full px-4 py-3 border rounded-lg" />
-        </div>
+        </label>
+
+        <label className="space-y-2 block">
+          <span className="text-sm font-semibold text-gray-700">SEO description</span>
+          <textarea value={metadata.metaDescription || ''} onChange={(e) => updatePageMetadata(page, 'metaDescription', e.target.value)} placeholder="Search result description for this page" rows={4} className="min-h-28 w-full rounded-lg border px-4 py-3" />
+        </label>
       </div>
     </section>
   )

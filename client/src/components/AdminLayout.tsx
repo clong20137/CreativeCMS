@@ -68,6 +68,13 @@ const mobilePrimaryLinks = [
   { label: 'Settings', path: '/admin/settings', icon: FiSettings }
 ]
 
+type PageNavLink = {
+  title: string
+  path: string
+  active: boolean
+  isAction?: boolean
+}
+
 export default function AdminLayout({ title, children }: { title: string; children: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -303,11 +310,11 @@ export default function AdminLayout({ title, children }: { title: string; childr
             {adminGroups.map((group) => {
               const GroupIcon = group.icon
               const groupActive = group.label === 'Pages' ? location.pathname.startsWith('/admin/pages') || isGroupActive(group.links) : isGroupActive(group.links)
-              const pageLinks = group.label === 'Pages'
+              const pageLinks: PageNavLink[] = group.label === 'Pages'
                 ? [
+                    { title: 'Add New Page', path: '/admin/pages?page=new', active: isPageLinkActive('new'), isAction: true },
                     ...builtInPageLinks.map(link => ({ title: link.label, path: `/admin/pages?page=${link.page}`, active: isPageLinkActive(link.page) })),
                     ...customPages.map(page => ({ title: page.title || 'Custom Page', path: `/admin/pages?custom=${page.id}`, active: isCustomPageLinkActive(String(page.id)) })),
-                    { title: 'Add New Page', path: '/admin/pages?page=new', active: isPageLinkActive('new') }
                   ]
                 : []
               const filteredPageLinks = pageLinks.filter(link => matchesSearch(link.title))
@@ -356,7 +363,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                               to={link.path}
                               onClick={() => setMobileSidebarOpen(false)}
                               className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
-                                link.active ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+                                link.active ? 'bg-blue-600 text-white' : link.isAction ? 'border border-dashed border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                               }`}
                             >
                               <FiFileText size={16} />
@@ -476,11 +483,11 @@ export default function AdminLayout({ title, children }: { title: string; childr
             {adminGroups.map((group) => {
               const GroupIcon = group.icon
               const groupActive = group.label === 'Pages' ? location.pathname.startsWith('/admin/pages') || isGroupActive(group.links) : isGroupActive(group.links)
-              const pageLinks = group.label === 'Pages'
+              const pageLinks: PageNavLink[] = group.label === 'Pages'
                 ? [
+                    { title: 'Add New Page', path: '/admin/pages?page=new', active: isPageLinkActive('new'), isAction: true },
                     ...builtInPageLinks.map(link => ({ title: link.label, path: `/admin/pages?page=${link.page}`, active: isPageLinkActive(link.page) })),
                     ...customPages.map(page => ({ title: page.title || 'Custom Page', path: `/admin/pages?custom=${page.id}`, active: isCustomPageLinkActive(String(page.id)) })),
-                    { title: 'Add New Page', path: '/admin/pages?page=new', active: isPageLinkActive('new') }
                   ]
                 : []
               const filteredPageLinks = pageLinks.filter(link => matchesSearch(link.title))
@@ -513,8 +520,28 @@ export default function AdminLayout({ title, children }: { title: string; childr
                   {sidebarOpen && (
                     <div className={`overflow-hidden transition-all duration-300 ease-in-out ${groupExpanded ? 'max-h-[44rem] opacity-100' : 'max-h-0 opacity-0'}`}>
                   {group.label === 'Pages' && (
-                    <div className="ml-4 space-y-1 border-l border-gray-200 pl-3">
-                      {filteredPageLinks.map(link => (
+                    <div className="ml-4 border-l border-gray-200 pl-3">
+                      {filteredPageLinks.find(link => link.isAction) && (
+                        <div className="sticky top-0 z-10 mb-2 bg-white pb-2">
+                          {filteredPageLinks.filter(link => link.isAction).map(link => (
+                            <Link
+                              key={link.path}
+                              to={link.path}
+                              onClick={() => setMobileSidebarOpen(false)}
+                              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                                link.active
+                                  ? 'bg-blue-600 text-white'
+                                  : 'border border-dashed border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                              }`}
+                            >
+                              <FiFileText size={16} />
+                              {link.title}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                      <div className="max-h-[22rem] space-y-1 overflow-y-auto pr-1">
+                      {filteredPageLinks.filter(link => !link.isAction).map(link => (
                         <Link
                           key={link.path}
                           to={link.path}
@@ -529,6 +556,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                           {link.title}
                         </Link>
                       ))}
+                      </div>
                     </div>
                   )}
 

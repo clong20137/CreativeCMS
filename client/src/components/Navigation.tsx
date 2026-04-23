@@ -196,7 +196,7 @@ export default function Navigation() {
             })}
             <Link
               to={userRole ? dashboardPath : '/login'}
-              className="btn-primary text-sm inline-flex h-10 items-center"
+              className="btn-primary inline-flex items-center justify-center text-sm"
             >
               {userRole ? 'Dashboard' : 'Client Login'}
             </Link>
@@ -286,7 +286,7 @@ export default function Navigation() {
                 </div>
               )
             })}
-            <Link to={userRole ? dashboardPath : '/login'} className="btn-primary mt-2 block w-full rounded-xl px-3 py-3 text-left text-base font-semibold">
+            <Link to={userRole ? dashboardPath : '/login'} className="btn-primary mt-2 inline-flex w-full items-center justify-center text-base font-semibold">
               {userRole ? 'Dashboard' : 'Client Login'}
             </Link>
             <button
