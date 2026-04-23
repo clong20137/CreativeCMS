@@ -25,6 +25,8 @@ const BarbershopSiteDemo = lazy(() => import('./pages/BarbershopSiteDemo'))
 const RealEstateSiteDemo = lazy(() => import('./pages/RealEstateSiteDemo'))
 const ElectricianSiteDemo = lazy(() => import('./pages/ElectricianSiteDemo'))
 const MowingBusinessSiteDemo = lazy(() => import('./pages/MowingBusinessSiteDemo'))
+const GolfSiteDemo = lazy(() => import('./pages/GolfSiteDemo'))
+const CornholeSiteDemo = lazy(() => import('./pages/CornholeSiteDemo'))
 const Login = lazy(() => import('./pages/Login'))
 const ClientDashboard = lazy(() => import('./pages/ClientDashboard'))
 const ClientPortalBilling = lazy(() => import('./pages/ClientPortalBilling'))
@@ -92,6 +94,8 @@ function AppRoutes() {
             <Route path="/site-demos/real-estate" element={<RealEstateSiteDemo />} />
             <Route path="/site-demos/electrician" element={<ElectricianSiteDemo />} />
             <Route path="/site-demos/mowing-business" element={<MowingBusinessSiteDemo />} />
+            <Route path="/site-demos/golf" element={<GolfSiteDemo />} />
+            <Route path="/site-demos/cornhole" element={<CornholeSiteDemo />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/client-dashboard" element={<ClientDashboard />} />

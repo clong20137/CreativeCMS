@@ -111,6 +111,42 @@ export async function getOrCreateMowingBusinessSiteDemo() {
   return demo
 }
 
+export async function getOrCreateGolfSiteDemo() {
+  const [demo] = await SiteDemo.findOrCreate({
+    where: { slug: 'golf' },
+    defaults: {
+      slug: 'golf',
+      name: 'Golf Demo',
+      category: 'Sports & Recreation',
+      description: 'A golf website demo for tee times, lessons, memberships, tournaments, and clubhouse events.',
+      previewImage: 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&w=1200&q=80',
+      demoUrl: '/site-demos/golf',
+      isActive: true,
+      sortOrder: 70
+    }
+  })
+
+  return demo
+}
+
+export async function getOrCreateCornholeSiteDemo() {
+  const [demo] = await SiteDemo.findOrCreate({
+    where: { slug: 'cornhole' },
+    defaults: {
+      slug: 'cornhole',
+      name: 'Cornhole Demo',
+      category: 'Events & Recreation',
+      description: 'A cornhole website demo for leagues, tournaments, social nights, sponsors, and registration.',
+      previewImage: 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1200&q=80',
+      demoUrl: '/site-demos/cornhole',
+      isActive: true,
+      sortOrder: 80
+    }
+  })
+
+  return demo
+}
+
 export async function ensureSiteDemos() {
   await getOrCreateRestaurantSiteDemo()
   await getOrCreateTowingTransportSiteDemo()
@@ -118,6 +154,8 @@ export async function ensureSiteDemos() {
   await getOrCreateRealEstateSiteDemo()
   await getOrCreateElectricianSiteDemo()
   await getOrCreateMowingBusinessSiteDemo()
+  await getOrCreateGolfSiteDemo()
+  await getOrCreateCornholeSiteDemo()
 }
 
 router.get('/', async (req, res) => {
