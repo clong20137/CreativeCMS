@@ -62,6 +62,9 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
 if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-secret-key')) {
   throw new Error('JWT_SECRET must be set to a strong unique value in production')
 }
+if (process.env.NODE_ENV === 'production' && (!process.env.DB_PASSWORD || process.env.DB_PASSWORD === '123456')) {
+  throw new Error('DB_PASSWORD must be set to a non-default value in production')
+}
 
 User.hasMany(Project, { foreignKey: 'clientId' })
 Project.belongsTo(User, { foreignKey: 'clientId' })
@@ -105,6 +108,9 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
   next()
 })
 app.use(cors({

@@ -397,9 +397,9 @@ export default function AdminLayout({ title, children }: { title: string; childr
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1">
-        <div className="border-b border-gray-200 bg-white">
-          <div className={isPageEditor ? 'px-4 py-5' : 'container py-5'}>
+      <main className="min-w-0 flex-1 pb-20 lg:pb-0">
+        <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
+          <div className={isPageEditor ? 'px-4 py-4' : 'container py-4 md:py-5'}>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <button type="button" onClick={() => setMobileSidebarOpen(true)} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 lg:hidden" aria-label="Open admin navigation">
@@ -409,7 +409,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
                   <Link to="/admin/dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
                     Admin Panel
                   </Link>
-                  <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{title}</h1>
                 </div>
               </div>
               <div className="relative">
@@ -455,7 +455,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
           </div>
         </div>
 
-        <div className={isPageEditor ? 'w-full px-4 py-6' : 'container py-8'}>{children}</div>
+        <div className={isPageEditor ? 'w-full px-4 py-5 md:py-6' : 'container py-6 md:py-8'}>{children}</div>
       </main>
     </div>
   )

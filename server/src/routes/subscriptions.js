@@ -80,6 +80,7 @@ async function ensureCmsLicenseSchema() {
   const queryInterface = CMSLicense.sequelize.getQueryInterface()
   const table = await queryInterface.describeTable('CMSLicenses').catch(() => null)
   if (!table) {
+    await CMSLicense.sync()
     cmsLicenseSchemaReady = true
     return
   }

@@ -69,15 +69,15 @@ export default function ClientLayout({ title, children }: { title: string; child
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm">
-        <div className="container py-4">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
+      <div className="sticky top-0 z-20 bg-white/95 shadow-sm backdrop-blur">
+        <div className="container py-3 md:py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <Link to="/client-dashboard" className="text-sm font-semibold text-blue-600 hover:text-blue-800">
                 Client Portal
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{title}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                 <span className={`inline-flex items-center rounded-full px-3 py-1 font-semibold ${
                   licenseState.hasActiveLicense
@@ -101,13 +101,13 @@ export default function ClientLayout({ title, children }: { title: string; child
             </div>
             <button
               onClick={handleLogout}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              className="hidden items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white transition hover:bg-red-700 md:inline-flex"
             >
               <FiLogOut /> Logout
             </button>
           </div>
 
-          <nav className="mt-5 flex gap-2 overflow-x-auto pb-1">
+          <nav className="mt-4 hidden gap-2 overflow-x-auto pb-1 md:flex">
             {clientLinks.map((link) => {
               const Icon = link.icon
               return (
@@ -140,6 +140,28 @@ export default function ClientLayout({ title, children }: { title: string; child
         )}
         {children}
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+        <div className="grid grid-cols-3 gap-1">
+          {clientLinks.map((link) => {
+            const Icon = link.icon
+            const isActive = currentPath === link.path
+            return (
+              <NavLink
+                key={link.path}
+                to={link.path}
+                end={link.path === '/client-dashboard'}
+                className={`flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold transition ${
+                  isActive ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+                }`}
+              >
+                <Icon size={18} />
+                <span className="text-center leading-tight">{link.label}</span>
+              </NavLink>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }

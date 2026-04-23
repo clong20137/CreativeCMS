@@ -16,14 +16,26 @@ const verifyToken = (req, res, next) => {
     
     const decoded = jwt.verify(token, JWT_SECRET)
     req.userId = decoded.userId
+    req.userRole = decoded.role
     next()
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' })
   }
 }
 
+const ensureActiveUser = async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.userId, { attributes: ['id', 'isActive'] })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
+    next()
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
 // Get user profile
-router.get('/profile', verifyToken, async (req, res) => {
+router.get('/profile', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const user = await User.findByPk(req.userId, { attributes: { exclude: ['password', 'twoFactorCode', 'twoFactorSecret'] } })
     if (!user) return res.status(404).json({ error: 'User not found' })
@@ -35,7 +47,7 @@ router.get('/profile', verifyToken, async (req, res) => {
 })
 
 // Update profile (name, phone, company, address fields)
-router.put('/profile', verifyToken, async (req, res) => {
+router.put('/profile', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const { name, phone, company, address, city, state, zipCode, country } = req.body
     
@@ -60,7 +72,7 @@ router.put('/profile', verifyToken, async (req, res) => {
 })
 
 // Update email
-router.put('/email', verifyToken, async (req, res) => {
+router.put('/email', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const { newEmail, password } = req.body
     
@@ -84,7 +96,7 @@ router.put('/email', verifyToken, async (req, res) => {
 })
 
 // Change password
-router.put('/password', verifyToken, async (req, res) => {
+router.put('/password', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body
     
@@ -105,7 +117,7 @@ router.put('/password', verifyToken, async (req, res) => {
   }
 })
 
-router.post('/two-factor/setup', verifyToken, async (req, res) => {
+router.post('/two-factor/setup', verifyToken, ensureActiveUser, async (req, res) => {
   try {
     const user = await User.findByPk(req.userId)
     if (!user) return res.status(404).json({ error: 'User not found' })

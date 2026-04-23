@@ -141,6 +141,7 @@ router.post('/login', async (req, res) => {
     
     const user = await User.findOne({ where: { email } })
     if (!user) return res.status(401).json({ error: 'Invalid credentials' })
+    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
     
     const isValidPassword = await bcryptjs.compare(password, user.password)
     if (!isValidPassword) return res.status(401).json({ error: 'Invalid credentials' })
@@ -195,6 +196,7 @@ router.post('/verify-2fa', async (req, res) => {
 
     const user = await User.findByPk(decoded.userId)
     if (!user) return res.status(404).json({ error: 'User not found' })
+    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
     if (user.twoFactorMethod === 'app' && user.twoFactorSecret) {
       if (!verifyTotp(user.twoFactorSecret, code)) return res.status(401).json({ error: 'Invalid verification code' })
     } else {
@@ -228,6 +230,7 @@ router.post('/forgot-password', async (req, res) => {
     if (!user) {
       return res.json({ message: 'If an account exists, a reset code was sent' })
     }
+    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
 
     const code = createTwoFactorCode()
     await user.update({
@@ -261,6 +264,7 @@ router.post('/reset-password', async (req, res) => {
 
     const user = await User.findByPk(decoded.userId)
     if (!user) return res.status(404).json({ error: 'User not found' })
+    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
     if (!user.passwordResetCode || user.passwordResetCode !== resetCode) return res.status(401).json({ error: 'Invalid reset code' })
     if (!user.passwordResetExpires || new Date(user.passwordResetExpires).getTime() < Date.now()) {
       return res.status(401).json({ error: 'Reset code expired' })
@@ -287,12 +291,15 @@ router.post('/reset-password', async (req, res) => {
 })
 
 // Get Current User
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1]
     if (!token) return res.status(401).json({ error: 'No token provided' })
     
     const decoded = jwt.verify(token, JWT_SECRET)
+    const user = await User.findByPk(decoded.userId, { attributes: ['id', 'role', 'isActive'] })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+    if (user.isActive === false) return res.status(403).json({ error: 'This account has been disabled. Please contact support.' })
     res.json({ userId: decoded.userId, role: decoded.role })
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' })

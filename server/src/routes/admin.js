@@ -225,6 +225,7 @@ async function ensureCmsLicenseSchema() {
   const queryInterface = CMSLicense.sequelize.getQueryInterface()
   const table = await queryInterface.describeTable('CMSLicenses').catch(() => null)
   if (!table) {
+    await CMSLicense.sync()
     cmsLicenseSchemaReady = true
     return
   }
@@ -658,7 +659,7 @@ router.get('/clients', async (req, res) => {
   try {
     const clients = await User.findAll({
       where: { role: 'client' },
-      attributes: { exclude: ['password'] },
+      attributes: { exclude: ['password', 'twoFactorCode', 'twoFactorSecret', 'passwordResetCode', 'passwordResetExpires'] },
       order: [['createdAt', 'DESC']]
     })
     res.json(clients)
