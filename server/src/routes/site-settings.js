@@ -6,6 +6,31 @@ const router = express.Router()
 let siteSettingsSchemaReady = false
 const BUILT_IN_PAGE_KEYS = ['home', 'portfolio', 'services', 'pricing', 'plugins', 'contact']
 
+const defaultFooterColumns = [
+  {
+    title: 'Quick Links',
+    sortOrder: 0,
+    isActive: true,
+    links: [
+      { label: 'Home', url: '/', isActive: true, sortOrder: 0 },
+      { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10 },
+      { label: 'Services', url: '/services', isActive: true, sortOrder: 20 },
+      { label: 'Pricing', url: '/pricing', isActive: true, sortOrder: 30 }
+    ]
+  },
+  {
+    title: 'Services',
+    sortOrder: 10,
+    isActive: true,
+    links: [
+      { label: 'Web Design', url: '/services', isActive: true, sortOrder: 0 },
+      { label: 'Photography', url: '/services', isActive: true, sortOrder: 10 },
+      { label: 'Videography', url: '/services', isActive: true, sortOrder: 20 },
+      { label: 'Branding', url: '/services', isActive: true, sortOrder: 30 }
+    ]
+  }
+]
+
 const fallbackWhatWeDo = [
   { id: 'fallback-whatwedo-1', title: 'Web Design', desc: 'Modern, responsive websites that convert' },
   { id: 'fallback-whatwedo-2', title: 'Photography', desc: 'Professional visual storytelling' },
@@ -248,6 +273,24 @@ function metadataFor(settings, pageKey) {
   }
 }
 
+function buildFooterColumns(settings) {
+  const existingColumns = Array.isArray(settings?.footerNavigationColumns) ? settings.footerNavigationColumns : []
+  if (existingColumns.length > 0) return existingColumns
+  const legacyLinks = Array.isArray(settings?.footerNavigationItems) ? settings.footerNavigationItems : []
+  if (legacyLinks.length > 0) {
+    return [
+      {
+        title: 'Quick Links',
+        sortOrder: 0,
+        isActive: true,
+        links: legacyLinks
+      },
+      defaultFooterColumns[1]
+    ]
+  }
+  return defaultFooterColumns
+}
+
 function buildFallbackBuiltInSections(settings) {
   const homeMetadata = metadataFor(settings, 'home')
   const portfolioMetadata = metadataFor(settings, 'portfolio')
@@ -484,7 +527,8 @@ async function ensureSiteSettingsSchema() {
     ['googleSearchConsoleServiceAccountJson', { type: DataTypes.TEXT('long'), allowNull: true }],
     ['pageSpeedUrl', { type: DataTypes.STRING, allowNull: true }],
     ['pageSpeedApiKey', { type: DataTypes.STRING, allowNull: true }],
-    ['footerNavigationItems', { type: DataTypes.JSON, allowNull: true }]
+    ['footerNavigationItems', { type: DataTypes.JSON, allowNull: true }],
+    ['footerNavigationColumns', { type: DataTypes.JSON, allowNull: true }]
   ]
 
   for (const [name, definition] of columns) {
@@ -510,6 +554,10 @@ export async function getOrCreateSiteSettings() {
   let changed = false
   if (!settings.reusableSections) {
     settings.reusableSections = []
+    changed = true
+  }
+  if (!Array.isArray(settings.footerNavigationColumns) || settings.footerNavigationColumns.length === 0) {
+    settings.footerNavigationColumns = buildFooterColumns(settings)
     changed = true
   }
   if (ensureBuiltInPageDefaults(settings)) changed = true
@@ -557,6 +605,7 @@ function publicSiteSettings(settings) {
     'pageMetadata',
     'navigationItems',
     'footerNavigationItems',
+    'footerNavigationColumns',
     'pageSections',
     'reusableSections',
     'facebookUrl',

@@ -11,6 +11,13 @@ type FooterNavigationItem = {
   sortOrder?: number
 }
 
+type FooterNavigationColumn = {
+  title: string
+  sortOrder?: number
+  isActive?: boolean
+  links?: FooterNavigationItem[]
+}
+
 const defaultFooterLinks: FooterNavigationItem[] = [
   { label: 'Home', url: '/', isActive: true, sortOrder: 0 },
   { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10 },
@@ -27,6 +34,15 @@ function normalizeFooterLink(item: any, index = 0): FooterNavigationItem {
   }
 }
 
+function normalizeFooterColumn(item: any, index = 0): FooterNavigationColumn {
+  return {
+    title: item?.title || `Footer Column ${index + 1}`,
+    sortOrder: Number(item?.sortOrder ?? index * 10),
+    isActive: item?.isActive !== false,
+    links: Array.isArray(item?.links) ? item.links.map(normalizeFooterLink) : []
+  }
+}
+
 export default function Footer() {
   const currentYear = new Date().getFullYear()
   const [settings, setSettings] = useState<any>({
@@ -35,7 +51,21 @@ export default function Footer() {
     logoSize: 40,
     footerDescription: 'Transforming ideas into stunning visual experiences through web design, photography, and videography.',
     contactEmail: 'hello@creativestudio.com',
-    footerNavigationItems: defaultFooterLinks
+    footerNavigationItems: defaultFooterLinks,
+    footerNavigationColumns: [
+      { title: 'Quick Links', sortOrder: 0, isActive: true, links: defaultFooterLinks },
+      {
+        title: 'Services',
+        sortOrder: 10,
+        isActive: true,
+        links: [
+          { label: 'Web Design', url: '/services', isActive: true, sortOrder: 0 },
+          { label: 'Photography', url: '/services', isActive: true, sortOrder: 10 },
+          { label: 'Videography', url: '/services', isActive: true, sortOrder: 20 },
+          { label: 'Branding', url: '/services', isActive: true, sortOrder: 30 }
+        ]
+      }
+    ]
   })
   const socialLinks = [
     { url: settings.facebookUrl, icon: FiFacebook, label: 'Facebook' },
@@ -43,12 +73,27 @@ export default function Footer() {
     { url: settings.twitterUrl, icon: FiTwitter, label: 'Twitter' },
     { url: settings.linkedinUrl, icon: FiLinkedin, label: 'LinkedIn' }
   ].filter(link => link.url)
-  const footerLinks: FooterNavigationItem[] = (Array.isArray(settings.footerNavigationItems) && settings.footerNavigationItems.length
-    ? settings.footerNavigationItems
-    : defaultFooterLinks)
-    .map(normalizeFooterLink)
-    .filter((link: FooterNavigationItem) => link.isActive !== false)
-    .sort((a: FooterNavigationItem, b: FooterNavigationItem) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
+  const footerColumns: FooterNavigationColumn[] = (
+    Array.isArray(settings.footerNavigationColumns) && settings.footerNavigationColumns.length
+      ? settings.footerNavigationColumns
+      : [
+          { title: 'Quick Links', sortOrder: 0, isActive: true, links: Array.isArray(settings.footerNavigationItems) && settings.footerNavigationItems.length ? settings.footerNavigationItems : defaultFooterLinks },
+          {
+            title: 'Services',
+            sortOrder: 10,
+            isActive: true,
+            links: [
+              { label: 'Web Design', url: '/services', isActive: true, sortOrder: 0 },
+              { label: 'Photography', url: '/services', isActive: true, sortOrder: 10 },
+              { label: 'Videography', url: '/services', isActive: true, sortOrder: 20 },
+              { label: 'Branding', url: '/services', isActive: true, sortOrder: 30 }
+            ]
+          }
+        ]
+  )
+    .map(normalizeFooterColumn)
+    .filter((column: FooterNavigationColumn) => column.isActive !== false)
+    .sort((a: FooterNavigationColumn, b: FooterNavigationColumn) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -65,9 +110,9 @@ export default function Footer() {
   }, [])
 
   return (
-    <footer className="bg-gray-900 text-white py-12">
+    <footer className="site-footer bg-gray-900 py-12 text-white">
       <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_2fr_1fr] mb-8">
           {/* Company Info */}
           <div>
             {settings.logoUrl ? (
@@ -83,27 +128,28 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-gray-400">
-              {footerLinks.map((link: FooterNavigationItem) => (
-                <li key={`${link.label}-${link.url}`}>
-                  <Link to={link.url} className="hover:text-white transition">{link.label}</Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <div className={`grid grid-cols-1 gap-8 ${footerColumns.length > 1 ? 'sm:grid-cols-2 xl:grid-cols-3' : ''}`}>
+            {footerColumns.map((column) => {
+              const links = (column.links || [])
+                .map(normalizeFooterLink)
+                .filter((link) => link.isActive !== false)
+                .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
 
-          {/* Services */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Services</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li><a href="#" className="hover:text-white transition">Web Design</a></li>
-              <li><a href="#" className="hover:text-white transition">Photography</a></li>
-              <li><a href="#" className="hover:text-white transition">Videography</a></li>
-              <li><a href="#" className="hover:text-white transition">Branding</a></li>
-            </ul>
+              if (links.length === 0) return null
+
+              return (
+                <div key={`${column.title}-${column.sortOrder || 0}`}>
+                  <h4 className="mb-4 text-lg font-semibold">{column.title}</h4>
+                  <ul className="space-y-2 text-gray-400">
+                    {links.map((link) => (
+                      <li key={`${column.title}-${link.label}-${link.url}`}>
+                        <Link to={link.url} className="transition hover:text-white">{link.label}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
           </div>
 
           {/* Contact & Social */}
@@ -114,7 +160,7 @@ export default function Footer() {
               {socialLinks.map((link) => {
                 const Icon = link.icon
                 return (
-                  <a key={link.label} href={link.url} aria-label={link.label} className="text-gray-400 hover:text-white transition">
+                  <a key={link.label} href={link.url} aria-label={link.label} className="text-gray-400 transition hover:text-white">
                     <Icon size={20} />
                   </a>
                 )
@@ -124,11 +170,11 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center text-gray-400">
+          <div className="flex flex-col items-center justify-between text-gray-400 md:flex-row">
             <p>&copy; {currentYear} {settings.siteName}. All rights reserved.</p>
             <div className="space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition">Terms of Service</a>
+              <a href="#" className="transition hover:text-white">Privacy Policy</a>
+              <a href="#" className="transition hover:text-white">Terms of Service</a>
             </div>
           </div>
         </div>

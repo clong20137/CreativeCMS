@@ -32,9 +32,50 @@ body {
   background: #FFFFFF;
 }
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e5e7eb;
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #e5e7eb;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 999px;
+  border: 3px solid #e5e7eb;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 html.dark-mode body {
   color: #E5E7EB;
   background: #111827;
+}
+
+html.dark-mode {
+  scrollbar-color: #475569 #111827;
+}
+
+html.dark-mode *::-webkit-scrollbar-track {
+  background: #111827;
+}
+
+html.dark-mode *::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-color: #111827;
+}
+
+html.dark-mode *::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 html.dark-mode .bg-gray-50 {
@@ -116,6 +157,42 @@ html.dark-mode .shadow-lg,
 html.dark-mode .shadow-xl,
 html.dark-mode .shadow-sm {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
+}
+
+.admin-shell .admin-sidebar,
+.admin-shell .admin-topbar,
+.admin-shell .admin-mobile-footer {
+  background-color: rgba(255, 255, 255, 0.96);
+}
+
+html.dark-mode .admin-shell .admin-sidebar,
+html.dark-mode .admin-shell .admin-topbar,
+html.dark-mode .admin-shell .admin-mobile-footer {
+  background-color: rgba(17, 24, 39, 0.96) !important;
+  border-color: #374151 !important;
+}
+
+html.dark-mode .admin-shell .admin-sidebar .bg-white,
+html.dark-mode .admin-shell .admin-topbar .bg-white,
+html.dark-mode .admin-shell .admin-mobile-footer .bg-white,
+html.dark-mode .admin-shell .admin-sidebar .bg-white\/95,
+html.dark-mode .admin-shell .admin-topbar .bg-white\/95,
+html.dark-mode .admin-shell .admin-mobile-footer .bg-white\/95 {
+  background-color: rgba(31, 41, 55, 0.96) !important;
+}
+
+.site-footer {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+html.dark-mode .site-footer {
+  background-color: #030712;
+  color: #f9fafb;
+}
+
+html.dark-mode .site-footer .border-gray-800 {
+  border-color: #374151 !important;
 }
 
 /* Smooth Page Transition */

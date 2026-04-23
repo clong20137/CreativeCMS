@@ -220,7 +220,7 @@ function PageScoreBadge({ score, inverse = false }: { score: number; inverse?: b
   return (
     <div className="relative h-8 w-8 shrink-0" title={`SEO score ${normalized}`}>
       <svg viewBox="0 0 32 32" className="h-8 w-8 -rotate-90">
-        <circle cx="16" cy="16" r={radius} fill="none" stroke="currentColor" strokeWidth="3" className={inverse ? 'text-white/30' : 'text-gray-200 dark:text-gray-700'} />
+        <circle cx="16" cy="16" r={radius} fill="none" stroke={inverse ? 'rgba(255,255,255,0.32)' : '#94a3b8'} strokeWidth="3" />
         <circle
           cx="16"
           cy="16"
@@ -433,9 +433,9 @@ export default function AdminLayout({ title, children }: { title: string; childr
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 lg:flex">
+    <div className="admin-shell min-h-screen bg-gray-50 lg:flex">
       {mobileSidebarOpen && <button type="button" aria-label="Close admin navigation" onClick={() => setMobileSidebarOpen(false)} className="fixed inset-0 z-40 bg-gray-950/45 lg:hidden" />}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-full max-w-[22rem] flex-col bg-white shadow-2xl transition-transform duration-300 lg:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`admin-sidebar fixed inset-y-0 left-0 z-50 flex w-full max-w-[22rem] flex-col bg-white shadow-2xl transition-transform duration-300 lg:hidden ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="border-b border-gray-200 px-4 pb-4 pt-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -627,7 +627,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
           </div>
         </div>
       </aside>
-      <aside className={`hidden fixed inset-y-0 left-0 z-50 w-[17.5rem] max-w-[88vw] bg-white shadow-sm transition-transform duration-300 lg:sticky lg:top-0 lg:flex lg:h-screen lg:shrink-0 lg:flex-col lg:translate-x-0 lg:transition-all ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarOpen ? 'lg:w-72' : 'lg:w-16'}`}>
+      <aside className={`admin-sidebar hidden fixed inset-y-0 left-0 z-50 w-[17.5rem] max-w-[88vw] bg-white shadow-sm transition-transform duration-300 lg:sticky lg:top-0 lg:flex lg:h-screen lg:shrink-0 lg:flex-col lg:translate-x-0 lg:transition-all ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarOpen ? 'lg:w-72' : 'lg:w-16'}`}>
         <div className="hidden w-full flex-col border-b border-gray-200 lg:flex lg:h-full lg:border-b-0 lg:border-r">
           <div className={`border-b border-gray-200 ${sidebarOpen ? 'p-5' : 'p-3'}`}>
             <div className={`flex ${sidebarOpen ? 'items-center justify-between gap-3' : 'flex-col items-center gap-2'}`}>
@@ -823,7 +823,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
       </aside>
 
       <main className="min-w-0 flex-1 pb-24 lg:pb-0">
-        <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
+        <div className="admin-topbar sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
           <div className={isPageEditor ? 'px-4 py-4' : 'container py-4 md:py-5'}>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -883,7 +883,7 @@ export default function AdminLayout({ title, children }: { title: string; childr
         <div className={isPageEditor ? 'w-full px-4 py-5 md:py-6' : 'container py-6 md:py-8'}>{children}</div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+      <nav className="admin-mobile-footer fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
         <div className="grid grid-cols-5 gap-1">
           {mobilePrimaryLinks.map((link) => {
             const Icon = link.icon

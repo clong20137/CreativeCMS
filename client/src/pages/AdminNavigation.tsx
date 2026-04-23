@@ -18,6 +18,13 @@ type FooterNavigationItem = {
   sortOrder: number
 }
 
+type FooterNavigationColumn = {
+  title: string
+  sortOrder: number
+  isActive: boolean
+  links: FooterNavigationItem[]
+}
+
 const defaultNavigationItems: NavigationItem[] = [
   { label: 'Home', url: '/', isActive: true, sortOrder: 0, children: [] },
   { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10, children: [] },
@@ -32,6 +39,21 @@ const defaultFooterNavigationItems: FooterNavigationItem[] = [
   { label: 'Portfolio', url: '/portfolio', isActive: true, sortOrder: 10 },
   { label: 'Services', url: '/services', isActive: true, sortOrder: 20 },
   { label: 'Pricing', url: '/pricing', isActive: true, sortOrder: 30 }
+]
+
+const defaultFooterNavigationColumns: FooterNavigationColumn[] = [
+  { title: 'Quick Links', sortOrder: 0, isActive: true, links: defaultFooterNavigationItems },
+  {
+    title: 'Services',
+    sortOrder: 10,
+    isActive: true,
+    links: [
+      { label: 'Web Design', url: '/services', isActive: true, sortOrder: 0 },
+      { label: 'Photography', url: '/services', isActive: true, sortOrder: 10 },
+      { label: 'Videography', url: '/services', isActive: true, sortOrder: 20 },
+      { label: 'Branding', url: '/services', isActive: true, sortOrder: 30 }
+    ]
+  }
 ]
 
 function normalizeNavigationItem(item: any, index = 0): NavigationItem {
@@ -55,7 +77,7 @@ function sortNavigationItems(items: NavigationItem[]): NavigationItem[] {
 
 export default function AdminNavigation() {
   const [items, setItems] = useState<NavigationItem[]>(defaultNavigationItems)
-  const [footerItems, setFooterItems] = useState<FooterNavigationItem[]>(defaultFooterNavigationItems)
+  const [footerColumns, setFooterColumns] = useState<FooterNavigationColumn[]>(defaultFooterNavigationColumns)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -65,14 +87,36 @@ export default function AdminNavigation() {
       try {
         const settings = await adminAPI.getSiteSettings()
         setItems(Array.isArray(settings.navigationItems) && settings.navigationItems.length ? settings.navigationItems.map(normalizeNavigationItem) : defaultNavigationItems)
-        setFooterItems(Array.isArray(settings.footerNavigationItems) && settings.footerNavigationItems.length
-          ? settings.footerNavigationItems.map((item: any, index: number) => ({
-            label: item?.label || 'Footer Link',
-            url: item?.url || '/',
-            isActive: item?.isActive !== false,
-            sortOrder: Number(item?.sortOrder ?? index * 10)
+        setFooterColumns(Array.isArray(settings.footerNavigationColumns) && settings.footerNavigationColumns.length
+          ? settings.footerNavigationColumns.map((column: any, columnIndex: number) => ({
+            title: column?.title || `Footer Column ${columnIndex + 1}`,
+            sortOrder: Number(column?.sortOrder ?? columnIndex * 10),
+            isActive: column?.isActive !== false,
+            links: Array.isArray(column?.links)
+              ? column.links.map((item: any, index: number) => ({
+                  label: item?.label || 'Footer Link',
+                  url: item?.url || '/',
+                  isActive: item?.isActive !== false,
+                  sortOrder: Number(item?.sortOrder ?? index * 10)
+                }))
+              : []
           }))
-          : defaultFooterNavigationItems)
+          : Array.isArray(settings.footerNavigationItems) && settings.footerNavigationItems.length
+            ? [
+                {
+                  title: 'Quick Links',
+                  sortOrder: 0,
+                  isActive: true,
+                  links: settings.footerNavigationItems.map((item: any, index: number) => ({
+                    label: item?.label || 'Footer Link',
+                    url: item?.url || '/',
+                    isActive: item?.isActive !== false,
+                    sortOrder: Number(item?.sortOrder ?? index * 10)
+                  }))
+                },
+                defaultFooterNavigationColumns[1]
+              ]
+            : defaultFooterNavigationColumns)
       } catch (err: any) {
         setError(err.error || 'Failed to load navigation')
       } finally {
@@ -128,10 +172,15 @@ export default function AdminNavigation() {
       setError('')
       setMessage('Saving navigation...')
       const sortedItems = sortNavigationItems(items)
-      const sortedFooterItems = [...footerItems].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
-      await adminAPI.updateSiteSettings({ navigationItems: sortedItems, footerNavigationItems: sortedFooterItems })
+      const sortedFooterColumns = [...footerColumns]
+        .map((column) => ({
+          ...column,
+          links: [...(column.links || [])].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
+        }))
+        .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
+      await adminAPI.updateSiteSettings({ navigationItems: sortedItems, footerNavigationColumns: sortedFooterColumns })
       setItems(sortedItems)
-      setFooterItems(sortedFooterItems)
+      setFooterColumns(sortedFooterColumns)
       setMessage('Navigation saved')
     } catch (err: any) {
       setMessage('')
@@ -139,19 +188,43 @@ export default function AdminNavigation() {
     }
   }
 
-  const updateFooterItem = (index: number, field: keyof FooterNavigationItem, value: any) => {
-    setFooterItems(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item))
+  const updateFooterColumn = (index: number, field: keyof FooterNavigationColumn, value: any) => {
+    setFooterColumns((current) => current.map((column, columnIndex) => columnIndex === index ? { ...column, [field]: value } : column))
   }
 
-  const addFooterItem = () => {
-    setFooterItems(current => [
+  const addFooterColumn = () => {
+    setFooterColumns(current => [
       ...current,
-      { label: 'Footer Link', url: '/', isActive: true, sortOrder: current.length * 10 }
+      { title: 'Footer Column', sortOrder: current.length * 10, isActive: true, links: [] }
     ])
   }
 
-  const removeFooterItem = (index: number) => {
-    setFooterItems(current => current.filter((_, itemIndex) => itemIndex !== index))
+  const removeFooterColumn = (index: number) => {
+    setFooterColumns(current => current.filter((_, columnIndex) => columnIndex !== index))
+  }
+
+  const updateFooterLink = (columnIndex: number, linkIndex: number, field: keyof FooterNavigationItem, value: any) => {
+    setFooterColumns((current) => current.map((column, currentColumnIndex) => currentColumnIndex === columnIndex ? {
+      ...column,
+      links: (column.links || []).map((link, currentLinkIndex) => currentLinkIndex === linkIndex ? { ...link, [field]: value } : link)
+    } : column))
+  }
+
+  const addFooterLink = (columnIndex: number) => {
+    setFooterColumns((current) => current.map((column, currentColumnIndex) => currentColumnIndex === columnIndex ? {
+      ...column,
+      links: [
+        ...(column.links || []),
+        { label: 'Footer Link', url: '/', isActive: true, sortOrder: (column.links || []).length * 10 }
+      ]
+    } : column))
+  }
+
+  const removeFooterLink = (columnIndex: number, linkIndex: number) => {
+    setFooterColumns((current) => current.map((column, currentColumnIndex) => currentColumnIndex === columnIndex ? {
+      ...column,
+      links: (column.links || []).filter((_, currentLinkIndex) => currentLinkIndex !== linkIndex)
+    } : column))
   }
 
   return (
@@ -273,49 +346,94 @@ export default function AdminNavigation() {
 
           <div className="card space-y-4 p-4 md:p-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Footer Links</h2>
-              <p className="text-sm text-gray-600 md:text-base">Choose which links appear in the footer quick links area.</p>
+              <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Footer Columns</h2>
+              <p className="text-sm text-gray-600 md:text-base">Build footer columns like Quick Links, Services, Legal, or any custom group you want.</p>
             </div>
 
             <div className="space-y-3 md:max-h-[calc(100vh-28rem)] md:overflow-y-auto md:pr-1">
-              {footerItems.map((item, index) => (
-                <div key={`footer-${index}`} className="grid grid-cols-1 gap-3 rounded-xl border p-4 xl:grid-cols-[1fr_1fr_7rem_auto_auto] xl:items-center">
-                  <input
-                    value={item.label || ''}
-                    onChange={(e) => updateFooterItem(index, 'label', e.target.value)}
-                    placeholder="Footer label"
-                    className="px-4 py-2 border rounded-lg"
-                  />
-                  <input
-                    value={item.url || ''}
-                    onChange={(e) => updateFooterItem(index, 'url', e.target.value)}
-                    placeholder="/page-url"
-                    className="px-4 py-2 border rounded-lg"
-                  />
-                  <input
-                    type="number"
-                    value={item.sortOrder ?? 0}
-                    onChange={(e) => updateFooterItem(index, 'sortOrder', Number(e.target.value))}
-                    placeholder="Order"
-                    className="px-4 py-2 border rounded-lg"
-                  />
-                  <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
+              {footerColumns.map((column, columnIndex) => (
+                <div key={`footer-column-${columnIndex}`} className="space-y-4 rounded-xl border p-4">
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_7rem_auto_auto] xl:items-center">
                     <input
-                      type="checkbox"
-                      checked={item.isActive !== false}
-                      onChange={(e) => updateFooterItem(index, 'isActive', e.target.checked)}
+                      value={column.title || ''}
+                      onChange={(e) => updateFooterColumn(columnIndex, 'title', e.target.value)}
+                      placeholder="Column title"
+                      className="px-4 py-2 border rounded-lg"
                     />
-                    Active
-                  </label>
-                  <button type="button" onClick={() => removeFooterItem(index)} className="btn-secondary w-full text-red-600 xl:w-auto">
-                    Remove
-                  </button>
+                    <input
+                      type="number"
+                      value={column.sortOrder ?? 0}
+                      onChange={(e) => updateFooterColumn(columnIndex, 'sortOrder', Number(e.target.value))}
+                      placeholder="Order"
+                      className="px-4 py-2 border rounded-lg"
+                    />
+                    <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={column.isActive !== false}
+                        onChange={(e) => updateFooterColumn(columnIndex, 'isActive', e.target.checked)}
+                      />
+                      Active
+                    </label>
+                    <button type="button" onClick={() => removeFooterColumn(columnIndex)} className="btn-secondary w-full text-red-600 xl:w-auto">
+                      Remove Column
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 rounded-lg bg-gray-50 p-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm font-bold text-gray-700">Column Links</p>
+                      <button type="button" onClick={() => addFooterLink(columnIndex)} className="btn-secondary w-full sm:w-auto">
+                        Add Link
+                      </button>
+                    </div>
+                    {(column.links || []).length > 0 ? (
+                      (column.links || []).map((item, linkIndex) => (
+                        <div key={`footer-link-${columnIndex}-${linkIndex}`} className="grid grid-cols-1 gap-3 rounded-xl border bg-white p-4 xl:grid-cols-[1fr_1fr_7rem_auto_auto] xl:items-center">
+                          <input
+                            value={item.label || ''}
+                            onChange={(e) => updateFooterLink(columnIndex, linkIndex, 'label', e.target.value)}
+                            placeholder="Footer label"
+                            className="px-4 py-2 border rounded-lg"
+                          />
+                          <input
+                            value={item.url || ''}
+                            onChange={(e) => updateFooterLink(columnIndex, linkIndex, 'url', e.target.value)}
+                            placeholder="/page-url"
+                            className="px-4 py-2 border rounded-lg"
+                          />
+                          <input
+                            type="number"
+                            value={item.sortOrder ?? 0}
+                            onChange={(e) => updateFooterLink(columnIndex, linkIndex, 'sortOrder', Number(e.target.value))}
+                            placeholder="Order"
+                            className="px-4 py-2 border rounded-lg"
+                          />
+                          <label className="inline-flex items-center gap-2 font-semibold text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={item.isActive !== false}
+                              onChange={(e) => updateFooterLink(columnIndex, linkIndex, 'isActive', e.target.checked)}
+                            />
+                            Active
+                          </label>
+                          <button type="button" onClick={() => removeFooterLink(columnIndex, linkIndex)} className="btn-secondary w-full text-red-600 xl:w-auto">
+                            Remove
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-lg border border-dashed bg-white p-4 text-sm text-gray-600">
+                        No links in this column yet. Click <span className="font-bold">Add Link</span> to start building it.
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
 
-            <button type="button" onClick={addFooterItem} className="btn-secondary">
-              Add Footer Link
+            <button type="button" onClick={addFooterColumn} className="btn-secondary">
+              Add Footer Column
             </button>
           </div>
 
