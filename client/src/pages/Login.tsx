@@ -34,6 +34,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const brandSummary = branding.poweredByText?.trim() || `Powered by ${branding.siteName}`
 
   useEffect(() => {
     const token = localStorage.getItem('authToken')
@@ -205,6 +206,10 @@ export default function Login() {
           <p className="text-gray-600">
             {isCreatingAccount ? `Start your access to ${branding.siteName}` : `Sign in to access ${branding.siteName}`}
           </p>
+          <div className="mx-auto mt-4 max-w-sm rounded-xl border border-blue-100 bg-white/70 px-4 py-3 text-left text-sm text-gray-600 shadow-sm backdrop-blur">
+            <div className="font-semibold text-gray-900">{branding.clientPortalName}</div>
+            <p className="mt-1">Branded client access, updates, billing, licenses, and support in one place.</p>
+          </div>
         </div>
 
         {/* Login Card */}
@@ -443,7 +448,7 @@ export default function Login() {
           </p>
         </div>
         {branding.showPoweredBy && (
-          <p className="mt-5 text-center text-xs text-gray-500">{branding.poweredByText}</p>
+          <p className="mt-5 text-center text-xs text-gray-500">{brandSummary}</p>
         )}
       </div>
     </div>

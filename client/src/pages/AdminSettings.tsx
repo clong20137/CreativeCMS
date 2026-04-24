@@ -364,6 +364,62 @@ export default function AdminSettings() {
   ] as const
   const completedSetupSteps = setupSteps.filter((step) => onboardingChecklist[step.key]).length
   const setupProgress = Math.round((completedSetupSteps / setupSteps.length) * 100)
+  const releaseNotes = useMemo(() => {
+    const list = Array.isArray(settings.cmsReleaseNotes) ? [...settings.cmsReleaseNotes] : []
+    return list.sort((a: any, b: any) => {
+      const aTime = new Date(a?.releasedAt || 0).getTime()
+      const bTime = new Date(b?.releasedAt || 0).getTime()
+      return bTime - aTime
+    })
+  }, [settings.cmsReleaseNotes])
+  const latestRelease = releaseNotes[0] || null
+  const launchReadinessItems = [
+    {
+      label: 'Branding',
+      description: settings.siteName?.trim() ? `${settings.siteName} is set and ready.` : 'Add your site name and logo.',
+      complete: onboardingChecklist.branding
+    },
+    {
+      label: 'Starter content',
+      description: settings.onboardingState?.selectedDemoSlug
+        ? `Starter selected: ${settings.onboardingState.selectedDemoSlug.replace(/-/g, ' ')}.`
+        : 'Choose a demo or reusable layout starter.',
+      complete: onboardingChecklist.template
+    },
+    {
+      label: 'Homepage',
+      description: settings.heroTitle?.trim() ? 'Homepage hero content is filled in.' : 'Review the homepage hero and CTA.',
+      complete: onboardingChecklist.homepage
+    },
+    {
+      label: 'Launch safety',
+      description: backups.length > 0 ? `${backups.length} backup${backups.length === 1 ? '' : 's'} available.` : 'Create your first backup before launch.',
+      complete: onboardingChecklist.launch
+    }
+  ]
+  const launchQuickLinks = [
+    { label: 'Edit Pages', description: 'Review homepage copy, sections, and CTA flow.', path: '/admin/pages' },
+    { label: 'Open Navigation', description: 'Tighten your header, footer columns, and menu order.', path: '/admin/navigation' },
+    { label: 'Check SEO', description: 'Verify Search Console, PageSpeed, and metadata basics.', path: '/admin/settings?tab=SEO' },
+    { label: 'Create Backup', description: 'Save a restore point before launch day.', path: '/admin/settings?tab=Backups' }
+  ]
+  const brandingPreviewCards = [
+    {
+      label: 'Public site',
+      title: settings.siteName || 'Creative by Caleb',
+      body: settings.poweredByText || 'Powered by Creative CMS'
+    },
+    {
+      label: 'Client portal',
+      title: settings.clientPortalName || 'Client Portal',
+      body: settings.emailFromName || settings.siteName || 'Branded client-facing experience'
+    },
+    {
+      label: 'Admin portal',
+      title: settings.adminPortalName || 'Admin Portal',
+      body: 'Internal editing, launches, and client operations'
+    }
+  ]
 
   const handleUpload = async (key: string, file: File | undefined) => {
     if (!file) return
@@ -795,6 +851,52 @@ export default function AdminSettings() {
                   </div>
 
                   <div className="space-y-5">
+                    <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+                      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900">Launch readiness</h3>
+                            <p className="mt-1 text-sm text-gray-600">A quick read on what still needs attention before you hand this site off.</p>
+                          </div>
+                          <div className={`rounded-full px-3 py-1 text-xs font-bold ${setupProgress >= 100 ? 'bg-green-100 text-green-800' : setupProgress >= 60 ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                            {setupProgress >= 100 ? 'Ready' : 'In Progress'}
+                          </div>
+                        </div>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {launchReadinessItems.map((item) => (
+                            <div key={item.label} className={`rounded-xl border px-4 py-3 ${item.complete ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-block h-2.5 w-2.5 rounded-full ${item.complete ? 'bg-green-500' : 'bg-amber-400'}`} />
+                                <span className="text-sm font-semibold text-gray-900">{item.label}</span>
+                              </div>
+                              <p className="mt-2 text-sm text-gray-600">{item.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+                        <h3 className="text-lg font-bold text-gray-900">Quick launch links</h3>
+                        <p className="mt-1 text-sm text-gray-600">Jump straight to the spots teams usually touch right before launch.</p>
+                        <div className="mt-4 space-y-3">
+                          {launchQuickLinks.map((link) => (
+                            <button
+                              key={link.label}
+                              type="button"
+                              onClick={() => navigate(link.path)}
+                              className="flex w-full items-start justify-between gap-3 rounded-xl border border-gray-200 px-4 py-3 text-left transition hover:bg-gray-50"
+                            >
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">{link.label}</div>
+                                <p className="mt-1 text-xs text-gray-600">{link.description}</p>
+                              </div>
+                              <span className="text-sm font-semibold text-blue-600">Open</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -993,6 +1095,15 @@ export default function AdminSettings() {
                     <span className="block text-sm font-semibold text-gray-700 mb-2">Powered-by text</span>
                     <input value={settings.poweredByText || ''} onChange={(e) => handleChange('poweredByText', e.target.value)} placeholder="Powered by Creative CMS" className="w-full px-4 py-2 border rounded-lg" />
                   </label>
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    {brandingPreviewCards.map((card) => (
+                      <div key={card.label} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{card.label}</p>
+                        <h4 className="mt-3 text-lg font-bold text-gray-900">{card.title}</h4>
+                        <p className="mt-2 text-sm text-gray-600">{card.body}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 {(settings.logoUrl || settings.faviconUrl) && (
                   <div className="grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-2">
@@ -1160,6 +1271,57 @@ export default function AdminSettings() {
                       <option value="early-access">Early Access</option>
                     </select>
                   </label>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+                  <div className="rounded-xl border p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Client-facing summary</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">v{settings.cmsCurrentVersion || '1.0.0'}</span>
+                      <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                        {settings.cmsReleaseChannel === 'early-access' ? 'Early Access' : 'Stable'}
+                      </span>
+                    </div>
+                    <h3 className="mt-4 text-2xl font-bold text-gray-900">{settings.cmsVersionName || 'Creative CMS'}</h3>
+                    <p className="mt-2 text-sm text-gray-600">
+                      This is the release snapshot clients will connect to the Updates page. Keep it crisp, reassuring, and easy to scan.
+                    </p>
+                    {latestRelease ? (
+                      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div className="text-sm font-semibold text-gray-900">{latestRelease.title || 'Latest release'}</div>
+                        <p className="mt-2 text-sm text-gray-600">{latestRelease.summary || 'Add a short summary so clients understand what changed without digging.'}</p>
+                        {Array.isArray(latestRelease.highlights) && latestRelease.highlights.filter(Boolean).length > 0 && (
+                          <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                            {latestRelease.highlights.filter(Boolean).slice(0, 3).map((highlight: string, index: number) => (
+                              <li key={`${latestRelease.id || 'latest'}-${index}`} className="flex gap-2">
+                                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-600" />
+                                <span>{highlight}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-xl border border-dashed p-4 text-sm text-gray-500">
+                        Add your first release note to preview how client updates will look.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border p-5">
+                    <h3 className="text-lg font-bold text-gray-900">Release writing tips</h3>
+                    <div className="mt-4 space-y-3 text-sm text-gray-600">
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        Lead with the business outcome, not just the feature list.
+                      </div>
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        Keep summaries to one or two sentences so clients actually read them.
+                      </div>
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        Save the top three highlights for the biggest visible improvements.
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4 rounded-lg border p-4">

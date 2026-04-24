@@ -24,6 +24,7 @@ export default function ClientPortalUpdates() {
       return bTime - aTime
     })
   }, [settings])
+  const latestRelease = releases[0] || null
 
   return (
     <ClientLayout title="Updates">
@@ -47,6 +48,37 @@ export default function ClientPortalUpdates() {
                   <div className="flex items-center gap-2 text-sm font-semibold text-gray-500"><FiTag /> Channel</div>
                   <p className="mt-2 text-xl font-bold text-gray-900">{settings?.cmsReleaseChannel === 'early-access' ? 'Early Access' : 'Stable'}</p>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="card p-6">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Latest rollout</p>
+              <h3 className="mt-3 text-2xl font-bold text-gray-900">
+                {latestRelease?.title || 'Your latest CMS improvements will show here.'}
+              </h3>
+              <p className="mt-3 text-gray-600">
+                {latestRelease?.summary || 'Once a release note is added in Admin Settings, this space becomes a clean client-facing summary of what changed.'}
+              </p>
+              {Array.isArray(latestRelease?.highlights) && latestRelease.highlights.filter(Boolean).length > 0 && (
+                <ul className="mt-4 space-y-2 text-gray-700">
+                  {latestRelease.highlights.filter(Boolean).slice(0, 3).map((highlight: string, index: number) => (
+                    <li key={`latest-${index}`} className="flex gap-3">
+                      <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-600" />
+                      <span>{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="card p-6">
+              <h3 className="text-lg font-bold text-gray-900">What clients care about</h3>
+              <div className="mt-4 space-y-3 text-sm text-gray-600">
+                <div className="rounded-xl border bg-gray-50 p-3">Visible improvements to editing, speed, reliability, and client tools.</div>
+                <div className="rounded-xl border bg-gray-50 p-3">Version history that feels easy to skim instead of developer-heavy.</div>
+                <div className="rounded-xl border bg-gray-50 p-3">A single place to confirm what changed before they jump back into work.</div>
               </div>
             </div>
           </section>
