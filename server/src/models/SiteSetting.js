@@ -123,6 +123,28 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.JSON,
     defaultValue: []
   },
+  setupWizardCompleted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  setupWizardCompletedAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  onboardingState: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      selectedDemoSlug: '',
+      starterPageId: null,
+      checklist: {
+        branding: false,
+        template: false,
+        homepage: false,
+        navigation: false,
+        launch: false
+      }
+    }
+  },
   contactEmail: {
     type: DataTypes.STRING,
     defaultValue: 'hello@creativestudio.com'

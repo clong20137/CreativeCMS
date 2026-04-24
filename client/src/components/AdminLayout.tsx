@@ -894,6 +894,20 @@ export default function AdminLayout({ title, children }: { title: string; childr
           </div>
         </div>
 
+        {siteSettings?.setupWizardCompleted !== true && (
+          <div className="border-b border-blue-200 bg-blue-50 px-4 py-3 text-blue-900">
+            <div className={`${isPageEditor ? 'w-full' : 'container'} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+              <div>
+                <div className="text-sm font-semibold">Finish your onboarding setup wizard</div>
+                <p className="text-sm text-blue-800">Brand the site, pick a starter demo, review homepage and navigation, then check launch readiness.</p>
+              </div>
+              <Link to="/admin/settings?tab=Setup%20Wizard" className="btn-primary justify-center sm:justify-start">
+                Open Setup Wizard
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className={isPageEditor ? 'w-full px-4 py-5 md:py-6' : 'container py-6 md:py-8'}>{children}</div>
       </main>
 

@@ -538,7 +538,10 @@ async function ensureSiteSettingsSchema() {
     ['cmsVersionName', { type: DataTypes.STRING, allowNull: true }],
     ['cmsReleaseChannel', { type: DataTypes.ENUM('stable', 'early-access'), allowNull: true }],
     ['cmsReleaseNotes', { type: DataTypes.JSON, allowNull: true }],
-    ['siteBackups', { type: DataTypes.JSON, allowNull: true }]
+    ['siteBackups', { type: DataTypes.JSON, allowNull: true }],
+    ['setupWizardCompleted', { type: DataTypes.BOOLEAN, allowNull: true }],
+    ['setupWizardCompletedAt', { type: DataTypes.DATE, allowNull: true }],
+    ['onboardingState', { type: DataTypes.JSON, allowNull: true }]
   ]
 
   for (const [name, definition] of columns) {
@@ -585,6 +588,40 @@ export async function getOrCreateSiteSettings() {
   if (!Array.isArray(settings.siteBackups)) {
     settings.siteBackups = []
     changed = true
+  }
+  if (typeof settings.setupWizardCompleted !== 'boolean') {
+    settings.setupWizardCompleted = false
+    changed = true
+  }
+  if (!settings.onboardingState || typeof settings.onboardingState !== 'object') {
+    settings.onboardingState = {
+      selectedDemoSlug: '',
+      starterPageId: null,
+      checklist: {
+        branding: false,
+        template: false,
+        homepage: false,
+        navigation: false,
+        launch: false
+      }
+    }
+    changed = true
+  } else {
+    const normalizedOnboardingState = {
+      selectedDemoSlug: settings.onboardingState.selectedDemoSlug || '',
+      starterPageId: settings.onboardingState.starterPageId || null,
+      checklist: {
+        branding: Boolean(settings.onboardingState?.checklist?.branding),
+        template: Boolean(settings.onboardingState?.checklist?.template),
+        homepage: Boolean(settings.onboardingState?.checklist?.homepage),
+        navigation: Boolean(settings.onboardingState?.checklist?.navigation),
+        launch: Boolean(settings.onboardingState?.checklist?.launch)
+      }
+    }
+    if (JSON.stringify(settings.onboardingState) !== JSON.stringify(normalizedOnboardingState)) {
+      settings.onboardingState = normalizedOnboardingState
+      changed = true
+    }
   }
   if (!settings.clientPortalName) {
     settings.clientPortalName = 'Client Portal'

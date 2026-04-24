@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI, resolveAssetUrl, usersAPI } from '../services/api'
+import { cloneDemoStarterSections } from '../utils/demoStarterTemplates'
 
 const emptySettings = {
   siteName: '',
@@ -32,6 +34,20 @@ const emptySettings = {
   cmsReleaseChannel: 'stable',
   cmsVersionName: 'Creative CMS',
   cmsReleaseNotes: [] as any[],
+  siteBackups: [] as any[],
+  setupWizardCompleted: false,
+  setupWizardCompletedAt: '',
+  onboardingState: {
+    selectedDemoSlug: '',
+    starterPageId: null,
+    checklist: {
+      branding: false,
+      template: false,
+      homepage: false,
+      navigation: false,
+      launch: false
+    }
+  },
   contactEmail: '',
   phone: '',
   hours: '',
@@ -95,7 +111,7 @@ const emptySettings = {
   turnstileSecretKey: ''
 }
 
-const tabs = ['General', 'Theme', 'Releases', 'Backups', 'Contact', 'SEO', 'Payments', 'Security']
+const tabs = ['Setup Wizard', 'General', 'Theme', 'Releases', 'Backups', 'Contact', 'SEO', 'Payments', 'Security']
 const pageHeaderLabels: Record<string, string> = {
   portfolio: 'Portfolio',
   services: 'Services',
@@ -221,6 +237,7 @@ async function compactSettingsPayload(settings: Record<string, any>) {
 
 function getActiveTabPayload(settings: typeof emptySettings, activeTab: string) {
   const payloadMap: Record<string, string[]> = {
+    'Setup Wizard': ['setupWizardCompleted', 'setupWizardCompletedAt', 'onboardingState', 'siteName', 'logoUrl', 'contactEmail'],
     General: ['siteName', 'faviconUrl', 'logoUrl', 'logoSize', 'clientPortalName', 'adminPortalName', 'emailFromName', 'showPoweredBy', 'poweredByText'],
     Theme: [
       'themeFontFamily',
@@ -281,8 +298,13 @@ function getActiveTabPayload(settings: typeof emptySettings, activeTab: string) 
 }
 
 export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState('General')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const requestedTab = decodeURIComponent(new URLSearchParams(location.search).get('tab') || '')
+  const initialTab = tabs.includes(requestedTab) ? requestedTab : 'Setup Wizard'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [settings, setSettings] = useState(emptySettings)
+  const [demos, setDemos] = useState<any[]>([])
   const [backups, setBackups] = useState<any[]>([])
   const [backupName, setBackupName] = useState('')
   const [importPayload, setImportPayload] = useState('')
@@ -296,13 +318,21 @@ export default function AdminSettings() {
   const userId = localStorage.getItem('userId') || ''
 
   useEffect(() => {
+    const nextRequestedTab = decodeURIComponent(new URLSearchParams(location.search).get('tab') || '')
+    if (nextRequestedTab && tabs.includes(nextRequestedTab) && nextRequestedTab !== activeTab) {
+      setActiveTab(nextRequestedTab)
+    }
+  }, [location.search])
+
+  useEffect(() => {
     const fetchSettings = async () => {
       try {
         setLoading(true)
-        const [data, profile, backupData] = await Promise.all([adminAPI.getSiteSettings(), usersAPI.getProfile(), adminAPI.getBackups()])
+        const [data, profile, backupData, demoData] = await Promise.all([adminAPI.getSiteSettings(), usersAPI.getProfile(), adminAPI.getBackups(), adminAPI.getSiteDemos()])
         setSettings({ ...emptySettings, ...data })
         setTwoFactorEnabled(Boolean(profile.twoFactorEnabled))
         setBackups(Array.isArray(backupData) ? backupData : [])
+        setDemos(Array.isArray(demoData) ? demoData : [])
       } catch (err: any) {
         setError(err.error || 'Failed to load settings')
       } finally {
@@ -318,6 +348,22 @@ export default function AdminSettings() {
   const cardRadius = Math.min(Math.max(Number(settings.themeCardRadius) || 8, 0), 32)
   const spacingScale = Math.min(Math.max(Number(settings.themeSpacingScale) || 1, 0.8), 1.4)
   const hasImportPayload = useMemo(() => Boolean(importPayload.trim()), [importPayload])
+  const onboardingChecklist = {
+    branding: Boolean(settings.siteName?.trim() && settings.contactEmail?.trim()),
+    template: Boolean(settings.onboardingState?.checklist?.template),
+    homepage: Boolean(settings.onboardingState?.checklist?.homepage),
+    navigation: Boolean(settings.onboardingState?.checklist?.navigation),
+    launch: Boolean(settings.onboardingState?.checklist?.launch)
+  }
+  const setupSteps = [
+    { key: 'branding', label: 'Brand basics', description: 'Add your site name, logo, and primary contact details.' },
+    { key: 'template', label: 'Choose a starter', description: 'Pick a demo template or reusable layout to avoid starting from zero.' },
+    { key: 'homepage', label: 'Homepage review', description: 'Confirm your homepage content, hero, and call to action feel right.' },
+    { key: 'navigation', label: 'Navigation review', description: 'Make sure the key pages are in the nav and footer.' },
+    { key: 'launch', label: 'Launch checklist', description: 'Do a final pass on SEO, backups, and publish readiness.' }
+  ] as const
+  const completedSetupSteps = setupSteps.filter((step) => onboardingChecklist[step.key]).length
+  const setupProgress = Math.round((completedSetupSteps / setupSteps.length) * 100)
 
   const handleUpload = async (key: string, file: File | undefined) => {
     if (!file) return
@@ -354,6 +400,28 @@ export default function AdminSettings() {
         }
       }
     }))
+  }
+
+  const setWizardChecklistValue = (key: 'branding' | 'template' | 'homepage' | 'navigation' | 'launch', value: boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      onboardingState: {
+        ...(prev.onboardingState || {}),
+        selectedDemoSlug: prev.onboardingState?.selectedDemoSlug || '',
+        starterPageId: prev.onboardingState?.starterPageId || null,
+        checklist: {
+          ...(prev.onboardingState?.checklist || {}),
+          [key]: value
+        }
+      }
+    }))
+  }
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    const params = new URLSearchParams(location.search)
+    params.set('tab', tab)
+    navigate({ pathname: location.pathname, search: params.toString() }, { replace: true })
   }
 
   const updateReleaseNote = (index: number, field: string, value: any) => {
@@ -598,6 +666,82 @@ export default function AdminSettings() {
     }
   }
 
+  const handleCreateStarterFromDemo = async () => {
+    const selectedDemoSlug = String(settings.onboardingState?.selectedDemoSlug || '').trim()
+    if (!selectedDemoSlug) {
+      setError('Choose a demo starter first.')
+      return
+    }
+
+    const demo = demos.find((item) => item.slug === selectedDemoSlug)
+    if (!demo) {
+      setError('That demo is not available right now.')
+      return
+    }
+
+    try {
+      setError('')
+      setMessage(`Creating ${demo.name} starter page...`)
+      const suffix = Date.now().toString().slice(-5)
+      const page = await adminAPI.createPage({
+        title: `${demo.name} Starter`,
+        slug: `${demo.slug}-starter-${suffix}`,
+        headerTitle: demo.name,
+        headerSubtitle: demo.description || '',
+        content: '',
+        sections: cloneDemoStarterSections(demo.slug),
+        metaTitle: `${demo.name} Starter`,
+        metaDescription: demo.description || '',
+        isPublished: false,
+        sortOrder: 1000 + Number(demo.sortOrder || 0)
+      })
+
+      setSettings((prev) => ({
+        ...prev,
+        onboardingState: {
+          ...(prev.onboardingState || {}),
+          selectedDemoSlug,
+          starterPageId: page.id,
+          checklist: {
+            ...(prev.onboardingState?.checklist || {}),
+            template: true
+          }
+        }
+      }))
+      window.dispatchEvent(new Event('admin-pages-refresh'))
+      setMessage(`${demo.name} starter page created. You can keep going in the wizard or jump into the editor.`)
+    } catch (err: any) {
+      setMessage('')
+      setError(err.error || err.message || 'Failed to create starter page')
+    }
+  }
+
+  const handleCompleteSetupWizard = async () => {
+    try {
+      setError('')
+      setMessage('Saving setup wizard...')
+      const payload = {
+        setupWizardCompleted: true,
+        setupWizardCompletedAt: new Date().toISOString(),
+        onboardingState: {
+          ...(settings.onboardingState || {}),
+          checklist: {
+            ...onboardingChecklist
+          }
+        },
+        siteName: settings.siteName,
+        logoUrl: settings.logoUrl,
+        contactEmail: settings.contactEmail
+      }
+      await adminAPI.updateSiteSettings(payload)
+      setSettings((prev) => ({ ...prev, ...payload }))
+      setMessage('Setup wizard completed. Nice work.')
+    } catch (err: any) {
+      setMessage('')
+      setError(err.error || err.message || 'Failed to complete setup wizard')
+    }
+  }
+
   const qrUrl = twoFactorSetup
     ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(twoFactorSetup.otpauthUrl)}`
     : ''
@@ -610,13 +754,173 @@ export default function AdminSettings() {
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div className="sticky top-[4.5rem] z-10 -mx-1 flex gap-2 overflow-x-auto bg-gray-50 px-1 pb-2 pt-1 sm:static sm:bg-transparent sm:px-0 sm:pt-0">
             {tabs.map(tab => (
-              <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap sm:px-4 ${activeTab === tab ? 'bg-blue-600 text-white' : 'border bg-white text-gray-700'}`}>
+              <button key={tab} type="button" onClick={() => handleTabChange(tab)} className={`rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap sm:px-4 ${activeTab === tab ? 'bg-blue-600 text-white' : 'border bg-white text-gray-700'}`}>
                 {tab}
               </button>
             ))}
           </div>
 
           <div className="card space-y-5 p-4 sm:space-y-6 sm:p-6">
+            {activeTab === 'Setup Wizard' && (
+              <section className="space-y-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Onboarding Setup Wizard</h2>
+                    <p className="mt-2 max-w-2xl text-sm text-gray-600">Let’s get the big pieces in place: brand basics, a starter layout, homepage review, navigation review, and launch readiness.</p>
+                  </div>
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                    <div className="font-semibold">{setupProgress}% complete</div>
+                    <div>{completedSetupSteps} of {setupSteps.length} setup steps checked off</div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
+                  <div className="space-y-3">
+                    {setupSteps.map((step, index) => {
+                      const complete = onboardingChecklist[step.key]
+                      return (
+                        <div key={step.key} className={`rounded-2xl border px-4 py-3 ${complete ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${complete ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">{step.label}</div>
+                              <p className="mt-1 text-xs text-gray-600">{step.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">1. Brand basics</h3>
+                          <p className="mt-1 text-sm text-gray-600">Set the essentials people will see first.</p>
+                        </div>
+                        <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <input type="checkbox" checked={onboardingChecklist.branding} onChange={(e) => setWizardChecklistValue('branding', e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                          Done
+                        </label>
+                      </div>
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
+                        <input value={settings.siteName} onChange={(e) => handleChange('siteName', e.target.value)} placeholder="Site name" className="px-4 py-2 border rounded-lg" />
+                        <input value={settings.contactEmail} onChange={(e) => handleChange('contactEmail', e.target.value)} placeholder="Primary contact email" className="px-4 py-2 border rounded-lg" />
+                        <input value={settings.logoUrl || ''} onChange={(e) => handleChange('logoUrl', e.target.value)} placeholder="Logo URL" className="px-4 py-2 border rounded-lg md:col-span-2" />
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">2. Choose a starter</h3>
+                          <p className="mt-1 text-sm text-gray-600">Use one of your demo sites as the starting point for the first real page.</p>
+                        </div>
+                        <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <input type="checkbox" checked={onboardingChecklist.template} onChange={(e) => setWizardChecklistValue('template', e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                          Done
+                        </label>
+                      </div>
+                      <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto]">
+                        <select
+                          value={settings.onboardingState?.selectedDemoSlug || ''}
+                          onChange={(e) => setSettings((prev) => ({
+                            ...prev,
+                            onboardingState: {
+                              ...(prev.onboardingState || {}),
+                              selectedDemoSlug: e.target.value,
+                              starterPageId: prev.onboardingState?.starterPageId || null,
+                              checklist: {
+                                ...(prev.onboardingState?.checklist || {})
+                              }
+                            }
+                          }))}
+                          className="px-4 py-2 border rounded-lg bg-white"
+                        >
+                          <option value="">Choose a demo starter</option>
+                          {demos.filter((demo) => demo.isActive !== false).map((demo) => (
+                            <option key={demo.slug} value={demo.slug}>{demo.name}</option>
+                          ))}
+                        </select>
+                        <button type="button" onClick={handleCreateStarterFromDemo} className="btn-primary justify-center">
+                          Create Starter Page
+                        </button>
+                      </div>
+                      {settings.onboardingState?.starterPageId ? (
+                        <p className="mt-3 text-sm text-green-700">Starter page created. You can open it from the Pages editor any time.</p>
+                      ) : null}
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">3. Homepage review</h3>
+                          <p className="mt-1 text-sm text-gray-600">Make sure the homepage hero, copy, and call to action are ready.</p>
+                        </div>
+                        <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <input type="checkbox" checked={onboardingChecklist.homepage} onChange={(e) => setWizardChecklistValue('homepage', e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                          Done
+                        </label>
+                      </div>
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
+                        <input value={settings.heroTitle} onChange={(e) => handleChange('heroTitle', e.target.value)} placeholder="Homepage hero title" className="px-4 py-2 border rounded-lg" />
+                        <input value={settings.heroPrimaryLabel} onChange={(e) => handleChange('heroPrimaryLabel', e.target.value)} placeholder="Primary CTA label" className="px-4 py-2 border rounded-lg" />
+                        <textarea value={settings.heroSubtitle} onChange={(e) => handleChange('heroSubtitle', e.target.value)} placeholder="Homepage hero subtitle" className="min-h-[120px] px-4 py-3 border rounded-lg md:col-span-2" />
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">4. Navigation review</h3>
+                          <p className="mt-1 text-sm text-gray-600">Confirm your main pages and footer are organized the way clients will expect.</p>
+                        </div>
+                        <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <input type="checkbox" checked={onboardingChecklist.navigation} onChange={(e) => setWizardChecklistValue('navigation', e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                          Done
+                        </label>
+                      </div>
+                      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                        Next stop after this step: <span className="font-semibold">Pages</span> and <span className="font-semibold">Navigation</span> in the admin sidebar. That’s where you can fine-tune menus, footer columns, and the page stack.
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">5. Launch checklist</h3>
+                          <p className="mt-1 text-sm text-gray-600">Do the final confidence pass before you call the site ready.</p>
+                        </div>
+                        <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <input type="checkbox" checked={onboardingChecklist.launch} onChange={(e) => setWizardChecklistValue('launch', e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                          Done
+                        </label>
+                      </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700">SEO connected in Settings to SEO</div>
+                        <div className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700">Fresh backup created in Settings to Backups</div>
+                        <div className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700">Homepage preview checked on mobile</div>
+                        <div className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700">Navigation and footer links reviewed</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="text-base font-semibold text-blue-900">Finish the wizard</div>
+                        <p className="mt-1 text-sm text-blue-800">This stores your onboarding progress so the admin portal stops nudging you.</p>
+                      </div>
+                      <button type="button" onClick={handleCompleteSetupWizard} className="btn-primary justify-center">
+                        Mark Setup Complete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {activeTab === 'General' && (
               <section className="space-y-4">
                 <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Branding</h2>
