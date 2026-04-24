@@ -105,6 +105,8 @@ const nestedBlockOptions = [
 const MAX_IMAGE_WIDTH = 1200
 const MAX_IMAGE_HEIGHT = 800
 const MAX_UPLOAD_DATA_URL_LENGTH = 3_000_000
+const PAGE_AUTOSAVE_KEY_PREFIX = 'creativecms:page-autosave:'
+const PAGE_AUTOSAVE_DELAY = 1200
 
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -220,6 +222,33 @@ function normalizePagePath(value: string) {
     .join('/')
 
   return normalized ? `/${normalized}` : ''
+}
+
+function getAutosaveStorageKey(activeTab: string, selectedPageId: string) {
+  return `${PAGE_AUTOSAVE_KEY_PREFIX}${activeTab === 'Custom Pages' ? `custom:${selectedPageId}` : `built-in:${activeTab}`}`
+}
+
+function loadAutosaveEntry(key: string) {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function saveAutosaveEntry(key: string, value: any) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(key, JSON.stringify(value))
+}
+
+function clearAutosaveEntry(key: string) {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(key)
 }
 
 function getSectionSeoIssues(section: any) {
@@ -729,6 +758,7 @@ export default function AdminPages() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [autosaveMessage, setAutosaveMessage] = useState('')
   const [draggingSectionIndex, setDraggingSectionIndex] = useState<number | null>(null)
   const [editingSectionId, setEditingSectionId] = useState('')
   const [highlightedSectionId, setHighlightedSectionId] = useState('')
@@ -736,12 +766,15 @@ export default function AdminPages() {
   const [sectionsPanelOpen, setSectionsPanelOpen] = useState(true)
   const [savedSnapshot, setSavedSnapshot] = useState('')
   const [unsavedPrompt, setUnsavedPrompt] = useState<{ open: boolean; href?: string; action?: () => void }>({ open: false })
+  const [draftRecoveryPrompt, setDraftRecoveryPrompt] = useState<{ open: boolean; key: string; label: string; updatedAt?: string; data?: any }>({ open: false, key: '', label: '' })
   const [deletePromptOpen, setDeletePromptOpen] = useState(false)
   const [newPageTemplatePromptOpen, setNewPageTemplatePromptOpen] = useState(false)
   const [undoStack, setUndoStack] = useState<string[]>([])
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [mediaPicker, setMediaPicker] = useState<{ open: boolean; type: string; onSelect: null | ((url: string) => void) }>({ open: false, type: 'image', onSelect: null })
   const skipNextNewPagePromptRef = useRef(false)
+  const lastAutosavedSnapshotRef = useRef('')
+  const autosaveTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -867,6 +900,9 @@ export default function AdminPages() {
       const payload = getActivePayload(settings, activeTab)
       await adminAPI.updateSiteSettings(payload)
       setSavedSnapshot(JSON.stringify(payload))
+      clearAutosaveEntry(autosaveStorageKey)
+      lastAutosavedSnapshotRef.current = JSON.stringify(payload)
+      setAutosaveMessage('')
       setUndoStack([])
       setRedoStack([])
       setMessage('Page edits saved')
@@ -1174,6 +1210,7 @@ export default function AdminPages() {
   const saveActivePage = () => activeTab === 'Custom Pages' ? saveCustomPageEdits() : saveBuiltInPageEdits()
   const editorGridColumns = `minmax(0, 1fr) ${sectionsPanelOpen ? '23rem' : '3.25rem'}`
   const activePageSnapshot = useMemo(() => JSON.stringify(activeTab === 'Custom Pages' ? pageDraft : getActivePayload(settings, activeTab)), [activeTab, pageDraft, settings])
+  const autosaveStorageKey = useMemo(() => getAutosaveStorageKey(activeTab, selectedPageId), [activeTab, selectedPageId])
   const hasUnsavedChanges = Boolean(savedSnapshot) && savedSnapshot !== activePageSnapshot
   const starterTemplates = useMemo(() => (settings.reusableSections || []).filter((template: any) => template.kind === 'layout' || Array.isArray(template.sections)), [settings.reusableSections])
   const starterDemos = useMemo(() => siteDemos.filter((demo: any) => demoStarterSections[demo.slug]), [siteDemos])
@@ -1228,10 +1265,64 @@ export default function AdminPages() {
   useEffect(() => {
     if (!loading) {
       setSavedSnapshot(activePageSnapshot)
+      lastAutosavedSnapshotRef.current = activePageSnapshot
       setUndoStack([])
       setRedoStack([])
     }
   }, [loading, activePageSnapshot, activeTab, selectedPageId])
+
+  useEffect(() => {
+    if (loading) return
+    const autosaveEntry = loadAutosaveEntry(autosaveStorageKey)
+    if (!autosaveEntry?.snapshot || autosaveEntry.snapshot === activePageSnapshot) {
+      setDraftRecoveryPrompt((current) => current.key === autosaveStorageKey ? { open: false, key: '', label: '' } : current)
+      return
+    }
+
+    setDraftRecoveryPrompt({
+      open: true,
+      key: autosaveStorageKey,
+      label: activePageLabel,
+      updatedAt: autosaveEntry.updatedAt,
+      data: autosaveEntry.data
+    })
+  }, [activePageLabel, activePageSnapshot, autosaveStorageKey, loading])
+
+  useEffect(() => {
+    if (loading || !savedSnapshot || !hasUnsavedChanges) {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current)
+        autosaveTimerRef.current = null
+      }
+      return
+    }
+
+    if (lastAutosavedSnapshotRef.current === activePageSnapshot) return
+
+    if (autosaveTimerRef.current) {
+      window.clearTimeout(autosaveTimerRef.current)
+    }
+
+    autosaveTimerRef.current = window.setTimeout(() => {
+      const payload = activeTab === 'Custom Pages' ? pageDraft : getActivePayload(settings, activeTab)
+      saveAutosaveEntry(autosaveStorageKey, {
+        snapshot: activePageSnapshot,
+        updatedAt: new Date().toISOString(),
+        label: activePageLabel,
+        type: activeTab === 'Custom Pages' ? 'custom' : 'built-in',
+        data: payload
+      })
+      lastAutosavedSnapshotRef.current = activePageSnapshot
+      setAutosaveMessage(`Draft autosaved at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`)
+    }, PAGE_AUTOSAVE_DELAY)
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current)
+        autosaveTimerRef.current = null
+      }
+    }
+  }, [activePageLabel, activePageSnapshot, activeTab, autosaveStorageKey, hasUnsavedChanges, loading, pageDraft, savedSnapshot, settings])
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -1267,6 +1358,22 @@ export default function AdminPages() {
   }, [hasUnsavedChanges, location.pathname, location.search, unsavedPrompt.open])
 
   const closeUnsavedPrompt = () => setUnsavedPrompt({ open: false })
+  const dismissDraftRecoveryPrompt = () => {
+    clearAutosaveEntry(autosaveStorageKey)
+    lastAutosavedSnapshotRef.current = activePageSnapshot
+    setDraftRecoveryPrompt({ open: false, key: '', label: '' })
+    setAutosaveMessage('')
+  }
+  const restoreDraftRecovery = () => {
+    if (!draftRecoveryPrompt.data) return
+    if (activeTab === 'Custom Pages') {
+      setPageDraft(draftRecoveryPrompt.data)
+    } else {
+      setSettings((prev) => ({ ...prev, ...draftRecoveryPrompt.data }))
+    }
+    setDraftRecoveryPrompt({ open: false, key: '', label: '' })
+    setMessage(`Recovered an autosaved draft for ${activePageLabel}.`)
+  }
 
   const leaveWithUnsavedChanges = () => {
     const prompt = unsavedPrompt
@@ -1299,6 +1406,10 @@ export default function AdminPages() {
       setSelectedPageId(String(savedPage.id))
       setPageDraft({ ...savedPage, showPageHeader: savedPage.showPageHeader !== false })
       setSavedSnapshot(JSON.stringify(savedPage))
+      clearAutosaveEntry(getAutosaveStorageKey('Custom Pages', String(savedPage.id)))
+      clearAutosaveEntry(getAutosaveStorageKey('Custom Pages', selectedPageId))
+      lastAutosavedSnapshotRef.current = JSON.stringify(savedPage)
+      setAutosaveMessage('')
       setUndoStack([])
       setRedoStack([])
       navigate(`/admin/pages?custom=${savedPage.id}`)
@@ -1315,6 +1426,8 @@ export default function AdminPages() {
 
       try {
         await adminAPI.deletePage(selectedPageId)
+        clearAutosaveEntry(getAutosaveStorageKey('Custom Pages', selectedPageId))
+        setAutosaveMessage('')
         setPages(current => current.filter(page => String(page.id) !== selectedPageId))
         startNewPage(true, false)
         window.dispatchEvent(new Event('admin-pages-refresh'))
@@ -1327,6 +1440,7 @@ export default function AdminPages() {
   return (
     <AdminLayout title="Website Pages">
       {message && <div className="mx-2 mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 md:mx-4 md:mb-6">{message}</div>}
+      {autosaveMessage && !message && <div className="mx-2 mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 md:mx-4 md:mb-6">{autosaveMessage}</div>}
       {error && <div className="mx-2 mb-4 rounded-lg border border-red-400 bg-red-100 p-4 text-sm text-red-700 md:mx-4 md:mb-6">{error}</div>}
       {loading ? <PageSkeleton /> : (
         <div className="grid min-h-[calc(100vh-12rem)] grid-cols-1 items-start gap-3 transition-all duration-300 xl:grid-cols-[var(--editor-grid)]" style={{ '--editor-grid': editorGridColumns } as any}>
@@ -1942,6 +2056,32 @@ export default function AdminPages() {
               </button>
               <button type="button" onClick={closeUnsavedPrompt} className="w-full rounded-lg border px-4 py-3 font-bold text-gray-700 transition hover:bg-gray-50">
                 Stay here
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {draftRecoveryPrompt.open && (
+        <div className="fixed inset-0 z-[101] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+            <h2 className="text-2xl font-bold text-gray-900">Recover autosaved draft?</h2>
+            <p className="mt-3 text-gray-600">
+              We found a newer unsaved draft for <span className="font-semibold text-gray-900">{draftRecoveryPrompt.label}</span>
+              {draftRecoveryPrompt.updatedAt ? ` from ${new Date(draftRecoveryPrompt.updatedAt).toLocaleString()}` : ''}.
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              Restore it to continue where you left off, or discard it and keep the last saved version.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button type="button" onClick={restoreDraftRecovery} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700">
+                <FiRotateCcw />
+                Restore draft
+              </button>
+              <button type="button" onClick={dismissDraftRecoveryPrompt} className="inline-flex flex-1 items-center justify-center rounded-lg bg-red-600 px-4 py-3 font-bold text-white transition hover:bg-red-700">
+                Discard draft
+              </button>
+              <button type="button" onClick={dismissDraftRecoveryPrompt} className="w-full rounded-lg border px-4 py-3 font-bold text-gray-700 transition hover:bg-gray-50">
+                Keep saved version
               </button>
             </div>
           </div>
