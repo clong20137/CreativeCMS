@@ -155,6 +155,55 @@ function EditableHeadingText({ section, fallbackText = '' }: { section: any; fal
   return <>{section?.title || fallbackText}</>
 }
 
+function EditableRichTextContent({
+  section,
+  className = '',
+  fallbackHtml = ''
+}: {
+  section: any
+  className?: string
+  fallbackHtml?: string
+}) {
+  const editorRef = useRef<HTMLDivElement | null>(null)
+  const editableMeta = section?.__liveEdit
+  const isEditable = Boolean(editableMeta?.bodyEditable)
+  const rawHtml = section?.body || fallbackHtml
+  const normalized = normalizeRichTextHtml(rawHtml)
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor || !isEditable) return
+    if (document.activeElement === editor) return
+    if (editor.innerHTML !== normalized) editor.innerHTML = normalized
+  }, [normalized, isEditable])
+
+  if (isEditable) {
+    return (
+      <div
+        id={`editable-body-${section.id}`}
+        ref={editorRef}
+        contentEditable
+        draggable={false}
+        suppressContentEditableWarning
+        data-placeholder="Double-click and edit text..."
+        className={`preview-editable-body rich-text-content rounded px-1 focus:outline-none focus:ring-2 focus:ring-blue-300 ${className}`.trim()}
+        onClick={(event) => event.stopPropagation()}
+        onDoubleClick={(event) => {
+          event.stopPropagation()
+          editorRef.current?.focus()
+        }}
+        onInput={() => {
+          const html = sanitizeRichTextHtml(editorRef.current?.innerHTML || '')
+          editableMeta?.onBodyChange?.(html, extractPlainText(html))
+        }}
+        dangerouslySetInnerHTML={{ __html: normalized }}
+      />
+    )
+  }
+
+  return <RichTextContent html={rawHtml} className={className} />
+}
+
 function resolveResponsiveSection(section: any, mode: ResponsiveMode) {
   if (!section || mode === 'desktop') return section
   const nextSection = { ...section }
@@ -535,7 +584,7 @@ function PageSection({ section }: { section: any }) {
                 ? <EditableHeadingText section={section} />
                 : renderLinkedHeading(section.titleLinkUrl, <EditableHeadingText section={section} />, 'inline')}
             </HeadingTag>
-            {section.body && <RichTextContent html={section.body} className={`${alignment.body} mt-6 text-xl text-blue-100`.trim()} />}
+            {section.body && <EditableRichTextContent section={section} className={`${alignment.body} mt-6 text-xl text-blue-100`.trim()} />}
             {section.buttonLabel && section.buttonUrl && (
               <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
                 <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />
@@ -558,7 +607,7 @@ function PageSection({ section }: { section: any }) {
               ? <EditableHeadingText section={section} />
               : renderLinkedHeading(section.titleLinkUrl, <EditableHeadingText section={section} />, 'inline')}
           </HeadingTag>
-          {section.body && <RichTextContent html={section.body} className={`${alignment.body} -mt-8 max-w-3xl text-lg text-gray-600`.trim()} />}
+          {section.body && <EditableRichTextContent section={section} className={`${alignment.body} -mt-8 max-w-3xl text-lg text-gray-600`.trim()} />}
         </div>
       </section>
     )
@@ -680,7 +729,7 @@ function PageSection({ section }: { section: any }) {
               : renderLinkedHeading(section.titleLinkUrl, <EditableHeadingText section={section} />, 'inline')}
           </HeadingTag>
         )}
-        {section.body && <RichTextContent html={section.body} className={`${alignment.body} mt-3 text-gray-600`.trim()} />}
+        {section.body && <EditableRichTextContent section={section} className={`${alignment.body} mt-3 text-gray-600`.trim()} />}
       </div>
     )
     const imageBlock = section.imageUrl
@@ -788,7 +837,7 @@ function ColumnBlock({ block }: { block: any }) {
     return <PageSection section={block} />
   }
 
-  return <RichTextContent html={block.body} className="text-gray-700" />
+  return <EditableRichTextContent section={block} className="text-gray-700" />
 }
 
 function ButtonSection({ section }: { section: any }) {
@@ -1027,7 +1076,7 @@ function ImageOverlaySection({ section }: { section: any }) {
                 : renderLinkedHeading(section.titleLinkUrl, <EditableHeadingText section={section} />, 'inline')}
             </HeadingTag>
           )}
-          {section.body && <RichTextContent html={section.body} className={`${alignment.body} mt-5 text-lg text-gray-100 md:text-xl`.trim()} />}
+          {section.body && <EditableRichTextContent section={section} className={`${alignment.body} mt-5 text-lg text-gray-100 md:text-xl`.trim()} />}
           {section.buttonLabel && section.buttonUrl && (
             <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
               <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />
@@ -1087,7 +1136,7 @@ function HeroSection({ section }: { section: any }) {
                 ? <EditableHeadingText section={section} />
                 : renderLinkedHeading(section.titleLinkUrl, <EditableHeadingText section={section} />, 'inline')}
             </HeadingTag>
-            {section.body && <RichTextContent html={section.body} className={`${alignment.body} mt-6 text-xl text-blue-100 md:text-2xl`.trim()} />}
+            {section.body && <EditableRichTextContent section={section} className={`${alignment.body} mt-6 text-xl text-blue-100 md:text-2xl`.trim()} />}
             <div className="mt-8 flex flex-wrap gap-4">
               {section.buttonLabel && section.buttonUrl && (
                 <Link to={section.buttonUrl} className="section-button inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
@@ -1178,7 +1227,7 @@ function SectionHeading({ section, fallbackTitle }: { section: any; fallbackTitl
           ? <EditableHeadingText section={section} fallbackText={fallbackTitle} />
           : renderLinkedHeading(section.titleLinkUrl, <EditableHeadingText section={section} fallbackText={fallbackTitle} />, 'inline')}
       </HeadingTag>
-      {section.body && <RichTextContent html={section.body} className={`${alignment.body} mt-3 max-w-3xl text-gray-600`.trim()} />}
+      {section.body && <EditableRichTextContent section={section} className={`${alignment.body} mt-3 max-w-3xl text-gray-600`.trim()} />}
     </div>
   )
 }
@@ -1824,7 +1873,7 @@ function CtaSection({ section }: { section: any }) {
             ? <EditableHeadingText section={section} />
             : renderLinkedHeading(section.titleLinkUrl, <EditableHeadingText section={section} />, 'inline')}
         </HeadingTag>
-        {section.body && <RichTextContent html={section.body} className={`${alignment.body} mt-6 max-w-2xl text-xl text-blue-100`.trim()} />}
+        {section.body && <EditableRichTextContent section={section} className={`${alignment.body} mt-6 max-w-2xl text-xl text-blue-100`.trim()} />}
         {section.buttonLabel && section.buttonUrl && (
           <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
             <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />

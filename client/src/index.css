@@ -1302,6 +1302,11 @@ html.dark-mode .login-page {
   color: #94a3b8;
 }
 
+.preview-editable-body:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+}
+
 .page-section-render h1,
 .page-section-render h2,
 .page-section-render h3,

@@ -2509,28 +2509,37 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
   section,
   previewMode,
   isSelected,
-  onTitleContentChange
+  onTitleContentChange,
+  onBodyContentChange
 }: {
   section: any
   previewMode: 'desktop' | 'tablet' | 'mobile'
   isSelected?: boolean
   onTitleContentChange?: (html: string, text: string) => void
+  onBodyContentChange?: (html: string, text: string) => void
 }) {
   const previewSection = useMemo(() => {
-    if (!isSelected || !onTitleContentChange || !section?.title) return section
+    if (!isSelected) return section
     return {
       ...section,
       __liveEdit: {
-        titleEditable: true,
+        titleEditable: Boolean(onTitleContentChange && section?.title),
         onTitleChange: onTitleContentChange,
+        bodyEditable: Boolean(onBodyContentChange && section?.body),
+        onBodyChange: onBodyContentChange,
         syncFromDom: () => {
-          const editor = document.getElementById(`editable-heading-${section.id}`) as HTMLSpanElement | null
-          if (!editor) return
-          onTitleContentChange(editor.innerHTML || '', extractPlainTextFromHtml(editor.innerHTML || ''))
+          if (onTitleContentChange && section?.title) {
+            const headingEditor = document.getElementById(`editable-heading-${section.id}`) as HTMLSpanElement | null
+            if (headingEditor) onTitleContentChange(headingEditor.innerHTML || '', extractPlainTextFromHtml(headingEditor.innerHTML || ''))
+          }
+          if (onBodyContentChange && section?.body) {
+            const bodyEditor = document.getElementById(`editable-body-${section.id}`) as HTMLDivElement | null
+            if (bodyEditor) onBodyContentChange(bodyEditor.innerHTML || '', extractPlainTextFromHtml(bodyEditor.innerHTML || ''))
+          }
         }
       }
     }
-  }, [section, isSelected, onTitleContentChange])
+  }, [section, isSelected, onTitleContentChange, onBodyContentChange])
 
   return (
     <Suspense fallback={<div className="min-h-[12rem] animate-pulse bg-gray-100" />}>
@@ -2588,7 +2597,7 @@ function SectionPreviewToolbar({
 
   const supportsHeading = Boolean(section?.title) && !['button', 'paragraph', 'divider', 'contactForm', 'customForm'].includes(section?.type)
   const supportsVerticalAlign = ['hero', 'banner', 'imageOverlay', 'section'].includes(section?.type)
-  const supportsInlineHeadingEdit = supportsHeading
+  const supportsInlineEditing = Boolean(section?.title || section?.body)
   const hasPrimaryButton = Boolean(section?.buttonLabel && section?.buttonUrl)
 
   const alignButtons = [
@@ -2610,14 +2619,32 @@ function SectionPreviewToolbar({
     { label: 'Glow', value: '0 0 0 1px rgba(37, 99, 235, 0.08), 0 14px 30px rgba(37, 99, 235, 0.24)' }
   ]
 
-  const focusHeadingEditor = () => {
-    const editor = document.getElementById(`editable-heading-${section?.id}`) as HTMLSpanElement | null
-    editor?.focus()
-    return editor
+  const getActiveEditableElement = () => {
+    const selection = window.getSelection()
+    const node = selection?.anchorNode
+    if (!node) return null
+    const element = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement
+    return element?.closest('[id^="editable-heading-"], [id^="editable-body-"]') as HTMLElement | null
   }
 
-  const saveHeadingSelection = () => {
-    const editor = document.getElementById(`editable-heading-${section?.id}`) as HTMLSpanElement | null
+  const focusPreferredEditor = () => {
+    const active = getActiveEditableElement()
+    if (active) {
+      active.focus()
+      return active
+    }
+    const bodyEditor = document.getElementById(`editable-body-${section?.id}`) as HTMLElement | null
+    if (bodyEditor) {
+      bodyEditor.focus()
+      return bodyEditor
+    }
+    const headingEditor = document.getElementById(`editable-heading-${section?.id}`) as HTMLElement | null
+    headingEditor?.focus()
+    return headingEditor
+  }
+
+  const saveCurrentSelection = () => {
+    const editor = getActiveEditableElement() || focusPreferredEditor()
     const selection = window.getSelection()
     if (!editor || !selection || selection.rangeCount === 0) return false
     const range = selection.getRangeAt(0)
@@ -2626,18 +2653,18 @@ function SectionPreviewToolbar({
     return true
   }
 
-  const restoreHeadingSelection = () => {
+  const restoreCurrentSelection = () => {
     const selection = window.getSelection()
     if (!selection || !savedRangeRef.current) return
     selection.removeAllRanges()
     selection.addRange(savedRangeRef.current)
   }
 
-  const syncHeading = () => {
+  const syncInlineEditors = () => {
     section?.__liveEdit?.syncFromDom?.()
   }
 
-  const getActiveHeadingLink = () => {
+  const getActiveInlineLink = () => {
     const selection = window.getSelection()
     const node = selection?.anchorNode
     if (!node) return null
@@ -2645,26 +2672,26 @@ function SectionPreviewToolbar({
     return element?.closest('a') || null
   }
 
-  const applyHeadingCommand = (command: string, commandValue?: string) => {
-    const editor = focusHeadingEditor()
+  const applyInlineCommand = (command: string, commandValue?: string) => {
+    const editor = focusPreferredEditor()
     if (!editor) return
     document.execCommand('styleWithCSS', false, command === 'foreColor' ? 'true' : 'false')
     document.execCommand(command, false, commandValue)
-    window.setTimeout(syncHeading, 0)
+    window.setTimeout(syncInlineEditors, 0)
   }
 
-  const openHeadingLinkPopover = () => {
-    const hasSelection = saveHeadingSelection()
-    const activeLink = getActiveHeadingLink()
+  const openInlineLinkPopover = () => {
+    const hasSelection = saveCurrentSelection()
+    const activeLink = getActiveInlineLink()
     setLinkValue(activeLink?.getAttribute('href') || '')
     setLinkOpen(true)
-    if (!hasSelection && !activeLink) focusHeadingEditor()
+    if (!hasSelection && !activeLink) focusPreferredEditor()
   }
 
-  const applyHeadingLink = () => {
-    const editor = focusHeadingEditor()
+  const applyInlineLink = () => {
+    const editor = focusPreferredEditor()
     if (!editor) return
-    restoreHeadingSelection()
+    restoreCurrentSelection()
     document.execCommand('styleWithCSS', false, 'false')
     if (linkValue.trim()) {
       document.execCommand('createLink', false, linkValue.trim())
@@ -2672,17 +2699,17 @@ function SectionPreviewToolbar({
       document.execCommand('unlink')
     }
     window.setTimeout(() => {
-      syncHeading()
+      syncInlineEditors()
       setLinkOpen(false)
     }, 0)
   }
 
   return (
     <div
-      className="absolute left-1/2 top-3 z-20 w-[min(calc(100%-1.5rem),72rem)] -translate-x-1/2 rounded-xl border bg-white/95 p-3 shadow-2xl backdrop-blur"
+      className="absolute left-1/2 top-0 z-20 w-[min(calc(100%-1.5rem),52rem)] -translate-x-1/2 -translate-y-[calc(100%+0.5rem)] rounded-xl border bg-white/96 p-2 shadow-2xl backdrop-blur"
       onClick={(event) => event.stopPropagation()}
     >
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-lg border bg-gray-50 p-1">
           {alignButtons.map(({ value, icon: Icon, label }) => (
             <button
@@ -2698,21 +2725,19 @@ function SectionPreviewToolbar({
           ))}
         </div>
 
-        {supportsInlineHeadingEdit && (
+        {supportsInlineEditing && (
           <div className="flex items-center gap-1 rounded-lg border bg-gray-50 p-1">
-            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyHeadingCommand('bold')} className="rounded-md px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-white">B</button>
-            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyHeadingCommand('italic')} className="rounded-md px-3 py-2 text-sm italic text-gray-700 transition hover:bg-white">I</button>
-            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyHeadingCommand('underline')} className="rounded-md px-3 py-2 text-sm underline text-gray-700 transition hover:bg-white">U</button>
-            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={openHeadingLinkPopover} className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-white">
+            <button type="button" title="Bold" aria-label="Bold" onMouseDown={(event) => event.preventDefault()} onClick={() => applyInlineCommand('bold')} className="rounded-md px-2.5 py-2 text-sm font-bold text-gray-700 transition hover:bg-white">B</button>
+            <button type="button" title="Italic" aria-label="Italic" onMouseDown={(event) => event.preventDefault()} onClick={() => applyInlineCommand('italic')} className="rounded-md px-2.5 py-2 text-sm italic text-gray-700 transition hover:bg-white">I</button>
+            <button type="button" title="Underline" aria-label="Underline" onMouseDown={(event) => event.preventDefault()} onClick={() => applyInlineCommand('underline')} className="rounded-md px-2.5 py-2 text-sm underline text-gray-700 transition hover:bg-white">U</button>
+            <button type="button" title="Add link" aria-label="Add link" onMouseDown={(event) => event.preventDefault()} onClick={openInlineLinkPopover} className="inline-flex items-center rounded-md px-2.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-white">
               <FiLink />
-              <span>Link</span>
             </button>
-            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => applyHeadingCommand('unlink')} className="rounded-md px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-white">
-              Unlink
+            <button type="button" title="Remove link" aria-label="Remove link" onMouseDown={(event) => event.preventDefault()} onClick={() => applyInlineCommand('unlink')} className="rounded-md px-2.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-white">
+              <FiLink className="opacity-50" />
             </button>
-            <label className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-white">
-              <span>Color</span>
-              <input type="color" onChange={(event) => applyHeadingCommand('foreColor', event.target.value)} className="h-7 w-8 cursor-pointer rounded border p-0" />
+            <label className="inline-flex items-center rounded-md px-2 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-white" title="Text color">
+              <input type="color" onChange={(event) => applyInlineCommand('foreColor', event.target.value)} className="h-7 w-7 cursor-pointer rounded border p-0" />
             </label>
           </div>
         )}
@@ -2735,13 +2760,12 @@ function SectionPreviewToolbar({
         )}
 
         {supportsHeading && (
-          <label className="flex items-center gap-2 rounded-lg border bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700">
+          <label className="flex items-center gap-2 rounded-lg border bg-gray-50 px-2 py-1.5 text-sm font-semibold text-gray-700" title="Heading tag">
             <FiType className="text-gray-500" />
-            <span>Heading</span>
             <select
               value={section?.headingTag || (section?.type === 'hero' ? 'h1' : 'h2')}
               onChange={(event) => onUpdate('headingTag', event.target.value)}
-              className="rounded-md border bg-white px-2 py-1 text-sm font-semibold text-gray-700"
+              className="rounded-md border bg-white px-2 py-1 text-xs font-semibold text-gray-700"
             >
               <option value="h1">H1</option>
               <option value="h2">H2</option>
@@ -2755,16 +2779,13 @@ function SectionPreviewToolbar({
 
         {hasPrimaryButton && (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-gray-50 px-2 py-2">
-            <label className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">
-              Text
+            <label className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs font-semibold text-gray-700" title="Button text color">
               <input type="color" value={section?.buttonTextColor || '#ffffff'} onChange={(event) => onUpdate('buttonTextColor', event.target.value)} className="h-8 w-9 rounded border p-1" />
             </label>
-            <label className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">
-              Button
+            <label className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs font-semibold text-gray-700" title="Button color">
               <input type="color" value={section?.buttonBackgroundColor || '#2563eb'} onChange={(event) => onUpdate('buttonBackgroundColor', event.target.value)} className="h-8 w-9 rounded border p-1" />
             </label>
-            <label className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">
-              Shadow
+            <label className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs font-semibold text-gray-700" title="Button shadow">
               <select
                 value={buttonShadowPresets.some((preset) => preset.value === buttonShadowValue) ? buttonShadowValue : '__custom__'}
                 onChange={(event) => {
@@ -2772,40 +2793,38 @@ function SectionPreviewToolbar({
                   setButtonShadowValue(nextValue)
                   onUpdate('buttonBoxShadow', nextValue)
                 }}
-                className="rounded-md border bg-white px-2 py-1 text-xs text-gray-700"
+                className="rounded-md border bg-white px-2 py-1 text-[11px] text-gray-700"
               >
                 {buttonShadowPresets.map((preset) => <option key={preset.label} value={preset.value}>{preset.label}</option>)}
                 <option value="__custom__">Custom</option>
               </select>
             </label>
-            <label className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">
-              Effect
-              <select value={section?.buttonHoverEffect || 'lift'} onChange={(event) => onUpdate('buttonHoverEffect', event.target.value)} className="rounded-md border bg-white px-2 py-1 text-xs text-gray-700">
+            <label className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs font-semibold text-gray-700" title="Button effect">
+              <select value={section?.buttonHoverEffect || 'lift'} onChange={(event) => onUpdate('buttonHoverEffect', event.target.value)} className="rounded-md border bg-white px-2 py-1 text-[11px] text-gray-700">
                 <option value="none">None</option>
                 <option value="lift">Lift</option>
                 <option value="grow">Grow</option>
                 <option value="glow">Glow</option>
               </select>
             </label>
-            <label className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">
-              Text shadow
-              <select value={section?.buttonTextShadow || ''} onChange={(event) => onUpdate('buttonTextShadow', event.target.value)} className="rounded-md border bg-white px-2 py-1 text-xs text-gray-700">
+            <label className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs font-semibold text-gray-700" title="Button text shadow">
+              <select value={section?.buttonTextShadow || ''} onChange={(event) => onUpdate('buttonTextShadow', event.target.value)} className="rounded-md border bg-white px-2 py-1 text-[11px] text-gray-700">
                 <option value="">None</option>
                 <option value="0 1px 2px rgba(15, 23, 42, 0.2)">Soft</option>
                 <option value="0 2px 8px rgba(15, 23, 42, 0.3)">Glow</option>
               </select>
             </label>
-            <label className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">
-              Radius
-              <input type="range" min="0" max="40" value={Number(section?.buttonBorderRadius || 8)} onChange={(event) => onUpdate('buttonBorderRadius', event.target.value)} className="w-20 accent-blue-600" />
+            <label className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs font-semibold text-gray-700" title="Button radius">
+              <FiSquare className="h-3.5 w-3.5" />
+              <input type="range" min="0" max="40" value={Number(section?.buttonBorderRadius || 8)} onChange={(event) => onUpdate('buttonBorderRadius', event.target.value)} className="w-16 accent-blue-600" />
             </label>
-            <label className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">
-              Pad X
-              <input type="range" min="8" max="40" value={Number(section?.buttonPaddingX || 24)} onChange={(event) => onUpdate('buttonPaddingX', event.target.value)} className="w-20 accent-blue-600" />
+            <label className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs font-semibold text-gray-700" title="Horizontal padding">
+              <FiArrowLeft className="h-3.5 w-3.5" />
+              <input type="range" min="8" max="40" value={Number(section?.buttonPaddingX || 24)} onChange={(event) => onUpdate('buttonPaddingX', event.target.value)} className="w-16 accent-blue-600" />
             </label>
-            <label className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">
-              Pad Y
-              <input type="range" min="6" max="28" value={Number(section?.buttonPaddingY || 12)} onChange={(event) => onUpdate('buttonPaddingY', event.target.value)} className="w-20 accent-blue-600" />
+            <label className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs font-semibold text-gray-700" title="Vertical padding">
+              <FiArrowUp className="h-3.5 w-3.5" />
+              <input type="range" min="6" max="28" value={Number(section?.buttonPaddingY || 12)} onChange={(event) => onUpdate('buttonPaddingY', event.target.value)} className="w-16 accent-blue-600" />
             </label>
           </div>
         )}
@@ -2813,13 +2832,14 @@ function SectionPreviewToolbar({
         <button
           type="button"
           onClick={onSelectSectionSettings}
-          className="ml-auto inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          title="More controls"
+          aria-label="More controls"
+          className="ml-auto inline-flex items-center rounded-lg border px-2.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
         >
           <FiFileText />
-          <span>More controls</span>
         </button>
       </div>
-      {linkOpen && supportsInlineHeadingEdit && (
+      {linkOpen && supportsInlineEditing && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border bg-blue-50 p-3">
           <input
             value={linkValue}
@@ -2827,8 +2847,8 @@ function SectionPreviewToolbar({
             placeholder="https://example.com or /contact"
             className="min-w-[16rem] flex-1 rounded-md border bg-white px-3 py-2 text-sm text-gray-700"
           />
-          <button type="button" onClick={applyHeadingLink} className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white">Apply Link</button>
-          <button type="button" onClick={() => { setLinkValue(''); applyHeadingLink() }} className="rounded-md border px-3 py-2 text-sm font-semibold text-gray-700">Remove</button>
+          <button type="button" onClick={applyInlineLink} className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white">Apply</button>
+          <button type="button" onClick={() => { setLinkValue(''); applyInlineLink() }} className="rounded-md border px-3 py-2 text-sm font-semibold text-gray-700">Remove</button>
           <button type="button" onClick={() => setLinkOpen(false)} className="rounded-md border px-3 py-2 text-sm font-semibold text-gray-700">Close</button>
         </div>
       )}
@@ -2944,6 +2964,9 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                     onTitleContentChange={(html: string, text: string) => {
                       updateSelectedSection?.('titleHtml', html)
                       updateSelectedSection?.('title', text)
+                    }}
+                    onBodyContentChange={(html: string) => {
+                      updateSelectedSection?.('body', html)
                     }}
                   />
                 )}
