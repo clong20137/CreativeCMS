@@ -1067,25 +1067,21 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
       const marker = window.L.marker([pin.lat, pin.lng], {
         icon: window.L.divIcon({
           className: 'creativecms-leaflet-pin-wrap',
-          html: `<span class="creativecms-leaflet-pin" style="color:${escapeHtmlForAttribute(pin.pinColor || '#2563eb')}">●</span>`,
-          iconSize: [20, 20],
-          iconAnchor: [10, 20],
-          tooltipAnchor: [0, -18]
+          html: `<span class="creativecms-leaflet-pin" style="--map-pin-color:${escapeHtmlForAttribute(pin.pinColor || '#2563eb')}"><span class="creativecms-leaflet-pin-dot"></span></span>`,
+          iconSize: [28, 36],
+          iconAnchor: [14, 34],
+          tooltipAnchor: [0, -26]
         })
       }).addTo(markerLayer)
-      marker.bindTooltip(pin.label || 'Location', {
+      marker.bindTooltip(
+        `<span class="creativecms-map-pill-inner" style="background:${escapeHtmlForAttribute(pin.pillBackgroundColor || '#ffffff')};color:${escapeHtmlForAttribute(pin.pillTextColor || '#111827')};border-color:${escapeHtmlForAttribute(pin.pinColor || '#2563eb')}">${escapeHtmlForAttribute(pin.label || 'Location')}</span>`,
+        {
         permanent: true,
         direction: 'top',
         offset: [0, -10],
         className: 'creativecms-map-pill',
         opacity: 1
       })
-      const tooltipElement = marker.getTooltip()?.getElement?.()
-      if (tooltipElement) {
-        tooltipElement.style.setProperty('--map-pill-bg', String(pin.pillBackgroundColor || '#ffffff'))
-        tooltipElement.style.setProperty('--map-pill-text', String(pin.pillTextColor || '#111827'))
-        tooltipElement.style.setProperty('--map-pill-border', String(pin.pinColor || '#2563eb'))
-      }
     })
 
     if (points.length > 1) {

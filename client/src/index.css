@@ -1501,14 +1501,13 @@ html.dark-mode .login-page {
 }
 
 .creativecms-map-pill .leaflet-tooltip-content {
-  border-radius: 9999px;
-  background: var(--map-pill-bg, rgba(255, 255, 255, 0.96));
-  color: var(--map-pill-text, #111827);
-  padding: 0.35rem 0.8rem;
+  padding: 0;
   font-size: 0.75rem;
   font-weight: 700;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
-  border: 1px solid color-mix(in srgb, var(--map-pill-border, #2563eb) 28%, white);
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  border: 0;
 }
 
 .creativecms-leaflet-pin-wrap {
@@ -1517,12 +1516,34 @@ html.dark-mode .login-page {
 }
 
 .creativecms-leaflet-pin {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  line-height: 1;
-  text-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px 9999px 9999px 0;
+  background: var(--map-pin-color, #2563eb);
+  transform: rotate(-45deg);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+}
+
+.creativecms-leaflet-pin-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.96);
+  transform: rotate(45deg);
+}
+
+.creativecms-map-pill-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.35rem 0.8rem;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+  border: 1px solid transparent;
 }
 
 .rich-text-content ul,
