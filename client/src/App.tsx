@@ -17,6 +17,8 @@ const RealEstatePluginDemo = lazy(() => import('./pages/RealEstatePluginDemo'))
 const RealEstateListingDetail = lazy(() => import('./pages/RealEstateListingDetail'))
 const BookingPluginDemo = lazy(() => import('./pages/BookingPluginDemo'))
 const EventsPluginDemo = lazy(() => import('./pages/EventsPluginDemo'))
+const BlogPluginDemo = lazy(() => import('./pages/BlogPluginDemo'))
+const BlogArticleDetail = lazy(() => import('./pages/BlogArticleDetail'))
 const ProtectedContentPluginDemo = lazy(() => import('./pages/ProtectedContentPluginDemo'))
 const CRMPluginDemo = lazy(() => import('./pages/CRMPluginDemo'))
 const RestaurantSiteDemo = lazy(() => import('./pages/RestaurantSiteDemo'))
@@ -87,6 +89,8 @@ function AppRoutes() {
             <Route path="/plugins/real-estate/:id" element={<RealEstateListingDetail />} />
             <Route path="/plugins/booking" element={<BookingPluginDemo />} />
             <Route path="/plugins/events" element={<EventsPluginDemo />} />
+            <Route path="/plugins/blog" element={<BlogPluginDemo />} />
+            <Route path="/plugins/blog/:slug" element={<BlogArticleDetail />} />
             <Route path="/plugins/protected-content" element={<ProtectedContentPluginDemo />} />
             <Route path="/plugins/crm" element={<CRMPluginDemo />} />
             <Route path="/site-demos/restaurant" element={<RestaurantSiteDemo />} />

@@ -58,6 +58,7 @@ const pluginOptions = [
   { value: 'real-estate', label: 'Real Estate Listings' },
   { value: 'booking', label: 'Booking Appointments' },
   { value: 'events', label: 'Events' },
+  { value: 'blog', label: 'Blog & Articles' },
   { value: 'protected-content', label: 'Protected Content' },
   { value: 'crm', label: 'CRM Quote System' }
 ]

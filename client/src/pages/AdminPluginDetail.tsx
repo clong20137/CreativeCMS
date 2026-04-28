@@ -46,6 +46,20 @@ const emptyEventItem = {
   sortOrder: '0'
 }
 
+const emptyBlogPost = {
+  title: '',
+  slug: '',
+  excerpt: '',
+  content: '',
+  category: '',
+  author: '',
+  featuredImage: '',
+  buttonLabel: 'Read Article',
+  isPublished: true,
+  publishedAt: '',
+  sortOrder: '0'
+}
+
 const emptyProtectedContentItem = {
   title: '',
   description: '',
@@ -114,22 +128,26 @@ export default function AdminPluginDetail() {
   const [bookingSlots, setBookingSlots] = useState<any[]>([])
   const [appointments, setAppointments] = useState<any[]>([])
   const [eventItems, setEventItems] = useState<any[]>([])
+  const [blogPosts, setBlogPosts] = useState<any[]>([])
   const [protectedContentItems, setProtectedContentItems] = useState<any[]>([])
   const [crmLeads, setCrmLeads] = useState<any[]>([])
   const [menuForm, setMenuForm] = useState(emptyMenuItem)
   const [listingForm, setListingForm] = useState(emptyListing)
   const [bookingForm, setBookingForm] = useState(emptyBookingSlot)
   const [eventForm, setEventForm] = useState(emptyEventItem)
+  const [blogForm, setBlogForm] = useState(emptyBlogPost)
   const [protectedContentForm, setProtectedContentForm] = useState(emptyProtectedContentItem)
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null)
   const [editingListingId, setEditingListingId] = useState<string | null>(null)
   const [editingSlotId, setEditingSlotId] = useState<string | null>(null)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
+  const [editingBlogPostId, setEditingBlogPostId] = useState<string | null>(null)
   const [editingProtectedContentId, setEditingProtectedContentId] = useState<string | null>(null)
   const [showMenuForm, setShowMenuForm] = useState(false)
   const [showListingForm, setShowListingForm] = useState(false)
   const [showBookingForm, setShowBookingForm] = useState(false)
   const [showEventForm, setShowEventForm] = useState(false)
+  const [showBlogForm, setShowBlogForm] = useState(false)
   const [showProtectedContentForm, setShowProtectedContentForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [imageUploading, setImageUploading] = useState(false)
@@ -166,6 +184,9 @@ export default function AdminPluginDetail() {
       }
       if (foundPlugin.slug === 'events') {
         setEventItems(await adminAPI.getEventItems())
+      }
+      if (foundPlugin.slug === 'blog-articles') {
+        setBlogPosts(await adminAPI.getBlogPosts())
       }
       if (foundPlugin.slug === 'protected-content') {
         setProtectedContentItems(await adminAPI.getProtectedContentAdminItems())
@@ -451,6 +472,58 @@ export default function AdminPluginDetail() {
     setProtectedContentForm(emptyProtectedContentItem)
     setEditingProtectedContentId(null)
     setShowProtectedContentForm(false)
+  }
+
+  const resetBlogForm = () => {
+    setBlogForm(emptyBlogPost)
+    setEditingBlogPostId(null)
+    setShowBlogForm(false)
+  }
+
+  const saveBlogPost = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const payload = {
+        ...blogForm,
+        sortOrder: Number(blogForm.sortOrder || 0)
+      }
+      if (editingBlogPostId) {
+        await adminAPI.updateBlogPost(editingBlogPostId, payload)
+        setMessage('Article updated')
+      } else {
+        await adminAPI.createBlogPost(payload)
+        setMessage('Article created')
+      }
+      resetBlogForm()
+      setBlogPosts(await adminAPI.getBlogPosts())
+    } catch (err: any) {
+      setError(err.error || 'Failed to save article')
+    }
+  }
+
+  const editBlogPost = (post: any) => {
+    setEditingBlogPostId(String(post.id))
+    setBlogForm({
+      title: post.title || '',
+      slug: post.slug || '',
+      excerpt: post.excerpt || '',
+      content: post.content || '',
+      category: post.category || '',
+      author: post.author || '',
+      featuredImage: post.featuredImage || '',
+      buttonLabel: post.buttonLabel || 'Read Article',
+      isPublished: post.isPublished !== false,
+      publishedAt: post.publishedAt ? String(post.publishedAt).slice(0, 10) : '',
+      sortOrder: String(post.sortOrder || 0)
+    })
+    setShowBlogForm(true)
+  }
+
+  const deleteBlogPost = async (id: string) => {
+    if (!confirm('Delete this article?')) return
+    await adminAPI.deleteBlogPost(id)
+    setMessage('Article deleted')
+    setBlogPosts(await adminAPI.getBlogPosts())
   }
 
   const saveProtectedContentItem = async (e: React.FormEvent) => {
@@ -824,6 +897,81 @@ export default function AdminPluginDetail() {
                   </div>
                 ))}
                 {eventItems.length === 0 && <div className="card p-8 text-center text-gray-600 xl:col-span-3">No events yet.</div>}
+              </div>
+            </>
+          )}
+
+          {plugin.slug === 'blog-articles' && (
+            <>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Blog Articles</h2>
+                  <p className="text-gray-600">Publish articles with excerpts, categories, feature images, and detail pages.</p>
+                </div>
+                <button onClick={() => { setShowBlogForm(!showBlogForm); setEditingBlogPostId(null) }} className="inline-flex items-center gap-2 btn-primary">
+                  {showBlogForm ? <FiX /> : <FiPlus />}
+                  {showBlogForm ? 'Close Form' : 'Add Article'}
+                </button>
+              </div>
+
+              {showBlogForm && (
+                <form onSubmit={saveBlogPost} className="card space-y-4 p-6">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <input type="text" placeholder="Article title" value={blogForm.title} onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" required />
+                    <input type="text" placeholder="Article slug" value={blogForm.slug} onChange={(e) => setBlogForm({ ...blogForm, slug: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <input type="text" placeholder="Category" value={blogForm.category} onChange={(e) => setBlogForm({ ...blogForm, category: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <input type="text" placeholder="Author" value={blogForm.author} onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <input type="text" placeholder="Button label" value={blogForm.buttonLabel} onChange={(e) => setBlogForm({ ...blogForm, buttonLabel: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <input type="date" value={blogForm.publishedAt} onChange={(e) => setBlogForm({ ...blogForm, publishedAt: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <input type="number" placeholder="Sort order" value={blogForm.sortOrder} onChange={(e) => setBlogForm({ ...blogForm, sortOrder: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                  </div>
+                  <textarea placeholder="Excerpt" value={blogForm.excerpt} onChange={(e) => setBlogForm({ ...blogForm, excerpt: e.target.value })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" rows={3} />
+                  <textarea placeholder="Article content" value={blogForm.content} onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" rows={8} />
+                  <div className="grid grid-cols-1 gap-4 items-start lg:grid-cols-[1fr_auto]">
+                    <input type="text" placeholder="Featured image URL" value={blogForm.featuredImage} onChange={(e) => setBlogForm({ ...blogForm, featuredImage: e.target.value })} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                    <button type="button" onClick={() => openMediaPicker(setBlogForm, 'featuredImage')} className="inline-flex items-center justify-center gap-2 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50">
+                      <FiImage /> Choose Media
+                    </button>
+                    <label className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-700">
+                      <FiImage /> {imageUploading ? 'Uploading...' : 'Upload Image'}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadImage(e.target.files?.[0], setBlogForm, 'featuredImage')} />
+                    </label>
+                  </div>
+                  {blogForm.featuredImage && <img src={resolveAssetUrl(blogForm.featuredImage)} alt={blogForm.title || 'Article'} className="h-32 w-48 rounded-lg object-cover border" />}
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" checked={blogForm.isPublished} onChange={(e) => setBlogForm({ ...blogForm, isPublished: e.target.checked })} />
+                    Publish this article
+                  </label>
+                  <button type="submit" className="btn-primary">{editingBlogPostId ? 'Save Article' : 'Create Article'}</button>
+                </form>
+              )}
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {blogPosts.map((post) => (
+                  <div key={post.id} className="card overflow-hidden">
+                    {post.featuredImage ? <img src={resolveAssetUrl(post.featuredImage)} alt={post.title} className="h-48 w-full object-cover" /> : <div className="h-48 bg-gray-100 flex items-center justify-center text-gray-500">No image</div>}
+                    <div className="p-6">
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        {post.category && <span className="rounded bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">{post.category}</span>}
+                        <span className={`rounded px-2 py-1 text-xs font-semibold ${post.isPublished ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
+                          {post.isPublished ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900">{post.title}</h3>
+                      {(post.author || post.publishedAt) && (
+                        <p className="mt-2 text-sm text-gray-500">
+                          {post.author ? `By ${post.author}` : ''}{post.author && post.publishedAt ? ' | ' : ''}{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : ''}
+                        </p>
+                      )}
+                      <p className="my-4 text-gray-600">{post.excerpt || 'No excerpt yet.'}</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => editBlogPost(post)} className="inline-flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"><FiEdit /> Edit</button>
+                        <button onClick={() => deleteBlogPost(String(post.id))} className="inline-flex items-center gap-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"><FiTrash2 /> Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {blogPosts.length === 0 && <div className="card p-8 text-center text-gray-600 xl:col-span-3">No articles yet.</div>}
               </div>
             </>
           )}

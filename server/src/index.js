@@ -29,6 +29,7 @@ import ProtectedContentPurchase from './models/ProtectedContentPurchase.js'
 import SiteDemo from './models/SiteDemo.js'
 import MediaAsset from './models/MediaAsset.js'
 import CRMLead from './models/CRMLead.js'
+import BlogArticle from './models/BlogArticle.js'
 import AuditLog from './models/AuditLog.js'
 import { getOrCreateSiteSettings } from './routes/site-settings.js'
 

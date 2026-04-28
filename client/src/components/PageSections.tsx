@@ -12,6 +12,7 @@ const pluginLabels: Record<string, string> = {
   'real-estate': 'Real Estate Listings',
   booking: 'Booking Appointments',
   events: 'Events',
+  blog: 'Blog & Articles',
   'protected-content': 'Protected Content',
   crm: 'CRM Quote System',
   plugins: 'Website Plugins'
@@ -1183,6 +1184,8 @@ function EmbeddedPluginSection({ section }: { section: any }) {
           setData(await pluginsAPI.getBookingSlots())
         } else if (section.pluginSlug === 'events') {
           setData(await pluginsAPI.getEvents())
+        } else if (section.pluginSlug === 'blog') {
+          setData(await pluginsAPI.getBlogPosts())
         } else if (section.pluginSlug === 'protected-content') {
           setData(await pluginsAPI.getProtectedContentItems())
         } else if (section.pluginSlug === 'crm') {
@@ -1689,6 +1692,40 @@ function PluginContent({ pluginSlug, data, section = {} }: { pluginSlug: string;
               <h3 className="mt-1 font-bold text-gray-900">{event.title}</h3>
               {event.description && <p className="mt-2 text-sm text-gray-600">{event.description}</p>}
               {event.buttonLabel && event.buttonUrl && <a href={event.buttonUrl} className="mt-4 inline-flex font-semibold text-blue-600 hover:text-blue-800">{event.buttonLabel}</a>}
+            </div>
+          </article>
+        ))}
+      </div>
+    )
+  }
+
+  if (pluginSlug === 'blog') {
+    const posts = data.posts || []
+    if (posts.length === 0) return <div className="text-gray-600">No blog articles have been added yet.</div>
+
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {posts.slice(0, Number(section.itemLimit || 4)).map((post: any) => (
+          <article key={post.id} className="overflow-hidden rounded-lg bg-white shadow">
+            {post.featuredImage && (
+              <img
+                src={resolveAssetUrl(post.featuredImage)}
+                alt={post.title}
+                loading="lazy"
+                decoding="async"
+                className="h-48 w-full object-cover"
+              />
+            )}
+            <div className="p-4">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-blue-600">
+                {post.category && <span>{post.category}</span>}
+                {post.publishedAt && <span>{formatDate(post.publishedAt)}</span>}
+              </div>
+              <h3 className="mt-2 text-xl font-bold text-gray-900">{post.title}</h3>
+              {post.excerpt && <p className="mt-2 text-sm text-gray-600">{post.excerpt}</p>}
+              <Link to={`/plugins/blog/${post.slug}`} className="mt-4 inline-flex font-semibold text-blue-600 hover:text-blue-800">
+                {post.buttonLabel || 'Read Article'}
+              </Link>
             </div>
           </article>
         ))}

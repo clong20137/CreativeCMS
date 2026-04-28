@@ -223,6 +223,24 @@ CREATE TABLE IF NOT EXISTS EventItems (
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Blog Articles Plugin Table
+CREATE TABLE IF NOT EXISTS BlogArticles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  excerpt LONGTEXT,
+  content LONGTEXT,
+  category VARCHAR(120),
+  author VARCHAR(120),
+  featuredImage LONGTEXT,
+  buttonLabel VARCHAR(255) DEFAULT 'Read Article',
+  isPublished BOOLEAN DEFAULT true,
+  publishedAt DATE,
+  sortOrder INT DEFAULT 0,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- CMS Licenses Table
 CREATE TABLE IF NOT EXISTS CMSLicenses (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -539,6 +557,19 @@ VALUES (
   true,
   true,
   '/plugins/events'
+)
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
+
+INSERT INTO Plugins (slug, name, description, category, price, isEnabled, isPurchased, demoUrl)
+VALUES (
+  'blog-articles',
+  'Blog & Articles',
+  'Publish articles with categories, feature images, excerpts, and detail pages for SEO-friendly content marketing.',
+  'Content',
+  349.00,
+  true,
+  true,
+  '/plugins/blog'
 )
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);
 

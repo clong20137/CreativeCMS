@@ -12,6 +12,7 @@ import EventItem from '../models/EventItem.js'
 import ProtectedContentItem from '../models/ProtectedContentItem.js'
 import ProtectedContentPurchase from '../models/ProtectedContentPurchase.js'
 import CRMLead from '../models/CRMLead.js'
+import BlogArticle from '../models/BlogArticle.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
 import User from '../models/User.js'
 import { createRateLimiter } from '../utils/rate-limit.js'
@@ -348,6 +349,71 @@ export async function getOrCreateCrmPlugin() {
   return plugin
 }
 
+function makeArticleSlug(value = '') {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+export async function getOrCreateBlogPlugin() {
+  const [plugin] = await Plugin.findOrCreate({
+    where: { slug: 'blog-articles' },
+    defaults: {
+      slug: 'blog-articles',
+      name: 'Blog & Articles',
+      description: 'Publish articles with categories, feature images, excerpts, and detail pages for SEO-friendly content marketing.',
+      category: 'Content',
+      price: 349,
+      isEnabled: true,
+      isPurchased: true,
+      demoUrl: '/plugins/blog'
+    }
+  })
+
+  const articleCount = await BlogArticle.count()
+  if (articleCount === 0) {
+    await BlogArticle.bulkCreate([
+      {
+        title: 'How to Plan a Homepage That Actually Converts',
+        slug: 'how-to-plan-a-homepage-that-actually-converts',
+        excerpt: 'A simple framework for structuring the first screen, proof sections, and calls to action so visitors know what to do next.',
+        content: `A homepage should answer three questions quickly: what you do, who you help, and what someone should do next.\n\nStart with a clear opening statement, add one strong supporting line, and make the first call to action obvious. After that, use proof sections like services, featured work, reviews, or case studies to reduce uncertainty.\n\nThe goal is not to say everything at once. The goal is to make the next step feel easy.`,
+        category: 'Marketing',
+        author: 'Creative CMS',
+        featuredImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+        publishedAt: new Date().toISOString().slice(0, 10),
+        sortOrder: 1
+      },
+      {
+        title: 'Five Website Updates Small Businesses Should Make This Quarter',
+        slug: 'five-website-updates-small-businesses-should-make-this-quarter',
+        excerpt: 'A practical short list of updates that improve clarity, trust, and lead flow without rebuilding the whole site.',
+        content: `If your site feels stale, you probably do not need a complete redesign to improve it.\n\nStart with your homepage message, make sure your services are current, refresh old project images, tighten your contact flow, and review your mobile layout. Those small changes can create a much better first impression.\n\nA good website is less about endless features and more about keeping the important details current.`,
+        category: 'Small Business',
+        author: 'Creative CMS',
+        featuredImage: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80',
+        publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString().slice(0, 10),
+        sortOrder: 2
+      },
+      {
+        title: 'Choosing Between Landing Pages and Full Service Pages',
+        slug: 'choosing-between-landing-pages-and-full-service-pages',
+        excerpt: 'When to use a focused campaign page, when to build a deep evergreen page, and how both can work together.',
+        content: `Landing pages are best when you have one clear traffic source and one clear action. Full service pages are better when you want long-term search visibility and space to explain your process.\n\nIn most cases, both are useful. Use service pages for evergreen organic traffic and use landing pages for campaigns, seasonal offers, or niche messaging.\n\nThe important part is keeping the message aligned with the visitor intent.`,
+        category: 'SEO',
+        author: 'Creative CMS',
+        featuredImage: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80',
+        publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString().slice(0, 10),
+        sortOrder: 3
+      }
+    ])
+  }
+
+  return plugin
+}
+
 export async function ensureDemoPlugins() {
   await Promise.all([
     getOrCreateRestaurantPlugin(),
@@ -355,7 +421,8 @@ export async function ensureDemoPlugins() {
     getOrCreateBookingPlugin(),
     getOrCreateEventsPlugin(),
     getOrCreateProtectedContentPlugin(),
-    getOrCreateCrmPlugin()
+    getOrCreateCrmPlugin(),
+    getOrCreateBlogPlugin()
   ])
 }
 
@@ -666,6 +733,33 @@ router.get('/crm', async (req, res) => {
     const plugin = await getOrCreateCrmPlugin()
     if (!plugin.isEnabled) return res.status(404).json({ error: 'CRM plugin is not active' })
     res.json({ plugin })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/blog/posts', async (req, res) => {
+  try {
+    const plugin = await getOrCreateBlogPlugin()
+    const posts = await BlogArticle.findAll({
+      where: { isPublished: true },
+      order: [['sortOrder', 'ASC'], ['publishedAt', 'DESC'], ['createdAt', 'DESC']]
+    })
+    res.json({ plugin, posts })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.get('/blog/posts/:slug', async (req, res) => {
+  try {
+    const plugin = await getOrCreateBlogPlugin()
+    const slug = makeArticleSlug(req.params.slug)
+    const post = await BlogArticle.findOne({
+      where: { slug, isPublished: true }
+    })
+    if (!post) return res.status(404).json({ error: 'Article not found' })
+    res.json({ plugin, post })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

@@ -26,9 +26,10 @@ import CustomPage from '../models/CustomPage.js'
 import SiteDemo from '../models/SiteDemo.js'
 import MediaAsset from '../models/MediaAsset.js'
 import CRMLead from '../models/CRMLead.js'
+import BlogArticle from '../models/BlogArticle.js'
 import AuditLog from '../models/AuditLog.js'
 import { getOrCreateSiteSettings } from './site-settings.js'
-import { ensureDemoPlugins, getOrCreateBookingPlugin, getOrCreateCrmPlugin, getOrCreateEventsPlugin, getOrCreateProtectedContentPlugin, getOrCreateRestaurantPlugin, getOrCreateRealEstatePlugin } from './plugins.js'
+import { ensureDemoPlugins, getOrCreateBlogPlugin, getOrCreateBookingPlugin, getOrCreateCrmPlugin, getOrCreateEventsPlugin, getOrCreateProtectedContentPlugin, getOrCreateRestaurantPlugin, getOrCreateRealEstatePlugin } from './plugins.js'
 import { ensureSiteDemos } from './site-demos.js'
 import crypto from 'crypto'
 import { base32Encode, verifyTotp } from './auth.js'
@@ -879,7 +880,8 @@ function backupSummaryFromData(data = {}) {
     realEstateListings: Array.isArray(data.realEstateListings) ? data.realEstateListings.length : 0,
     bookingAvailabilitySlots: Array.isArray(data.bookingAvailabilitySlots) ? data.bookingAvailabilitySlots.length : 0,
     eventItems: Array.isArray(data.eventItems) ? data.eventItems.length : 0,
-    protectedContentItems: Array.isArray(data.protectedContentItems) ? data.protectedContentItems.length : 0
+    protectedContentItems: Array.isArray(data.protectedContentItems) ? data.protectedContentItems.length : 0,
+    blogArticles: Array.isArray(data.blogArticles) ? data.blogArticles.length : 0
   }
 }
 
@@ -904,6 +906,7 @@ async function buildCmsBackupPayload({ includeFiles = false } = {}) {
     bookingAvailabilitySlots,
     eventItems,
     protectedContentItems,
+    blogArticles,
     mediaAssets
   ] = await Promise.all([
     getOrCreateSiteSettings(),
@@ -917,6 +920,7 @@ async function buildCmsBackupPayload({ includeFiles = false } = {}) {
     BookingAvailabilitySlot.findAll({ order: [['createdAt', 'ASC'], ['id', 'ASC']] }),
     EventItem.findAll({ order: [['createdAt', 'ASC'], ['id', 'ASC']] }),
     ProtectedContentItem.findAll({ order: [['createdAt', 'ASC'], ['id', 'ASC']] }),
+    BlogArticle.findAll({ order: [['sortOrder', 'ASC'], ['publishedAt', 'DESC'], ['createdAt', 'DESC']] }),
     serializeMediaAssets(includeFiles)
   ])
 
@@ -936,7 +940,8 @@ async function buildCmsBackupPayload({ includeFiles = false } = {}) {
     realEstateListings: realEstateListings.map((item) => stripModelMetadata(item)),
     bookingAvailabilitySlots: bookingAvailabilitySlots.map((item) => stripModelMetadata(item)),
     eventItems: eventItems.map((item) => stripModelMetadata(item)),
-    protectedContentItems: protectedContentItems.map((item) => stripModelMetadata(item))
+    protectedContentItems: protectedContentItems.map((item) => stripModelMetadata(item)),
+    blogArticles: blogArticles.map((item) => stripModelMetadata(item))
   }
 
   return {
@@ -1066,6 +1071,7 @@ async function restoreCmsBackupPayload(payload) {
   await replaceTableRecords(RestaurantMenuItem, Array.isArray(data.restaurantMenuItems) ? data.restaurantMenuItems : [])
   await replaceTableRecords(RealEstateListing, Array.isArray(data.realEstateListings) ? data.realEstateListings : [])
   await replaceTableRecords(EventItem, Array.isArray(data.eventItems) ? data.eventItems : [])
+  await replaceTableRecords(BlogArticle, Array.isArray(data.blogArticles) ? data.blogArticles : [])
   await replaceTableRecords(SiteDemo, Array.isArray(data.siteDemos) ? data.siteDemos : [])
 
   const preparedMediaAssets = await prepareImportedMediaAssets(data.mediaAssets)
@@ -1680,6 +1686,99 @@ router.delete('/plugins/events/items/:id', async (req, res) => {
 
     await event.destroy()
     res.json({ message: 'Event deleted' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+function makeArticleSlug(value = '') {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+router.get('/plugins/blog/posts', async (req, res) => {
+  try {
+    await getOrCreateBlogPlugin()
+    const posts = await BlogArticle.findAll({
+      order: [['sortOrder', 'ASC'], ['publishedAt', 'DESC'], ['createdAt', 'DESC']]
+    })
+    res.json(posts)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/plugins/blog/posts', async (req, res) => {
+  try {
+    await getOrCreateBlogPlugin()
+    const title = cleanString(req.body.title, 180)
+    if (!title) return res.status(400).json({ error: 'Title is required' })
+    const slug = makeArticleSlug(req.body.slug || title)
+    if (!slug) return res.status(400).json({ error: 'Slug is required' })
+
+    const post = await BlogArticle.create({
+      title,
+      slug,
+      excerpt: req.body.excerpt || '',
+      content: req.body.content || '',
+      category: cleanString(req.body.category, 120),
+      author: cleanString(req.body.author, 120),
+      featuredImage: req.body.featuredImage || '',
+      buttonLabel: cleanString(req.body.buttonLabel, 80) || 'Read Article',
+      isPublished: req.body.isPublished !== false,
+      publishedAt: req.body.publishedAt || null,
+      sortOrder: Number(req.body.sortOrder || 0)
+    })
+    res.status(201).json(post)
+  } catch (error) {
+    if (String(error?.message || '').includes('slug')) {
+      return res.status(400).json({ error: 'That article slug is already in use' })
+    }
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/plugins/blog/posts/:id', async (req, res) => {
+  try {
+    await getOrCreateBlogPlugin()
+    const post = await BlogArticle.findByPk(req.params.id)
+    if (!post) return res.status(404).json({ error: 'Article not found' })
+    const title = cleanString(req.body.title, 180)
+    if (!title) return res.status(400).json({ error: 'Title is required' })
+    const slug = makeArticleSlug(req.body.slug || title)
+    if (!slug) return res.status(400).json({ error: 'Slug is required' })
+
+    await post.update({
+      title,
+      slug,
+      excerpt: req.body.excerpt || '',
+      content: req.body.content || '',
+      category: cleanString(req.body.category, 120),
+      author: cleanString(req.body.author, 120),
+      featuredImage: req.body.featuredImage || '',
+      buttonLabel: cleanString(req.body.buttonLabel, 80) || 'Read Article',
+      isPublished: req.body.isPublished !== false,
+      publishedAt: req.body.publishedAt || null,
+      sortOrder: Number(req.body.sortOrder || 0)
+    })
+    res.json(post)
+  } catch (error) {
+    if (String(error?.message || '').includes('slug')) {
+      return res.status(400).json({ error: 'That article slug is already in use' })
+    }
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.delete('/plugins/blog/posts/:id', async (req, res) => {
+  try {
+    const post = await BlogArticle.findByPk(req.params.id)
+    if (!post) return res.status(404).json({ error: 'Article not found' })
+    await post.destroy()
+    res.json({ message: 'Article deleted' })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
