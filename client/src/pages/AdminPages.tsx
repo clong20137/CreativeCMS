@@ -109,39 +109,6 @@ const sectionTypeOptions = [
   { value: 'cta', label: 'CTA', icon: FiLayout }
 ]
 
-const nestedBlockOptions = [
-  { value: 'header', label: 'Header', icon: FiType },
-  { value: 'paragraph', label: 'Paragraph', icon: FiFileText },
-  { value: 'button', label: 'Button', icon: FiSquare },
-  { value: 'image', label: 'Image', icon: FiImage },
-  { value: 'imageCard', label: 'Image Card', icon: FiGrid },
-  { value: 'hero', label: 'Hero', icon: FiLayout },
-  { value: 'banner', label: 'Banner', icon: FiLayout },
-  { value: 'cta', label: 'CTA', icon: FiLayout },
-  { value: 'imageOverlay', label: 'Image Overlay', icon: FiImage },
-  { value: 'map', label: 'Interactive Map', icon: FiMapPin },
-  { value: 'youtube', label: 'YouTube Video', icon: FiVideo },
-  { value: 'imageStrip', label: 'Image Strip', icon: FiImage },
-  { value: 'divider', label: 'Divider', icon: FiLayout },
-  { value: 'gallery', label: 'Gallery', icon: FiImage },
-  { value: 'plugin', label: 'Plugin', icon: FiGrid },
-  { value: 'section', label: 'Text + Image', icon: FiColumns },
-  { value: 'testimonials', label: 'Testimonials', icon: FiFileText },
-  { value: 'portfolio', label: 'Portfolio Items', icon: FiImage },
-  { value: 'services', label: 'Services', icon: FiGrid },
-  { value: 'whatWeDo', label: 'Image + Name Cards', icon: FiGrid },
-  { value: 'featuredWork', label: 'Featured Work', icon: FiImage },
-  { value: 'portfolioGallery', label: 'Portfolio Gallery', icon: FiImage },
-  { value: 'servicesList', label: 'Services List', icon: FiGrid },
-  { value: 'pricingPackages', label: 'Pricing Packages', icon: FiGrid },
-  { value: 'servicePricing', label: 'A La Carte Pricing', icon: FiGrid },
-  { value: 'faq', label: 'FAQ', icon: FiFileText },
-  { value: 'pluginsList', label: 'Plugins List', icon: FiGrid },
-  { value: 'siteDemos', label: 'Site Demos', icon: FiMonitor },
-  { value: 'contactForm', label: 'Contact Form', icon: FiFileText },
-  { value: 'customForm', label: 'Custom Form', icon: FiFileText }
-]
-
 const buttonIconOptions = [
   { value: '', label: 'No icon', icon: null },
   { value: 'phone', label: 'Phone', icon: FiPhone },
@@ -150,6 +117,11 @@ const buttonIconOptions = [
   { value: 'map', label: 'Map Pin', icon: FiMapPin },
   { value: 'video', label: 'Video', icon: FiVideo },
   { value: 'monitor', label: 'Monitor', icon: FiMonitor }
+]
+
+const gridBlockOptions = [
+  ...sectionTypeOptions,
+  { value: 'imageCard', label: 'Image Card', icon: FiGrid }
 ]
 
 const MAX_IMAGE_WIDTH = 1200
@@ -324,8 +296,9 @@ function makePageSection(type: string) {
     if (type === 'gallery') return [{ id: crypto.randomUUID(), title: '', description: '', image: '' }]
     if (type === 'imageCards') return [makeImageCard()]
     if (type === 'imageStrip') return [makeImageStripItem()]
-    if (type === 'columns') return makeColumns(2)
+    if (type === 'columns') return makeGridCells(2, 1)
     if (type === 'faq') return [{ id: crypto.randomUUID(), q: '', a: '' }]
+    if (type === 'button') return [makeButtonItem()]
     return []
   }
 
@@ -454,7 +427,8 @@ function makePageSection(type: string) {
     animationEasing: 'ease-out',
     animationTrigger: 'viewport',
     itemLimit: type === 'portfolio' ? 8 : 6,
-    columns: type === 'portfolio' ? 4 : type === 'columns' ? 2 : 3
+    columns: type === 'portfolio' ? 4 : type === 'columns' ? 2 : 3,
+    rows: type === 'columns' ? 1 : ''
   }
 }
 
@@ -477,6 +451,18 @@ function makeImageStripItem() {
     alt: '',
     url: '',
     title: ''
+  }
+}
+
+function makeButtonItem(overrides: Record<string, any> = {}) {
+  return {
+    id: crypto.randomUUID(),
+    buttonLabel: 'Learn More',
+    buttonUrl: '/contact',
+    buttonIcon: '',
+    buttonIconOnly: false,
+    buttonShowArrow: true,
+    ...overrides
   }
 }
 
@@ -542,11 +528,32 @@ function makeNestedBlock(type: string) {
   return base
 }
 
-function makeColumns(count: number, existing: any[] = []) {
-  return Array.from({ length: count }, (_, index) => ({
-    id: existing[index]?.id || crypto.randomUUID(),
-    sections: Array.isArray(existing[index]?.sections) ? existing[index].sections : []
-  }))
+function clampGridSize(value: any, fallback = 1) {
+  const numeric = Number(value || fallback)
+  if (!Number.isFinite(numeric)) return fallback
+  return Math.min(6, Math.max(1, Math.round(numeric)))
+}
+
+function makeGridCells(columnCount: number, rowCount: number, existing: any[] = []) {
+  const columns = clampGridSize(columnCount, 1)
+  const rows = clampGridSize(rowCount, 1)
+  const safeExisting = Array.isArray(existing) ? existing : []
+
+  return Array.from({ length: columns * rows }, (_, index) => {
+    const row = Math.floor(index / columns)
+    const column = index % columns
+    const matchedCell = safeExisting.find((item: any) => Number(item?.row) === row && Number(item?.column) === column) || safeExisting[index] || {}
+    return {
+      id: matchedCell.id || crypto.randomUUID(),
+      row,
+      column,
+      sections: Array.isArray(matchedCell.sections) ? matchedCell.sections : []
+    }
+  })
+}
+
+function getGridCells(section: any) {
+  return makeGridCells(Number(section?.columns || 2), Number(section?.rows || 1), Array.isArray(section?.items) ? section.items : [])
 }
 
 function getSectionTitle(section: any, index: number) {
@@ -3619,8 +3626,14 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
           <div className="space-y-3">
             {section.type !== 'button' && <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Heading" className="w-full px-4 py-2 border rounded-lg" />}
             {section.type !== 'button' && <DeferredRichTextEditorField label="Text" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Add text, links, and color..." minHeight={120} />}
-            <input value={section.buttonLabel || ''} onChange={(e) => updateSection(index, 'buttonLabel', e.target.value)} placeholder="Button label" className="w-full px-4 py-2 border rounded-lg" />
-            <input value={section.buttonUrl || ''} onChange={(e) => updateSection(index, 'buttonUrl', e.target.value)} placeholder="Button URL" className="w-full px-4 py-2 border rounded-lg" />
+            {section.type === 'button' ? (
+              <ButtonItemsEditor section={section} index={index} updateSection={updateSection} />
+            ) : (
+              <>
+                <input value={section.buttonLabel || ''} onChange={(e) => updateSection(index, 'buttonLabel', e.target.value)} placeholder="Button label" className="w-full px-4 py-2 border rounded-lg" />
+                <input value={section.buttonUrl || ''} onChange={(e) => updateSection(index, 'buttonUrl', e.target.value)} placeholder="Button URL" className="w-full px-4 py-2 border rounded-lg" />
+              </>
+            )}
             {section.type === 'hero' && <input value={section.secondaryButtonLabel || ''} onChange={(e) => updateSection(index, 'secondaryButtonLabel', e.target.value)} placeholder="Secondary button label" className="w-full px-4 py-2 border rounded-lg" />}
             {section.type === 'hero' && <input value={section.secondaryButtonUrl || ''} onChange={(e) => updateSection(index, 'secondaryButtonUrl', e.target.value)} placeholder="Secondary button URL" className="w-full px-4 py-2 border rounded-lg" />}
             {section.type !== 'cta' && section.type !== 'button' && <input value={section.imageUrl || ''} onChange={(e) => updateSection(index, 'imageUrl', e.target.value)} placeholder="Optional image URL" className="w-full px-4 py-2 border rounded-lg" />}
@@ -4395,73 +4408,118 @@ function ImageCardsEditor({ section, index, updateSection, uploadImageToField, o
 }
 
 function ColumnsEditor({ section, index, updateSection, uploadImageToField, openMediaPicker }: any) {
-  const count = Number(section.columns || 2)
-  const columns = makeColumns(count, Array.isArray(section.items) ? section.items : [])
-  const updateColumns = (nextColumns: any[]) => updateSection(index, 'items', nextColumns)
-  const setColumnCount = (nextCount: number) => {
-    updateSection(index, 'columns', nextCount)
-    updateSection(index, 'items', makeColumns(nextCount, columns))
+  const [isOpen, setIsOpen] = useState(false)
+  const columnCount = clampGridSize(section.columns, 2)
+  const rowCount = clampGridSize(section.rows, 1)
+  const cells = getGridCells(section)
+  const setGrid = (nextColumns: number, nextRows: number, existingCells = cells) => {
+    updateSection(index, 'columns', nextColumns)
+    updateSection(index, 'rows', nextRows)
+    updateSection(index, 'items', makeGridCells(nextColumns, nextRows, existingCells))
   }
-  const addBlock = (columnIndex: number, type: string) => {
-    updateColumns(columns.map((column, currentIndex) => currentIndex === columnIndex ? { ...column, sections: [...(column.sections || []), makeNestedBlock(type)] } : column))
+  const updateCells = (nextCells: any[]) => updateSection(index, 'items', nextCells)
+  const updateCellSections = (cellIndex: number, nextSections: any[]) => {
+    updateCells(cells.map((cell: any, currentIndex: number) => currentIndex === cellIndex ? { ...cell, sections: nextSections } : cell))
   }
-  const updateBlock = (columnIndex: number, blockIndex: number, field: string, value: any) => {
-    updateColumns(columns.map((column, currentIndex) => currentIndex === columnIndex ? {
-      ...column,
-      sections: (column.sections || []).map((block: any, currentBlockIndex: number) => currentBlockIndex === blockIndex ? { ...block, [field]: value } : block)
-    } : column))
+  const addBlock = (cellIndex: number, type: string) => {
+    if (!type) return
+    updateCellSections(cellIndex, [...(cells[cellIndex]?.sections || []), makeNestedBlock(type)])
   }
-  const removeBlock = (columnIndex: number, blockIndex: number) => {
-    updateColumns(columns.map((column, currentIndex) => currentIndex === columnIndex ? {
-      ...column,
-      sections: (column.sections || []).filter((_: any, currentBlockIndex: number) => currentBlockIndex !== blockIndex)
-    } : column))
+  const updateBlock = (cellIndex: number, blockIndex: number, field: string, value: any) => {
+    updateCellSections(
+      cellIndex,
+      (cells[cellIndex]?.sections || []).map((block: any, currentBlockIndex: number) => currentBlockIndex === blockIndex ? { ...block, [field]: value } : block)
+    )
+  }
+  const removeBlock = (cellIndex: number, blockIndex: number) => {
+    updateCellSections(
+      cellIndex,
+      (cells[cellIndex]?.sections || []).filter((_: any, currentBlockIndex: number) => currentBlockIndex !== blockIndex)
+    )
   }
 
   return (
-    <div className="space-y-3 rounded-lg border bg-white p-3">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="px-4 py-2 border rounded-lg" />
-        <select value={count} onChange={(e) => setColumnCount(Number(e.target.value))} className="px-4 py-2 border rounded-lg">
-          <option value={1}>1 column</option>
-          <option value={2}>Split columns</option>
-          <option value={3}>Three columns</option>
-        </select>
-        <div className="md:col-span-2">
-          <DeferredRichTextEditorField label="Section description" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Section description..." minHeight={120} />
+    <>
+      <div className="space-y-3 rounded-lg border bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h4 className="font-bold text-gray-900">Grid Builder</h4>
+            <p className="text-sm text-gray-600">{columnCount} column{columnCount === 1 ? '' : 's'} by {rowCount} row{rowCount === 1 ? '' : 's'}.</p>
+          </div>
+          <button type="button" onClick={() => setIsOpen(true)} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Edit Grid Layout</button>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="px-4 py-2 border rounded-lg" />
+          <div className="rounded-lg border px-4 py-2 text-sm text-gray-600">Up to 6 columns and 6 rows. Add sections into each cell from the modal.</div>
+          <div className="md:col-span-2">
+            <DeferredRichTextEditorField label="Section description" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Section description..." minHeight={120} />
+          </div>
         </div>
       </div>
-      {columns.map((column, columnIndex) => (
-        <div key={column.id || columnIndex} className="space-y-3 rounded-lg border p-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h4 className="font-bold text-gray-900">Column {columnIndex + 1}</h4>
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-              + Add as many blocks as you want
-            </span>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center bg-slate-950/55 p-4">
+          <div className="flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-4 border-b px-6 py-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Edit Columns Grid</h3>
+                <p className="text-sm text-gray-600">Build a layout up to 6 columns by 6 rows and add sections into each cell.</p>
+              </div>
+              <button type="button" onClick={() => setIsOpen(false)} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Close</button>
+            </div>
+            <div className="overflow-y-auto p-6">
+              <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="space-y-2 text-sm text-gray-700">
+                  <span className="block font-semibold">Columns</span>
+                  <select value={columnCount} onChange={(e) => setGrid(Number(e.target.value), rowCount)} className="w-full rounded-lg border px-4 py-2">
+                    {Array.from({ length: 6 }, (_, i) => i + 1).map(value => <option key={value} value={value}>{value} column{value === 1 ? '' : 's'}</option>)}
+                  </select>
+                </label>
+                <label className="space-y-2 text-sm text-gray-700">
+                  <span className="block font-semibold">Rows</span>
+                  <select value={rowCount} onChange={(e) => setGrid(columnCount, Number(e.target.value))} className="w-full rounded-lg border px-4 py-2">
+                    {Array.from({ length: 6 }, (_, i) => i + 1).map(value => <option key={value} value={value}>{value} row{value === 1 ? '' : 's'}</option>)}
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
+                {cells.map((cell: any, cellIndex: number) => (
+                  <div key={cell.id || cellIndex} className="space-y-3 rounded-xl border bg-gray-50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-bold text-gray-900">Row {Number(cell.row) + 1}, Column {Number(cell.column) + 1}</h4>
+                      <select
+                        defaultValue=""
+                        onChange={(e) => {
+                          addBlock(cellIndex, e.target.value)
+                          e.currentTarget.value = ''
+                        }}
+                        className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold text-gray-700"
+                      >
+                        <option value="">+ Add section</option>
+                        {gridBlockOptions.map(option => <option key={`${option.value}-${option.label}`} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </div>
+                    {(cell.sections || []).length === 0 && (
+                      <div className="rounded-lg border border-dashed bg-white p-4 text-center text-sm text-gray-500">This cell is empty.</div>
+                    )}
+                    {(cell.sections || []).map((block: any, blockIndex: number) => (
+                      <NestedBlockEditor key={block.id || blockIndex} block={block} columnIndex={cellIndex} blockIndex={blockIndex} updateBlock={updateBlock} removeBlock={removeBlock} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-            {nestedBlockOptions.map(option => {
-              const Icon = option.icon
-              return (
-                <button key={option.value} type="button" onClick={() => addBlock(columnIndex, option.value)} className="flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-gray-50">
-                  <Icon size={18} />
-                  {option.label}
-                </button>
-              )
-            })}
-          </div>
-          {(column.sections || []).map((block: any, blockIndex: number) => (
-            <NestedBlockEditor key={block.id || blockIndex} block={block} columnIndex={columnIndex} blockIndex={blockIndex} updateBlock={updateBlock} removeBlock={removeBlock} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
-          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </>
   )
 }
 
 function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, removeBlock, uploadImageToField, openMediaPicker }: any) {
-  const hasTitle = ['header', 'imageCard', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm', 'imageStrip'].includes(block.type)
-  const hasBody = ['paragraph', 'header', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm', 'imageStrip'].includes(block.type)
+  const hasTitle = ['header', 'imageCard', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm', 'imageStrip', 'columns'].includes(block.type)
+  const hasBody = ['paragraph', 'header', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm', 'imageStrip', 'columns'].includes(block.type)
   const hasButton = ['button', 'hero', 'banner', 'cta', 'imageOverlay'].includes(block.type)
 
   return (
@@ -4552,6 +4610,9 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
           <NestedImageStripItemsEditor block={block} columnIndex={columnIndex} blockIndex={blockIndex} updateBlock={updateBlock} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
         </>
       )}
+      {block.type === 'columns' && (
+        <NestedColumnsEditor block={block} columnIndex={columnIndex} blockIndex={blockIndex} updateBlock={updateBlock} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
+      )}
       {block.type === 'plugin' && (
         <select value={block.pluginSlug || 'restaurant'} onChange={(e) => updateBlock(columnIndex, blockIndex, 'pluginSlug', e.target.value)} className="w-full px-4 py-2 border rounded-lg bg-white">
           {pluginOptions.map(plugin => <option key={plugin.value} value={plugin.value}>{plugin.label}</option>)}
@@ -4561,6 +4622,99 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <input value={block.buttonLabel || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonLabel', e.target.value)} placeholder="Button label" className="px-4 py-2 border rounded-lg" />
           <input value={block.buttonUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonUrl', e.target.value)} placeholder="Button URL" className="px-4 py-2 border rounded-lg" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NestedColumnsEditor({ block, columnIndex, blockIndex, updateBlock, uploadImageToField, openMediaPicker }: any) {
+  const [isOpen, setIsOpen] = useState(false)
+  const columnCount = clampGridSize(block.columns, 2)
+  const rowCount = clampGridSize(block.rows, 1)
+  const sectionLike = { columns: columnCount, rows: rowCount, items: Array.isArray(block.items) ? block.items : [] }
+  const cells = getGridCells(sectionLike)
+  const setGrid = (nextColumns: number, nextRows: number, existingCells = cells) => {
+    updateBlock(columnIndex, blockIndex, 'columns', nextColumns)
+    updateBlock(columnIndex, blockIndex, 'rows', nextRows)
+    updateBlock(columnIndex, blockIndex, 'items', makeGridCells(nextColumns, nextRows, existingCells))
+  }
+  const updateCells = (nextCells: any[]) => updateBlock(columnIndex, blockIndex, 'items', nextCells)
+  const updateCellSections = (cellIndex: number, nextSections: any[]) => {
+    updateCells(cells.map((cell: any, currentIndex: number) => currentIndex === cellIndex ? { ...cell, sections: nextSections } : cell))
+  }
+  const addNestedBlock = (cellIndex: number, type: string) => {
+    if (!type) return
+    updateCellSections(cellIndex, [...(cells[cellIndex]?.sections || []), makeNestedBlock(type)])
+  }
+  const updateNestedBlock = (cellIndex: number, nestedBlockIndex: number, field: string, value: any) => {
+    updateCellSections(cellIndex, (cells[cellIndex]?.sections || []).map((item: any, currentIndex: number) => currentIndex === nestedBlockIndex ? { ...item, [field]: value } : item))
+  }
+  const removeNestedBlock = (cellIndex: number, nestedBlockIndex: number) => {
+    updateCellSections(cellIndex, (cells[cellIndex]?.sections || []).filter((_: any, currentIndex: number) => currentIndex !== nestedBlockIndex))
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="font-bold text-gray-900">Nested Grid</h4>
+          <p className="text-sm text-gray-600">{columnCount} column{columnCount === 1 ? '' : 's'} by {rowCount} row{rowCount === 1 ? '' : 's'}.</p>
+        </div>
+        <button type="button" onClick={() => setIsOpen(true)} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Edit Nested Grid</button>
+      </div>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[170] flex items-center justify-center bg-slate-950/55 p-4">
+          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-4 border-b px-6 py-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Edit Nested Grid</h3>
+                <p className="text-sm text-gray-600">Build a nested grid up to 6 columns by 6 rows.</p>
+              </div>
+              <button type="button" onClick={() => setIsOpen(false)} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Close</button>
+            </div>
+            <div className="overflow-y-auto p-6">
+              <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="space-y-2 text-sm text-gray-700">
+                  <span className="block font-semibold">Columns</span>
+                  <select value={columnCount} onChange={(e) => setGrid(Number(e.target.value), rowCount)} className="w-full rounded-lg border px-4 py-2">
+                    {Array.from({ length: 6 }, (_, i) => i + 1).map(value => <option key={value} value={value}>{value} column{value === 1 ? '' : 's'}</option>)}
+                  </select>
+                </label>
+                <label className="space-y-2 text-sm text-gray-700">
+                  <span className="block font-semibold">Rows</span>
+                  <select value={rowCount} onChange={(e) => setGrid(columnCount, Number(e.target.value))} className="w-full rounded-lg border px-4 py-2">
+                    {Array.from({ length: 6 }, (_, i) => i + 1).map(value => <option key={value} value={value}>{value} row{value === 1 ? '' : 's'}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}>
+                {cells.map((cell: any, cellIndex: number) => (
+                  <div key={cell.id || cellIndex} className="space-y-3 rounded-xl border bg-gray-50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-bold text-gray-900">Row {Number(cell.row) + 1}, Column {Number(cell.column) + 1}</h4>
+                      <select
+                        defaultValue=""
+                        onChange={(e) => {
+                          addNestedBlock(cellIndex, e.target.value)
+                          e.currentTarget.value = ''
+                        }}
+                        className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold text-gray-700"
+                      >
+                        <option value="">+ Add section</option>
+                        {gridBlockOptions.map(option => <option key={`${option.value}-${option.label}`} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </div>
+                    {(cell.sections || []).length === 0 && <div className="rounded-lg border border-dashed bg-white p-4 text-center text-sm text-gray-500">This cell is empty.</div>}
+                    {(cell.sections || []).map((nested: any, nestedIndex: number) => (
+                      <NestedBlockEditor key={nested.id || nestedIndex} block={nested} columnIndex={cellIndex} blockIndex={nestedIndex} updateBlock={updateNestedBlock} removeBlock={removeNestedBlock} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -4667,6 +4821,73 @@ function ImageStripItemsEditor({ section, index, updateSection, uploadImageToFie
         </div>
       ))}
       {items.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No strip images yet.</div>}
+    </div>
+  )
+}
+
+function ButtonItemsEditor({ section, index, updateSection }: any) {
+  const items = Array.isArray(section.buttons) && section.buttons.length > 0
+    ? section.buttons
+    : (section.buttonLabel && section.buttonUrl
+        ? [makeButtonItem({
+            buttonLabel: section.buttonLabel,
+            buttonUrl: section.buttonUrl,
+            buttonIcon: section.buttonIcon,
+            buttonIconOnly: section.buttonIconOnly,
+            buttonShowArrow: section.buttonShowArrow
+          })]
+        : [makeButtonItem()])
+
+  const syncItems = (nextItems: any[]) => {
+    updateSection(index, 'buttons', nextItems)
+  }
+
+  const updateItem = (itemIndex: number, field: string, value: any) => {
+    syncItems(items.map((item: any, currentIndex: number) => currentIndex === itemIndex ? { ...item, [field]: value } : item))
+  }
+
+  const addItem = () => syncItems([...items, makeButtonItem()])
+  const removeItem = (itemIndex: number) => syncItems(items.filter((_: any, currentIndex: number) => currentIndex !== itemIndex))
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="font-bold text-gray-900">Buttons</h4>
+          <p className="text-sm text-gray-600">Add one or more buttons side by side.</p>
+        </div>
+        <button type="button" onClick={addItem} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Add Button</button>
+      </div>
+      {items.map((item: any, itemIndex: number) => (
+        <div key={item.id || itemIndex} className="space-y-3 rounded-lg border p-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <input value={item.buttonLabel || ''} onChange={(e) => updateItem(itemIndex, 'buttonLabel', e.target.value)} placeholder="Button label" className="px-4 py-2 border rounded-lg" />
+            <input value={item.buttonUrl || ''} onChange={(e) => updateItem(itemIndex, 'buttonUrl', e.target.value)} placeholder="Button URL" className="px-4 py-2 border rounded-lg" />
+          </div>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+            <select value={item.buttonIcon || ''} onChange={(e) => updateItem(itemIndex, 'buttonIcon', e.target.value)} className="w-full px-4 py-2 border rounded-lg bg-white">
+              {buttonIconOptions.map(option => <option key={option.value || 'none'} value={option.value}>{option.label}</option>)}
+            </select>
+            <label className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700">
+              <input type="checkbox" checked={Boolean(item.buttonIconOnly)} onChange={(e) => updateItem(itemIndex, 'buttonIconOnly', e.target.checked)} />
+              Icon only
+            </label>
+            <label className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700">
+              <input type="checkbox" checked={item.buttonShowArrow !== false} onChange={(e) => updateItem(itemIndex, 'buttonShowArrow', e.target.checked)} />
+              Show arrow
+            </label>
+          </div>
+          <button type="button" onClick={() => removeItem(itemIndex)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Remove Button</button>
+        </div>
+      ))}
+      <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+        <span className="font-semibold">Gap</span>
+        <input type="range" min="0" max="48" step="2" value={Number(section.buttonGroupGap || 12)} onChange={(e) => updateSection(index, 'buttonGroupGap', e.target.value)} className="w-full accent-blue-600" />
+        <div className="flex items-center gap-1">
+          <input type="number" min="0" max="96" value={section.buttonGroupGap ?? ''} onChange={(e) => updateSection(index, 'buttonGroupGap', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+          <span className="text-xs text-gray-500">px</span>
+        </div>
+      </label>
     </div>
   )
 }

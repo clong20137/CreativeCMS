@@ -861,17 +861,29 @@ export function RichTextContent({ html, className = '' }: { html?: string; class
 }
 
 function ColumnsSection({ section, selectedSectionId, onSelectNestedSection }: { section: any; selectedSectionId?: string; onSelectNestedSection?: (sectionId: string) => void }) {
-  const columns = Array.isArray(section.items) ? section.items : []
-  const count = Number(section.columns || columns.length || 2)
+  const count = Math.min(6, Math.max(1, Number(section.columns || 2)))
+  const rowCount = Math.min(6, Math.max(1, Number(section.rows || 1)))
+  const existingCells = Array.isArray(section.items) ? section.items : []
+  const cells = Array.from({ length: count * rowCount }, (_, index) => {
+    const row = Math.floor(index / count)
+    const column = index % count
+    const matchedCell = existingCells.find((item: any) => Number(item?.row) === row && Number(item?.column) === column) || existingCells[index] || {}
+    return {
+      id: matchedCell.id || `${row}-${column}`,
+      row,
+      column,
+      sections: Array.isArray(matchedCell.sections) ? matchedCell.sections : []
+    }
+  })
 
   return (
     <section className="py-16">
       <div className="container">
         <SectionHeading section={section} fallbackTitle="" />
         <div className="responsive-grid gap-6" style={getResponsiveGridStyle(section, count || 2)}>
-          {columns.slice(0, count).map((column: any, index: number) => (
-            <div key={column.id || index} className="space-y-5">
-              {(column.sections || []).map((block: any, blockIndex: number) => (
+          {cells.map((cell: any, index: number) => (
+            <div key={cell.id || index} className="space-y-5">
+              {(cell.sections || []).map((block: any, blockIndex: number) => (
                 <ColumnBlock key={block.id || blockIndex} block={block} selectedSectionId={selectedSectionId} onSelectNestedSection={onSelectNestedSection} />
               ))}
             </div>
@@ -979,15 +991,29 @@ function ButtonSection({ section }: { section: any }) {
     : section.textAlign === 'right'
       ? 'justify-end'
       : 'justify-center'
+  const buttons = Array.isArray(section.buttons) && section.buttons.length > 0
+    ? section.buttons
+    : (section.buttonLabel && section.buttonUrl
+        ? [{
+            id: section.id || 'primary',
+            buttonLabel: section.buttonLabel,
+            buttonUrl: section.buttonUrl,
+            buttonIcon: section.buttonIcon,
+            buttonIconOnly: section.buttonIconOnly,
+            buttonShowArrow: section.buttonShowArrow
+          }]
+        : [])
 
-  if (!section.buttonLabel || !section.buttonUrl) return null
+  if (buttons.length === 0) return null
 
   return (
     <section className="section-padding">
-      <div className={`container flex ${justifyClass}`}>
-        <Link to={section.buttonUrl} className="section-button inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
-          <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />
-        </Link>
+      <div className={`container flex flex-wrap ${justifyClass}`} style={{ gap: `${Math.max(8, Number(section.buttonGroupGap || 12))}px` }}>
+        {buttons.map((button: any, index: number) => (
+          <Link key={button.id || index} to={button.buttonUrl} className="section-button inline-flex items-center justify-center gap-2" aria-label={button.buttonLabel || 'Button'}>
+            <ButtonContent label={button.buttonLabel} icon={button.buttonIcon} iconOnly={button.buttonIconOnly} showArrow={button.buttonShowArrow} />
+          </Link>
+        ))}
       </div>
     </section>
   )
