@@ -46,6 +46,7 @@ const uploadsDir = path.resolve(__dirname, '../../uploads')
 const privateUploadsDir = path.resolve(__dirname, '../../private-uploads')
 let mediaAssetsSchemaReady = false
 let protectedContentSchemaReady = false
+let blogArticlesSchemaReady = false
 let customPagesSchemaReady = false
 let subscriptionSchemaReady = false
 let cmsLicenseSchemaReady = false
@@ -806,6 +807,12 @@ async function ensureProtectedContentSchema() {
   protectedContentSchemaReady = true
 }
 
+async function ensureBlogArticlesSchema() {
+  if (blogArticlesSchemaReady) return
+  await BlogArticle.sync()
+  blogArticlesSchemaReady = true
+}
+
 async function moveMediaAssetFile(asset, nextVisibility) {
   const currentVisibility = asset.visibility === 'private' ? 'private' : 'public'
   if (nextVisibility !== 'private' && nextVisibility !== 'public') return {}
@@ -889,6 +896,7 @@ async function buildCmsBackupPayload({ includeFiles = false } = {}) {
   await Promise.all([
     ensureCustomPagesSchema(),
     ensureMediaAssetsSchema(),
+    ensureBlogArticlesSchema(),
     ensureProtectedContentSchema(),
     ensureDemoPlugins(),
     ensureSiteDemos()
@@ -1701,6 +1709,7 @@ function makeArticleSlug(value = '') {
 
 router.get('/plugins/blog/posts', async (req, res) => {
   try {
+    await ensureBlogArticlesSchema()
     await getOrCreateBlogPlugin()
     const posts = await BlogArticle.findAll({
       order: [['sortOrder', 'ASC'], ['publishedAt', 'DESC'], ['createdAt', 'DESC']]
@@ -1713,6 +1722,7 @@ router.get('/plugins/blog/posts', async (req, res) => {
 
 router.post('/plugins/blog/posts', async (req, res) => {
   try {
+    await ensureBlogArticlesSchema()
     await getOrCreateBlogPlugin()
     const title = cleanString(req.body.title, 180)
     if (!title) return res.status(400).json({ error: 'Title is required' })
@@ -1743,6 +1753,7 @@ router.post('/plugins/blog/posts', async (req, res) => {
 
 router.put('/plugins/blog/posts/:id', async (req, res) => {
   try {
+    await ensureBlogArticlesSchema()
     await getOrCreateBlogPlugin()
     const post = await BlogArticle.findByPk(req.params.id)
     if (!post) return res.status(404).json({ error: 'Article not found' })
@@ -1775,6 +1786,7 @@ router.put('/plugins/blog/posts/:id', async (req, res) => {
 
 router.delete('/plugins/blog/posts/:id', async (req, res) => {
   try {
+    await ensureBlogArticlesSchema()
     const post = await BlogArticle.findByPk(req.params.id)
     if (!post) return res.status(404).json({ error: 'Article not found' })
     await post.destroy()

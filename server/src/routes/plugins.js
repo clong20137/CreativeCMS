@@ -22,6 +22,7 @@ import { getClientEntitlements, isPluginAllowed } from '../utils/entitlements.js
 const router = express.Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 let protectedContentSchemaReady = false
+let blogArticlesSchemaReady = false
 const bookingRateLimit = createRateLimiter({
   name: 'booking-appointments',
   windowMs: 15 * 60 * 1000,
@@ -50,6 +51,12 @@ async function ensureProtectedContentSchema() {
   }
 
   protectedContentSchemaReady = true
+}
+
+async function ensureBlogArticlesSchema() {
+  if (blogArticlesSchemaReady) return
+  await BlogArticle.sync()
+  blogArticlesSchemaReady = true
 }
 
 async function ensureActiveClient(req, res, next) {
@@ -358,6 +365,7 @@ function makeArticleSlug(value = '') {
 }
 
 export async function getOrCreateBlogPlugin() {
+  await ensureBlogArticlesSchema()
   const [plugin] = await Plugin.findOrCreate({
     where: { slug: 'blog-articles' },
     defaults: {
@@ -740,6 +748,7 @@ router.get('/crm', async (req, res) => {
 
 router.get('/blog/posts', async (req, res) => {
   try {
+    await ensureBlogArticlesSchema()
     const plugin = await getOrCreateBlogPlugin()
     const posts = await BlogArticle.findAll({
       where: { isPublished: true },
@@ -753,6 +762,7 @@ router.get('/blog/posts', async (req, res) => {
 
 router.get('/blog/posts/:slug', async (req, res) => {
   try {
+    await ensureBlogArticlesSchema()
     const plugin = await getOrCreateBlogPlugin()
     const slug = makeArticleSlug(req.params.slug)
     const post = await BlogArticle.findOne({
