@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { FiAlignCenter, FiAlignLeft, FiAlignRight, FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiLink, FiMail, FiMapPin, FiMessageSquare, FiMonitor, FiMove, FiPhone, FiRotateCcw, FiRotateCw, FiSave, FiSearch, FiSmartphone, FiSquare, FiTablet, FiTrash2, FiType, FiVideo } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
 import { PageSkeleton } from '../components/SkeletonLoaders'
+import { useToast } from '../components/ToastProvider'
 import { adminAPI, resolveAssetUrl } from '../services/api'
 import { cloneDemoStarterSections, demoStarterSections } from '../utils/demoStarterTemplates'
 
@@ -86,6 +87,7 @@ const sectionTypeOptions = [
   { value: 'imageOverlay', label: 'Image Overlay', icon: FiImage },
   { value: 'map', label: 'Interactive Map', icon: FiMapPin },
   { value: 'youtube', label: 'YouTube Video', icon: FiVideo },
+  { value: 'imageStrip', label: 'Image Strip', icon: FiImage },
   { value: 'divider', label: 'Divider', icon: FiLayout },
   { value: 'gallery', label: 'Gallery', icon: FiImage },
   { value: 'plugin', label: 'Plugin', icon: FiGrid },
@@ -119,6 +121,7 @@ const nestedBlockOptions = [
   { value: 'imageOverlay', label: 'Image Overlay', icon: FiImage },
   { value: 'map', label: 'Interactive Map', icon: FiMapPin },
   { value: 'youtube', label: 'YouTube Video', icon: FiVideo },
+  { value: 'imageStrip', label: 'Image Strip', icon: FiImage },
   { value: 'divider', label: 'Divider', icon: FiLayout },
   { value: 'gallery', label: 'Gallery', icon: FiImage },
   { value: 'plugin', label: 'Plugin', icon: FiGrid },
@@ -320,6 +323,7 @@ function makePageSection(type: string) {
   const defaultItems = () => {
     if (type === 'gallery') return [{ id: crypto.randomUUID(), title: '', description: '', image: '' }]
     if (type === 'imageCards') return [makeImageCard()]
+    if (type === 'imageStrip') return [makeImageStripItem()]
     if (type === 'columns') return makeColumns(2)
     if (type === 'faq') return [{ id: crypto.randomUUID(), q: '', a: '' }]
     return []
@@ -337,9 +341,14 @@ function makePageSection(type: string) {
     mapQuery: '',
     mapEmbedUrl: '',
     mapHeight: type === 'map' ? 420 : '',
+    mapZoom: type === 'map' ? 14 : '',
     mapPins: [],
     videoUrl: '',
     videoHeight: type === 'youtube' ? 420 : '',
+    imageStripJustify: 'center',
+    imageStripAlign: 'center',
+    imageStripHeight: type === 'imageStrip' ? 96 : '',
+    imageStripGap: type === 'imageStrip' ? 24 : '',
     mediaType: 'image',
     alt: '',
     pluginSlug: 'restaurant',
@@ -458,6 +467,16 @@ function makeImageCard() {
     image: '',
     buttonLabel: 'View More',
     buttonUrl: '/contact'
+  }
+}
+
+function makeImageStripItem() {
+  return {
+    id: crypto.randomUUID(),
+    image: '',
+    alt: '',
+    url: '',
+    title: ''
   }
 }
 
@@ -730,7 +749,7 @@ function buildPageEditorInsights(page: any, sections: any[] = []) {
   const bodyText = sections.flatMap(section => collectSectionText(section)).join(' ').trim()
   const bodyWordCount = countWords(bodyText)
   const heroSections = sections.filter(section => section?.type === 'hero')
-  const imageSections = sections.filter(section => ['image', 'gallery', 'imageCards', 'imageOverlay', 'portfolio', 'portfolioGallery'].includes(section?.type))
+  const imageSections = sections.filter(section => ['image', 'gallery', 'imageCards', 'imageOverlay', 'portfolio', 'portfolioGallery', 'imageStrip'].includes(section?.type))
   const imageStats = sections.reduce((totals, section) => {
     const next = collectImageDiagnostics(section)
     totals.total += next.total
@@ -867,6 +886,7 @@ function buildPageEditorInsights(page: any, sections: any[] = []) {
 export default function AdminPages() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState('home')
   const [settings, setSettings] = useState(emptySettings)
   const [pages, setPages] = useState<any[]>([])
@@ -1039,9 +1059,11 @@ export default function AdminPages() {
       setUndoStack([])
       setRedoStack([])
       setMessage('Page edits saved')
+      showToast({ tone: 'success', title: 'Page saved', message: 'Built-in page edits were saved.' })
     } catch (err: any) {
       setMessage('')
       setError(err.error || 'Failed to save page edits')
+      showToast({ tone: 'error', title: 'Save failed', message: err.error || 'Failed to save page edits' })
     }
   }
 
@@ -1081,6 +1103,7 @@ export default function AdminPages() {
     if (sections[0]?.id) markNewSection(sections[0].id)
     setNewPageTemplatePromptOpen(false)
     setMessage(`Started the page with ${template.name}. Save when you're ready to keep it.`)
+    showToast({ tone: 'info', title: 'Template loaded', message: `${template.name} is ready in the builder.` })
   }
 
   const applyDemoStarterToNewPage = (demo: any) => {
@@ -1098,6 +1121,7 @@ export default function AdminPages() {
     if (sections[0]?.id) markNewSection(sections[0].id)
     setNewPageTemplatePromptOpen(false)
     setMessage(`Started the page with the ${demo.name} demo template. Save when you're ready to keep it.`)
+    showToast({ tone: 'info', title: 'Demo starter loaded', message: `${demo.name} starter content is ready.` })
   }
 
   useEffect(() => {
@@ -1676,9 +1700,11 @@ export default function AdminPages() {
       navigate(`/admin/pages?custom=${savedPage.id}`)
       window.dispatchEvent(new Event('admin-pages-refresh'))
       setMessage('Custom page saved')
+      showToast({ tone: 'success', title: 'Page saved', message: `${savedPage.title || 'Custom page'} was saved.` })
     } catch (err: any) {
       setMessage('')
       setError(err.error || 'Failed to save custom page')
+      showToast({ tone: 'error', title: 'Save failed', message: err.error || 'Failed to save custom page' })
     }
   }
 
@@ -1693,8 +1719,10 @@ export default function AdminPages() {
         startNewPage(true, false)
         window.dispatchEvent(new Event('admin-pages-refresh'))
         setMessage('Custom page deleted')
+        showToast({ tone: 'success', title: 'Page deleted', message: 'The custom page was removed.' })
       } catch (err: any) {
       setError(err.error || 'Failed to delete custom page')
+      showToast({ tone: 'error', title: 'Delete failed', message: err.error || 'Failed to delete custom page' })
     }
   }
 
@@ -1735,8 +1763,10 @@ export default function AdminPages() {
       if (!previewUrl) throw new Error('Preview link is not ready yet.')
       await navigator.clipboard.writeText(previewUrl)
       setMessage('Private preview link copied')
+      showToast({ tone: 'success', title: 'Preview link copied', message: 'The private preview link is on your clipboard.' })
     } catch (err: any) {
       setError(err.error || err.message || 'Failed to copy preview link')
+      showToast({ tone: 'error', title: 'Copy failed', message: err.error || err.message || 'Failed to copy preview link' })
     }
   }
 
@@ -1752,8 +1782,10 @@ export default function AdminPages() {
       const previewUrl = buildPrivatePreviewUrl(savedPage.previewToken)
       if (previewUrl) await navigator.clipboard.writeText(previewUrl)
       setMessage('Private preview link regenerated and copied')
+      showToast({ tone: 'success', title: 'Preview link regenerated', message: 'The new private preview link is copied.' })
     } catch (err: any) {
       setError(err.error || 'Failed to regenerate preview link')
+      showToast({ tone: 'error', title: 'Preview link failed', message: err.error || 'Failed to regenerate preview link' })
     }
   }
 
@@ -2621,7 +2653,8 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
   onSelectNestedSection,
   onTitleContentChange,
   onBodyContentChange,
-  onSectionItemsChange
+  onSectionItemsChange,
+  onMapZoomChange
 }: {
   section: any
   previewMode: 'desktop' | 'tablet' | 'mobile'
@@ -2631,6 +2664,7 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
   onTitleContentChange?: (html: string, text: string) => void
   onBodyContentChange?: (html: string, text: string) => void
   onSectionItemsChange?: (items: any[]) => void
+  onMapZoomChange?: (zoom: number) => void
 }) {
   const previewSection = useMemo(() => {
     const makeLiveEditMeta = (target: any) => ({
@@ -2716,6 +2750,22 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
                       onSelect: () => onSelectNestedSection?.(blockId)
                     }
                   : undefined,
+                ...(isNestedSelected && block?.type === 'map'
+                  ? {
+                      __liveMap: {
+                        onZoomChange: (zoom: number) => onSectionItemsChange?.(
+                          inputSection.items.map((columnItem: any) => (
+                            columnItem.id === column.id
+                              ? {
+                                  ...columnItem,
+                                  sections: (column.sections || []).map((columnBlock: any) => columnBlock.id === block.id ? { ...columnBlock, mapZoom: zoom } : columnBlock)
+                                }
+                              : columnItem
+                          ))
+                        )
+                      }
+                    }
+                  : {}),
                 ...(isNestedSelected ? { __liveEdit: makeLiveEditMeta(withFaqDecoration) } : {})
               }
             })
@@ -2754,9 +2804,10 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
     if (!isSelected && selectedSectionId !== section?.id) return baseSection
     return {
       ...baseSection,
-      __liveEdit: makeLiveEditMeta(section)
+      __liveEdit: makeLiveEditMeta(section),
+      ...(isSelected && section?.type === 'map' ? { __liveMap: { onZoomChange: onMapZoomChange } } : {})
     }
-  }, [section, isSelected, selectedSectionId, onSelectNestedSection, onTitleContentChange, onBodyContentChange, onSectionItemsChange])
+  }, [section, isSelected, selectedSectionId, onSelectNestedSection, onTitleContentChange, onBodyContentChange, onSectionItemsChange, onMapZoomChange])
 
   return (
     <Suspense fallback={<div className="min-h-[12rem] animate-pulse bg-gray-100" />}>
@@ -3310,6 +3361,9 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                     onSectionItemsChange={(items: any[]) => {
                       updateSelectedSection?.('items', items)
                     }}
+                    onMapZoomChange={(zoom: number) => {
+                      updateSelectedSection?.('mapZoom', zoom)
+                    }}
                     onTitleContentChange={(html: string, text: string) => {
                       updateSelectedSection?.('titleHtml', html)
                       updateSelectedSection?.('title', text)
@@ -3673,7 +3727,7 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
           </div>
         )}
 
-        {(section.type === 'header' || section.type === 'hero' || section.type === 'banner' || section.type === 'section' || section.type === 'services' || section.type === 'map' || section.type === 'youtube' || section.type === 'imageOverlay' || section.type === 'cta') && (
+        {(section.type === 'header' || section.type === 'hero' || section.type === 'banner' || section.type === 'section' || section.type === 'services' || section.type === 'map' || section.type === 'youtube' || section.type === 'imageOverlay' || section.type === 'cta' || section.type === 'imageStrip') && (
           <div className="space-y-3">
             <input
               value={section.title || ''}
@@ -3685,7 +3739,7 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
               className="w-full px-4 py-2 border rounded-lg"
             />
             <input value={section.titleLinkUrl || ''} onChange={(e) => updateSection(index, 'titleLinkUrl', e.target.value)} placeholder="Optional title link URL" className="w-full px-4 py-2 border rounded-lg" />
-            {['header', 'hero', 'banner', 'section', 'services', 'map', 'youtube', 'imageOverlay', 'cta'].includes(section.type) && (
+            {['header', 'hero', 'banner', 'section', 'services', 'map', 'youtube', 'imageOverlay', 'cta', 'imageStrip'].includes(section.type) && (
               <label className="block text-sm font-semibold text-gray-700">
                 Heading tag
                 <select value={section.headingTag || (section.type === 'hero' ? 'h1' : 'h2')} onChange={(e) => updateSection(index, 'headingTag', e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
@@ -3711,7 +3765,7 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
           </div>
         )}
 
-        {(section.type === 'paragraph' || section.type === 'section' || section.type === 'services' || section.type === 'map' || section.type === 'youtube') && (
+        {(section.type === 'paragraph' || section.type === 'section' || section.type === 'services' || section.type === 'map' || section.type === 'youtube' || section.type === 'imageStrip') && (
           <DeferredRichTextEditorField label="Text content" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Format certain words, add links, and set colors..." minHeight={160} />
         )}
 
@@ -3730,6 +3784,46 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
             <ListCountControls section={section} index={index} updateSection={updateSection} titlePlaceholder="Section title" maxColumns={3} />
             <ImageCardsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
           </>
+        )}
+
+        {section.type === 'imageStrip' && (
+          <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <label className="space-y-2 text-sm text-gray-700">
+                <span className="block font-semibold">Horizontal alignment</span>
+                <select value={section.imageStripJustify || 'center'} onChange={(e) => updateSection(index, 'imageStripJustify', e.target.value)} className="w-full rounded-lg border px-4 py-2">
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+              <label className="space-y-2 text-sm text-gray-700">
+                <span className="block font-semibold">Vertical alignment</span>
+                <select value={section.imageStripAlign || 'center'} onChange={(e) => updateSection(index, 'imageStripAlign', e.target.value)} className="w-full rounded-lg border px-4 py-2">
+                  <option value="top">Top</option>
+                  <option value="center">Center</option>
+                  <option value="bottom">Bottom</option>
+                </select>
+              </label>
+            </div>
+            <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">Height</span>
+              <input type="range" min="40" max="240" step="2" value={Number(section.imageStripHeight || 96)} onChange={(e) => updateSection(index, 'imageStripHeight', e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="40" max="360" value={section.imageStripHeight ?? ''} onChange={(e) => updateSection(index, 'imageStripHeight', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </label>
+            <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">Gap</span>
+              <input type="range" min="0" max="80" step="2" value={Number(section.imageStripGap || 24)} onChange={(e) => updateSection(index, 'imageStripGap', e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" max="120" value={section.imageStripGap ?? ''} onChange={(e) => updateSection(index, 'imageStripGap', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </label>
+            <ImageStripItemsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
+          </div>
         )}
 
         {section.type === 'columns' && <ColumnsEditor section={section} index={index} updateSection={updateSection} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />}
@@ -3820,6 +3914,14 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
               <div className="flex items-center gap-1">
                 <input type="number" min="220" max="1200" value={section.mapHeight ?? ''} onChange={(e) => updateSection(index, 'mapHeight', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
                 <span className="text-xs text-gray-500">px</span>
+              </div>
+            </label>
+            <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">Zoom</span>
+              <input type="range" min="2" max="19" step="1" value={Number(section.mapZoom || 14)} onChange={(e) => updateSection(index, 'mapZoom', e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="2" max="19" value={section.mapZoom ?? 14} onChange={(e) => updateSection(index, 'mapZoom', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">x</span>
               </div>
             </label>
             <MapPinsEditor section={section} index={index} updateSection={updateSection} />
@@ -4358,8 +4460,8 @@ function ColumnsEditor({ section, index, updateSection, uploadImageToField, open
 }
 
 function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, removeBlock, uploadImageToField, openMediaPicker }: any) {
-  const hasTitle = ['header', 'imageCard', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm'].includes(block.type)
-  const hasBody = ['paragraph', 'header', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm'].includes(block.type)
+  const hasTitle = ['header', 'imageCard', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm', 'imageStrip'].includes(block.type)
+  const hasBody = ['paragraph', 'header', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm', 'imageStrip'].includes(block.type)
   const hasButton = ['button', 'hero', 'banner', 'cta', 'imageOverlay'].includes(block.type)
 
   return (
@@ -4414,12 +4516,40 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
           <input value={block.mapQuery || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapQuery', e.target.value)} placeholder="Map search / address" className="w-full px-4 py-2 border rounded-lg" />
           <input value={block.mapEmbedUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapEmbedUrl', e.target.value)} placeholder="Custom embed URL" className="w-full px-4 py-2 border rounded-lg" />
           <input type="number" min="220" max="1200" value={block.mapHeight || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapHeight', e.target.value)} placeholder="Map height in px" className="w-full px-4 py-2 border rounded-lg" />
+          <input type="number" min="2" max="19" value={block.mapZoom || 14} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapZoom', e.target.value)} placeholder="Map zoom" className="w-full px-4 py-2 border rounded-lg" />
         </>
       )}
       {block.type === 'youtube' && (
         <>
           <input value={block.videoUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'videoUrl', e.target.value)} placeholder="YouTube URL" className="w-full px-4 py-2 border rounded-lg" />
           <input type="number" min="220" max="1200" value={block.videoHeight || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'videoHeight', e.target.value)} placeholder="Video height in px" className="w-full px-4 py-2 border rounded-lg" />
+        </>
+      )}
+      {block.type === 'imageStrip' && (
+        <>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <label className="space-y-2 text-sm text-gray-700">
+              <span className="block font-semibold">Horizontal alignment</span>
+              <select value={block.imageStripJustify || 'center'} onChange={(e) => updateBlock(columnIndex, blockIndex, 'imageStripJustify', e.target.value)} className="w-full rounded-lg border px-4 py-2 bg-white">
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </label>
+            <label className="space-y-2 text-sm text-gray-700">
+              <span className="block font-semibold">Vertical alignment</span>
+              <select value={block.imageStripAlign || 'center'} onChange={(e) => updateBlock(columnIndex, blockIndex, 'imageStripAlign', e.target.value)} className="w-full rounded-lg border px-4 py-2 bg-white">
+                <option value="top">Top</option>
+                <option value="center">Center</option>
+                <option value="bottom">Bottom</option>
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <input type="number" min="40" max="360" value={block.imageStripHeight || 96} onChange={(e) => updateBlock(columnIndex, blockIndex, 'imageStripHeight', e.target.value)} placeholder="Image height in px" className="w-full px-4 py-2 border rounded-lg" />
+            <input type="number" min="0" max="120" value={block.imageStripGap || 24} onChange={(e) => updateBlock(columnIndex, blockIndex, 'imageStripGap', e.target.value)} placeholder="Gap in px" className="w-full px-4 py-2 border rounded-lg" />
+          </div>
+          <NestedImageStripItemsEditor block={block} columnIndex={columnIndex} blockIndex={blockIndex} updateBlock={updateBlock} uploadImageToField={uploadImageToField} openMediaPicker={openMediaPicker} />
         </>
       )}
       {block.type === 'plugin' && (
@@ -4433,6 +4563,45 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
           <input value={block.buttonUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonUrl', e.target.value)} placeholder="Button URL" className="px-4 py-2 border rounded-lg" />
         </div>
       )}
+    </div>
+  )
+}
+
+function NestedImageStripItemsEditor({ block, columnIndex, blockIndex, updateBlock, uploadImageToField, openMediaPicker }: any) {
+  const items = Array.isArray(block.items) ? block.items : []
+  const updateItem = (itemIndex: number, field: string, value: any) => {
+    updateBlock(
+      columnIndex,
+      blockIndex,
+      'items',
+      items.map((item: any, currentIndex: number) => currentIndex === itemIndex ? { ...item, [field]: value } : item)
+    )
+  }
+  const addItem = () => updateBlock(columnIndex, blockIndex, 'items', [...items, makeImageStripItem()])
+  const removeItem = (itemIndex: number) => updateBlock(columnIndex, blockIndex, 'items', items.filter((_: any, currentIndex: number) => currentIndex !== itemIndex))
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="font-bold text-gray-900">Strip Images</h4>
+          <p className="text-sm text-gray-600">Add linked logos, badges, or partner marks.</p>
+        </div>
+        <button type="button" onClick={addItem} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Add Image</button>
+      </div>
+      {items.map((item: any, itemIndex: number) => (
+        <div key={item.id || itemIndex} className="grid grid-cols-1 gap-3 rounded-lg border p-3 md:grid-cols-2">
+          <input value={item.title || ''} onChange={(e) => updateItem(itemIndex, 'title', e.target.value)} placeholder="Image label" className="px-4 py-2 border rounded-lg" />
+          <input value={item.url || ''} onChange={(e) => updateItem(itemIndex, 'url', e.target.value)} placeholder="Link URL (optional)" className="px-4 py-2 border rounded-lg" />
+          <input value={item.image || ''} onChange={(e) => updateItem(itemIndex, 'image', e.target.value)} placeholder="Image URL" className="px-4 py-2 border rounded-lg md:col-span-2" />
+          <input value={item.alt || ''} onChange={(e) => updateItem(itemIndex, 'alt', e.target.value)} placeholder="Alt text" className="px-4 py-2 border rounded-lg md:col-span-2" />
+          {openMediaPicker && <button type="button" onClick={() => openMediaPicker((url: string) => updateItem(itemIndex, 'image', url), 'image')} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 md:col-span-2"><FiImage /> Choose from Media Library</button>}
+          <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateItem(itemIndex, 'image', url), e.target.files?.[0])} className="px-4 py-2 border rounded-lg md:col-span-2" />
+          {item.image && <img src={resolveAssetUrl(item.image)} alt={item.alt || item.title || 'Strip image'} className="h-28 w-full rounded-lg object-contain bg-gray-50 p-3 md:col-span-2" />}
+          <button type="button" onClick={() => removeItem(itemIndex)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 md:col-span-2">Remove Image</button>
+        </div>
+      ))}
+      {items.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No strip images yet.</div>}
     </div>
   )
 }
@@ -4464,6 +4633,40 @@ function SectionItemsEditor({ section, index, updateSection, uploadImageToField,
         </div>
       ))}
       {items.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No gallery images yet.</div>}
+    </div>
+  )
+}
+
+function ImageStripItemsEditor({ section, index, updateSection, uploadImageToField, openMediaPicker }: any) {
+  const items = Array.isArray(section.items) ? section.items : []
+  const updateItem = (itemIndex: number, field: string, value: any) => {
+    updateSection(index, 'items', items.map((item: any, currentIndex: number) => currentIndex === itemIndex ? { ...item, [field]: value } : item))
+  }
+  const addItem = () => updateSection(index, 'items', [...items, makeImageStripItem()])
+  const removeItem = (itemIndex: number) => updateSection(index, 'items', items.filter((_: any, currentIndex: number) => currentIndex !== itemIndex))
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-white p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="font-bold text-gray-900">Strip Images</h4>
+          <p className="text-sm text-gray-600">Add linked logos, badges, certifications, or partner marks.</p>
+        </div>
+        <button type="button" onClick={addItem} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Add Image</button>
+      </div>
+      {items.map((item: any, itemIndex: number) => (
+        <div key={item.id || itemIndex} className="grid grid-cols-1 gap-3 rounded-lg border p-3 md:grid-cols-2">
+          <input value={item.title || ''} onChange={(e) => updateItem(itemIndex, 'title', e.target.value)} placeholder="Image label" className="px-4 py-2 border rounded-lg" />
+          <input value={item.url || ''} onChange={(e) => updateItem(itemIndex, 'url', e.target.value)} placeholder="Link URL (optional)" className="px-4 py-2 border rounded-lg" />
+          <input value={item.image || ''} onChange={(e) => updateItem(itemIndex, 'image', e.target.value)} placeholder="Image URL" className="px-4 py-2 border rounded-lg md:col-span-2" />
+          <input value={item.alt || ''} onChange={(e) => updateItem(itemIndex, 'alt', e.target.value)} placeholder="Alt text" className="px-4 py-2 border rounded-lg md:col-span-2" />
+          {openMediaPicker && <button type="button" onClick={() => openMediaPicker((url: string) => updateItem(itemIndex, 'image', url), 'image')} className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 md:col-span-2"><FiImage /> Choose from Media Library</button>}
+          <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateItem(itemIndex, 'image', url), e.target.files?.[0])} className="px-4 py-2 border rounded-lg md:col-span-2" />
+          {item.image && <img src={resolveAssetUrl(item.image)} alt={item.alt || item.title || 'Strip image'} className="h-28 w-full rounded-lg object-contain bg-gray-50 p-3 md:col-span-2" />}
+          <button type="button" onClick={() => removeItem(itemIndex)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 md:col-span-2">Remove Image</button>
+        </div>
+      ))}
+      {items.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No strip images yet.</div>}
     </div>
   )
 }

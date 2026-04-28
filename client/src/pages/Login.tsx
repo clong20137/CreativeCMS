@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { FiMail, FiLock, FiEyeOff, FiEye, FiUser, FiBriefcase } from 'react-icons/fi'
 import { authAPI, resolveAssetUrl, siteSettingsAPI } from '../services/api'
 import TurnstileWidget from '../components/TurnstileWidget'
+import { useToast } from '../components/ToastProvider'
 import { applyThemeSettings } from '../utils/theme'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [isCreatingAccount, setIsCreatingAccount] = useState(false)
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [name, setName] = useState('')
@@ -101,10 +103,11 @@ export default function Login() {
       localStorage.setItem('userId', String(data.user.id))
       localStorage.setItem('userRole', data.user.role)
       localStorage.setItem('userEmail', data.user.email)
-
+      showToast({ tone: 'success', title: 'Signed in', message: `Welcome back to ${branding.clientPortalName}.` })
       navigate(data.user.role === 'admin' ? '/admin/dashboard' : '/client-dashboard')
     } catch (err: any) {
       setError(err.error || 'Unable to sign in')
+      showToast({ tone: 'error', title: 'Sign in failed', message: err.error || 'Unable to sign in' })
       resetCaptcha()
     } finally {
       setIsLoading(false)
@@ -161,8 +164,10 @@ export default function Login() {
       setPassword('')
       setConfirmPassword('')
       setError('')
+      showToast({ tone: 'success', title: 'Password reset', message: 'Your password has been updated. You can sign in now.' })
     } catch (err: any) {
       setError(err.error || 'Unable to reset password')
+      showToast({ tone: 'error', title: 'Reset failed', message: err.error || 'Unable to reset password' })
     } finally {
       setIsLoading(false)
     }
@@ -179,9 +184,11 @@ export default function Login() {
       localStorage.setItem('userId', String(data.user.id))
       localStorage.setItem('userRole', data.user.role)
       localStorage.setItem('userEmail', data.user.email)
+      showToast({ tone: 'success', title: 'Verified', message: 'You are signed in.' })
       navigate(data.user.role === 'admin' ? '/admin/dashboard' : '/client-dashboard')
     } catch (err: any) {
       setError(err.error || 'Unable to verify code')
+      showToast({ tone: 'error', title: 'Verification failed', message: err.error || 'Unable to verify code' })
     } finally {
       setIsLoading(false)
     }

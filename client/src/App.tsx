@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { Suspense, lazy, useEffect } from 'react'
 import Navigation from './components/Navigation'
 import Footer from './components/Footer'
+import { ToastProvider } from './components/ToastProvider'
 import { resolveAssetUrl, siteSettingsAPI } from './services/api'
 import { applyThemeSettings } from './utils/theme'
 
@@ -169,7 +170,9 @@ function App() {
 
   return (
     <Router>
-      <AppRoutes />
+      <ToastProvider>
+        <AppRoutes />
+      </ToastProvider>
     </Router>
   )
 }

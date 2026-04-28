@@ -743,6 +743,10 @@ function PageSection({
     return <YoutubeSection section={section} />
   }
 
+  if (section.type === 'imageStrip') {
+    return <ImageStripSection section={section} />
+  }
+
   if (section.type === 'divider') {
     const width = Math.min(100, Math.max(10, Number(section.dividerWidth || 100)))
     const height = Math.min(20, Math.max(1, Number(section.dividerHeight || 1)))
@@ -958,6 +962,10 @@ function ColumnBlock({ block, selectedSectionId, onSelectNestedSection }: { bloc
     return renderWithSelection(<YoutubeSection section={block} inColumn />)
   }
 
+  if (block.type === 'imageStrip') {
+    return renderWithSelection(<ImageStripSection section={block} inColumn />)
+  }
+
   if (block.type !== 'paragraph') {
     return renderWithSelection(<PageSection section={block} selectedSectionId={selectedSectionId} onSelectNestedSection={onSelectNestedSection} />)
   }
@@ -997,8 +1005,10 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
   const mapElementRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<any>(null)
   const markerLayerRef = useRef<any>(null)
+  const zoomSyncRef = useRef<number | null>(null)
   const [ready, setReady] = useState(false)
   const [resolvedLocations, setResolvedLocations] = useState<any[]>([])
+  const onZoomChange = section?.__liveMap?.onZoomChange
 
   const pins = useMemo(() => Array.isArray(section.mapPins) ? section.mapPins : [], [section.mapPins])
 
@@ -1052,6 +1062,12 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(mapRef.current)
       markerLayerRef.current = window.L.layerGroup().addTo(mapRef.current)
+      mapRef.current.on('zoomend', () => {
+        const nextZoom = Number(mapRef.current?.getZoom?.())
+        if (!Number.isFinite(nextZoom) || zoomSyncRef.current === nextZoom) return
+        zoomSyncRef.current = nextZoom
+        onZoomChange?.(nextZoom)
+      })
     }
 
     const map = mapRef.current
@@ -1086,6 +1102,7 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
 
     if (points.length > 1) {
       map.fitBounds(points, { padding: [30, 30] })
+      if (Number.isFinite(Number(section.mapZoom))) map.setZoom(Number(section.mapZoom))
     } else if (points.length === 1) {
       map.setView(points[0], Math.max(12, Number(section.mapZoom || 14)))
     } else if (section.mapQuery) {
@@ -1097,11 +1114,12 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
     }
 
     window.setTimeout(() => map.invalidateSize(), 0)
+    zoomSyncRef.current = Number(map.getZoom?.())
 
     return () => {
       if (markerLayerRef.current) markerLayerRef.current.clearLayers()
     }
-  }, [ready, resolvedLocations, section.mapQuery, section.mapZoom])
+  }, [ready, resolvedLocations, section.mapQuery, section.mapZoom, onZoomChange])
 
   useEffect(() => () => {
     if (mapRef.current) {
@@ -1112,6 +1130,69 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
   }, [])
 
   return <div ref={mapElementRef} className="w-full" style={{ height: `${height}px` }} />
+}
+
+function ImageStripSection({ section, inColumn = false }: { section: any; inColumn?: boolean }) {
+  const items = Array.isArray(section.items) ? section.items : []
+  const justifyClass = section.imageStripJustify === 'left'
+    ? 'justify-start'
+    : section.imageStripJustify === 'right'
+      ? 'justify-end'
+      : 'justify-center'
+  const alignClass = section.imageStripAlign === 'top'
+    ? 'items-start'
+    : section.imageStripAlign === 'bottom'
+      ? 'items-end'
+      : 'items-center'
+  const gap = Math.max(8, Number(section.imageStripGap || 24))
+  const imageHeight = Math.max(40, Number(section.imageStripHeight || 96))
+
+  const content = (
+    <>
+      <SectionHeading section={section} fallbackTitle={inColumn ? '' : 'Image Strip'} compact={inColumn} />
+      <div className={`flex flex-wrap ${justifyClass} ${alignClass}`} style={{ gap: `${gap}px` }}>
+        {items.map((item: any, index: number) => {
+          const image = String(item.image || '').trim()
+          if (!image) return null
+          const imageElement = (
+            <img
+              src={resolveAssetUrl(image)}
+              alt={item.alt || item.title || `Image ${index + 1}`}
+              loading="lazy"
+              decoding="async"
+              className="w-auto object-contain"
+              style={{ maxHeight: `${imageHeight}px` }}
+            />
+          )
+          const href = String(item.url || '').trim()
+          return (
+            <div key={item.id || index} className="flex items-center justify-center">
+              {href ? (
+                isExternalOrSpecialUrl(href)
+                  ? <a href={href} className="inline-flex items-center justify-center" target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noreferrer noopener' : undefined}>{imageElement}</a>
+                  : <Link to={href} className="inline-flex items-center justify-center">{imageElement}</Link>
+              ) : imageElement}
+            </div>
+          )
+        })}
+        {items.length === 0 && (
+          <div className="rounded-lg border border-dashed p-6 text-center text-gray-600">
+            Add images in the page builder to create a linked image strip here.
+          </div>
+        )}
+      </div>
+    </>
+  )
+
+  if (inColumn) return content
+
+  return (
+    <section className="section-padding">
+      <div className="container">
+        {content}
+      </div>
+    </section>
+  )
 }
 
 function InteractiveMapSection({ section, inColumn = false }: { section: any; inColumn?: boolean }) {
