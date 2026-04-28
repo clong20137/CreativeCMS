@@ -28,6 +28,14 @@ const pluginLabels: Record<string, string> = {
 const LEAFLET_SCRIPT_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 const LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
 
+function escapeHtmlForAttribute(value: string) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
 function loadLeafletLibrary() {
   if (typeof window === 'undefined') return Promise.reject(new Error('Leaflet can only load in the browser'))
   if (window.L) return Promise.resolve(window.L)
@@ -1056,13 +1064,28 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
 
     resolvedLocations.forEach((pin: any) => {
       if (!Number.isFinite(pin.lat) || !Number.isFinite(pin.lng)) return
-      const marker = window.L.marker([pin.lat, pin.lng]).addTo(markerLayer)
+      const marker = window.L.marker([pin.lat, pin.lng], {
+        icon: window.L.divIcon({
+          className: 'creativecms-leaflet-pin-wrap',
+          html: `<span class="creativecms-leaflet-pin" style="color:${escapeHtmlForAttribute(pin.pinColor || '#2563eb')}">●</span>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 20],
+          tooltipAnchor: [0, -18]
+        })
+      }).addTo(markerLayer)
       marker.bindTooltip(pin.label || 'Location', {
         permanent: true,
         direction: 'top',
         offset: [0, -10],
-        className: 'creativecms-map-pill'
+        className: 'creativecms-map-pill',
+        opacity: 1
       })
+      const tooltipElement = marker.getTooltip()?.getElement?.()
+      if (tooltipElement) {
+        tooltipElement.style.setProperty('--map-pill-bg', String(pin.pillBackgroundColor || '#ffffff'))
+        tooltipElement.style.setProperty('--map-pill-text', String(pin.pillTextColor || '#111827'))
+        tooltipElement.style.setProperty('--map-pill-border', String(pin.pinColor || '#2563eb'))
+      }
     })
 
     if (points.length > 1) {
@@ -1129,8 +1152,14 @@ function InteractiveMapSection({ section, inColumn = false }: { section: any; in
                     className="absolute -translate-x-1/2 -translate-y-full"
                     style={{ left: `${left}%`, top: `${top}%` }}
                   >
-                    <div className="inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-gray-900 shadow-lg ring-1 ring-black/5">
-                      <FiMapPin className="text-blue-600" />
+                    <div
+                      className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow-lg ring-1 ring-black/5"
+                      style={{
+                        backgroundColor: pin.pillBackgroundColor || 'rgba(255,255,255,0.95)',
+                        color: pin.pillTextColor || '#111827'
+                      }}
+                    >
+                      <FiMapPin style={{ color: pin.pinColor || '#2563eb' }} />
                       <span>{pin.label || 'Location'}</span>
                     </div>
                   </div>

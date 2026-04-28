@@ -480,6 +480,9 @@ function makeMapPin(overrides: Record<string, any> = {}) {
     query: '',
     lat: '',
     lng: '',
+    pinColor: '#2563eb',
+    pillBackgroundColor: '#ffffff',
+    pillTextColor: '#111827',
     x: 50,
     y: 50,
     ...overrides
@@ -4592,6 +4595,29 @@ function MapPinsEditor({ section, index, updateSection }: any) {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <input value={pin.lat ?? ''} onChange={(e) => updatePin(pinIndex, 'lat', e.target.value)} placeholder="Latitude (optional override)" className="w-full rounded-lg border px-4 py-2" />
             <input value={pin.lng ?? ''} onChange={(e) => updatePin(pinIndex, 'lng', e.target.value)} placeholder="Longitude (optional override)" className="w-full rounded-lg border px-4 py-2" />
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <label className="space-y-1 text-sm font-semibold text-gray-700">
+              <span>Pin color</span>
+              <div className="flex items-center gap-2">
+                <input type="color" value={pin.pinColor || '#2563eb'} onChange={(e) => updatePin(pinIndex, 'pinColor', e.target.value)} className="h-11 w-14 rounded border p-1" />
+                <input value={pin.pinColor || '#2563eb'} onChange={(e) => updatePin(pinIndex, 'pinColor', e.target.value)} className="w-full rounded-lg border px-3 py-2 font-normal" />
+              </div>
+            </label>
+            <label className="space-y-1 text-sm font-semibold text-gray-700">
+              <span>Pill background</span>
+              <div className="flex items-center gap-2">
+                <input type="color" value={pin.pillBackgroundColor || '#ffffff'} onChange={(e) => updatePin(pinIndex, 'pillBackgroundColor', e.target.value)} className="h-11 w-14 rounded border p-1" />
+                <input value={pin.pillBackgroundColor || '#ffffff'} onChange={(e) => updatePin(pinIndex, 'pillBackgroundColor', e.target.value)} className="w-full rounded-lg border px-3 py-2 font-normal" />
+              </div>
+            </label>
+            <label className="space-y-1 text-sm font-semibold text-gray-700">
+              <span>Pill text</span>
+              <div className="flex items-center gap-2">
+                <input type="color" value={pin.pillTextColor || '#111827'} onChange={(e) => updatePin(pinIndex, 'pillTextColor', e.target.value)} className="h-11 w-14 rounded border p-1" />
+                <input value={pin.pillTextColor || '#111827'} onChange={(e) => updatePin(pinIndex, 'pillTextColor', e.target.value)} className="w-full rounded-lg border px-3 py-2 font-normal" />
+              </div>
+            </label>
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="grid grid-cols-[4rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
