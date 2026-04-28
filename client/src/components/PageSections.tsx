@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ElementType, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { FiArrowRight, FiCamera, FiCheck, FiMail, FiMapPin, FiMonitor, FiPenTool, FiPhone, FiVideo } from 'react-icons/fi'
+import { FiArrowRight, FiCamera, FiCheck, FiMail, FiMapPin, FiMessageSquare, FiMonitor, FiPenTool, FiPhone, FiVideo } from 'react-icons/fi'
 import Testimonials from './Testimonials'
 import TurnstileWidget from './TurnstileWidget'
 import { contactMessagesAPI, formSubmissionsAPI, pluginsAPI, portfolioAPI, resolveAssetUrl, servicePackagesAPI, siteDemosAPI, siteSettingsAPI } from '../services/api'
@@ -174,6 +174,61 @@ function getAlignmentClasses(textAlign?: string) {
   return { container: 'text-center', body: 'mx-auto' }
 }
 
+function getButtonIcon(icon?: string) {
+  if (icon === 'phone') return FiPhone
+  if (icon === 'mail') return FiMail
+  if (icon === 'message') return FiMessageSquare
+  if (icon === 'map') return FiMapPin
+  if (icon === 'video') return FiVideo
+  if (icon === 'monitor') return FiMonitor
+  return null
+}
+
+function ButtonContent({
+  label,
+  icon,
+  iconOnly,
+  showArrow
+}: {
+  label?: string
+  icon?: string
+  iconOnly?: boolean
+  showArrow?: boolean
+}) {
+  const Icon = getButtonIcon(icon)
+  const text = label || 'Button'
+
+  return (
+    <>
+      {Icon ? <Icon aria-hidden="true" /> : null}
+      {!iconOnly ? <span>{text}</span> : <span className="sr-only">{text}</span>}
+      {showArrow ? <FiArrowRight aria-hidden="true" /> : null}
+    </>
+  )
+}
+
+function getYoutubeEmbedUrl(value?: string) {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  if (raw.includes('/embed/')) return raw
+
+  try {
+    const url = new URL(raw)
+    if (url.hostname.includes('youtu.be')) {
+      const id = url.pathname.replace(/\//g, '')
+      return id ? `https://www.youtube.com/embed/${id}` : ''
+    }
+    if (url.hostname.includes('youtube.com')) {
+      const id = url.searchParams.get('v')
+      return id ? `https://www.youtube.com/embed/${id}` : ''
+    }
+  } catch {
+    return ''
+  }
+
+  return ''
+}
+
 function getImageLayout(section: any) {
   const width = Math.min(100, Math.max(10, Number(section.imageWidth || 100)))
   const height = Math.min(1200, Math.max(120, Number(section.imageHeight || 480)))
@@ -315,15 +370,18 @@ function getSectionSpacingStyle(section: any) {
       : secondaryHoverEffect === 'grow'
         ? '0 10px 20px rgba(15, 23, 42, 0.14)'
         : 'none'
+  const defaultVerticalPadding = ['hero', 'banner', 'imageOverlay'].includes(section.type) ? undefined : 'calc(4rem * var(--theme-spacing-scale, 1))'
+  const resolvedPaddingTop = toPixels(section.paddingTop) ?? defaultVerticalPadding
+  const resolvedPaddingBottom = toPixels(section.paddingBottom) ?? defaultVerticalPadding
 
   return {
     marginTop: toPixels(section.marginTop),
     marginRight: toPixels(section.marginRight),
     marginBottom: toPixels(section.marginBottom),
     marginLeft: toPixels(section.marginLeft),
-    paddingTop: toPixels(section.paddingTop),
+    paddingTop: resolvedPaddingTop,
     paddingRight: toPixels(section.paddingRight),
-    paddingBottom: toPixels(section.paddingBottom),
+    paddingBottom: resolvedPaddingBottom,
     paddingLeft: toPixels(section.paddingLeft),
     backgroundColor: section.backgroundColor || undefined,
     color: section.textColor || undefined,
@@ -394,8 +452,8 @@ function PageSection({ section }: { section: any }) {
             <h2 className="text-4xl font-bold md:text-6xl">{section.title}</h2>
             {section.body && <RichTextContent html={section.body} className="mt-6 text-xl text-blue-100" />}
             {section.buttonLabel && section.buttonUrl && (
-              <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center">
-                {section.buttonLabel}
+              <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
+                <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />
               </Link>
             )}
           </div>
@@ -452,6 +510,10 @@ function PageSection({ section }: { section: any }) {
 
   if (section.type === 'map') {
     return <InteractiveMapSection section={section} />
+  }
+
+  if (section.type === 'youtube') {
+    return <YoutubeSection section={section} />
   }
 
   if (section.type === 'divider') {
@@ -592,7 +654,11 @@ function ColumnBlock({ block }: { block: any }) {
 
   if (block.type === 'button') {
     return block.buttonLabel && block.buttonUrl
-      ? <Link to={block.buttonUrl} className="section-button inline-flex items-center justify-center gap-2">{block.buttonLabel} <FiArrowRight /></Link>
+      ? (
+        <Link to={block.buttonUrl} className="section-button inline-flex items-center justify-center gap-2" aria-label={block.buttonLabel || 'Button'}>
+          <ButtonContent label={block.buttonLabel} icon={block.buttonIcon} iconOnly={block.buttonIconOnly} showArrow={block.buttonShowArrow} />
+        </Link>
+      )
       : null
   }
 
@@ -606,6 +672,18 @@ function ColumnBlock({ block }: { block: any }) {
 
   if (block.type === 'siteDemos') {
     return <ColumnSiteDemosBlock block={block} />
+  }
+
+  if (block.type === 'map') {
+    return <InteractiveMapSection section={block} />
+  }
+
+  if (block.type === 'youtube') {
+    return <YoutubeSection section={block} />
+  }
+
+  if (block.type !== 'paragraph') {
+    return <PageSection section={block} />
   }
 
   return <RichTextContent html={block.body} className="text-gray-700" />
@@ -623,8 +701,8 @@ function ButtonSection({ section }: { section: any }) {
   return (
     <section className="section-padding">
       <div className={`container flex ${justifyClass}`}>
-        <Link to={section.buttonUrl} className="section-button inline-flex items-center justify-center gap-2">
-          {section.buttonLabel} <FiArrowRight />
+        <Link to={section.buttonUrl} className="section-button inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
+          <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />
         </Link>
       </div>
     </section>
@@ -662,6 +740,37 @@ function InteractiveMapSection({ section }: { section: any }) {
         ) : (
           <div className="rounded-lg border border-dashed p-6 text-center text-gray-600">
             Add a map address or embed URL in the page builder to show an interactive map here.
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function YoutubeSection({ section }: { section: any }) {
+  const src = getYoutubeEmbedUrl(section.videoUrl)
+  const height = Math.min(1200, Math.max(220, Number(section.videoHeight || 420)))
+
+  return (
+    <section className="section-padding">
+      <div className="container">
+        <SectionHeading section={section} fallbackTitle="Watch Video" />
+        {src ? (
+          <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+            <iframe
+              title={section.title || 'YouTube video'}
+              src={src}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="w-full border-0"
+              style={{ height: `${height}px` }}
+            />
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed p-6 text-center text-gray-600">
+            Add a YouTube URL in the page builder to show an embedded video here.
           </div>
         )}
       </div>
@@ -787,7 +896,11 @@ function ImageOverlaySection({ section }: { section: any }) {
         <div className="max-w-2xl">
           {section.title && <h2 className="text-4xl font-bold md:text-6xl">{section.title}</h2>}
           {section.body && <RichTextContent html={section.body} className="mt-5 text-lg text-gray-100 md:text-xl" />}
-          {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center">{section.buttonLabel}</Link>}
+          {section.buttonLabel && section.buttonUrl && (
+            <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
+              <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />
+            </Link>
+          )}
         </div>
       </div>
     </section>
@@ -837,8 +950,16 @@ function HeroSection({ section }: { section: any }) {
             <h1 className="text-4xl font-bold md:text-6xl">{section.title}</h1>
             {section.body && <RichTextContent html={section.body} className="mt-6 text-xl text-blue-100 md:text-2xl" />}
             <div className="mt-8 flex flex-wrap gap-4">
-              {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="section-button inline-flex items-center justify-center gap-2">{section.buttonLabel} <FiArrowRight /></Link>}
-              {section.secondaryButtonLabel && section.secondaryButtonUrl && <Link to={section.secondaryButtonUrl} className="btn-secondary section-secondary-button inline-flex items-center justify-center">{section.secondaryButtonLabel}</Link>}
+              {section.buttonLabel && section.buttonUrl && (
+                <Link to={section.buttonUrl} className="section-button inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
+                  <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />
+                </Link>
+              )}
+              {section.secondaryButtonLabel && section.secondaryButtonUrl && (
+                <Link to={section.secondaryButtonUrl} className="btn-secondary section-secondary-button inline-flex items-center justify-center gap-2" aria-label={section.secondaryButtonLabel || 'Secondary button'}>
+                  <ButtonContent label={section.secondaryButtonLabel} icon={section.secondaryButtonIcon} iconOnly={section.secondaryButtonIconOnly} showArrow={section.secondaryButtonShowArrow} />
+                </Link>
+              )}
             </div>
           </div>
           {hasHeroForm && (
@@ -1554,7 +1675,11 @@ function CtaSection({ section }: { section: any }) {
       <div className="container text-center">
         <h2 className="text-3xl font-bold md:text-4xl">{section.title}</h2>
         {section.body && <RichTextContent html={section.body} className="mx-auto mt-6 max-w-2xl text-xl text-blue-100" />}
-        {section.buttonLabel && section.buttonUrl && <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center">{section.buttonLabel}</Link>}
+        {section.buttonLabel && section.buttonUrl && (
+          <Link to={section.buttonUrl} className="section-button mt-8 inline-flex items-center justify-center gap-2" aria-label={section.buttonLabel || 'Button'}>
+            <ButtonContent label={section.buttonLabel} icon={section.buttonIcon} iconOnly={section.buttonIconOnly} showArrow={section.buttonShowArrow} />
+          </Link>
+        )}
       </div>
     </section>
   )

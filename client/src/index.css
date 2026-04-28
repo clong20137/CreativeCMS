@@ -1290,6 +1290,12 @@ html.dark-mode .login-page {
   color: var(--section-text-color, var(--theme-body, inherit));
 }
 
+.page-section-render > section.section-padding,
+.page-section-render > section.py-16 {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 .page-section-render h1,
 .page-section-render h2,
 .page-section-render h3,

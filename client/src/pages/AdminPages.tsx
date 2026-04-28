@@ -1,6 +1,6 @@
 import { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiMapPin, FiMonitor, FiMove, FiRotateCcw, FiRotateCw, FiSave, FiSearch, FiSmartphone, FiSquare, FiTablet, FiTrash2, FiType } from 'react-icons/fi'
+import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiMail, FiMapPin, FiMessageSquare, FiMonitor, FiMove, FiPhone, FiRotateCcw, FiRotateCw, FiSave, FiSearch, FiSmartphone, FiSquare, FiTablet, FiTrash2, FiType, FiVideo } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { adminAPI, resolveAssetUrl } from '../services/api'
@@ -24,10 +24,16 @@ const emptySettings = {
   heroTitle: '',
   heroSubtitle: '',
   heroPrimaryLabel: '',
-  heroPrimaryUrl: '',
-  heroSecondaryLabel: '',
-  heroSecondaryUrl: '',
-  heroMediaType: 'none',
+    heroPrimaryUrl: '',
+    heroSecondaryLabel: '',
+    heroSecondaryUrl: '',
+    buttonIcon: '',
+    buttonIconOnly: false,
+    buttonShowArrow: true,
+    secondaryButtonIcon: '',
+    secondaryButtonIconOnly: false,
+    secondaryButtonShowArrow: false,
+    heroMediaType: 'none',
   heroMediaUrl: '',
   pageHeaders: {} as Record<string, { title: string; subtitle: string }>,
   pageMetadata: {} as Record<string, any>,
@@ -76,6 +82,7 @@ const sectionTypeOptions = [
   { value: 'imageCards', label: 'Image Cards', icon: FiGrid },
   { value: 'imageOverlay', label: 'Image Overlay', icon: FiImage },
   { value: 'map', label: 'Interactive Map', icon: FiMapPin },
+  { value: 'youtube', label: 'YouTube Video', icon: FiVideo },
   { value: 'divider', label: 'Divider', icon: FiLayout },
   { value: 'gallery', label: 'Gallery', icon: FiImage },
   { value: 'plugin', label: 'Plugin', icon: FiGrid },
@@ -103,8 +110,40 @@ const nestedBlockOptions = [
   { value: 'button', label: 'Button', icon: FiSquare },
   { value: 'image', label: 'Image', icon: FiImage },
   { value: 'imageCard', label: 'Image Card', icon: FiGrid },
+  { value: 'hero', label: 'Hero', icon: FiLayout },
+  { value: 'banner', label: 'Banner', icon: FiLayout },
+  { value: 'cta', label: 'CTA', icon: FiLayout },
+  { value: 'imageOverlay', label: 'Image Overlay', icon: FiImage },
+  { value: 'map', label: 'Interactive Map', icon: FiMapPin },
+  { value: 'youtube', label: 'YouTube Video', icon: FiVideo },
+  { value: 'divider', label: 'Divider', icon: FiLayout },
+  { value: 'gallery', label: 'Gallery', icon: FiImage },
+  { value: 'plugin', label: 'Plugin', icon: FiGrid },
+  { value: 'section', label: 'Text + Image', icon: FiColumns },
+  { value: 'testimonials', label: 'Testimonials', icon: FiFileText },
+  { value: 'portfolio', label: 'Portfolio Items', icon: FiImage },
+  { value: 'services', label: 'Services', icon: FiGrid },
+  { value: 'whatWeDo', label: 'Image + Name Cards', icon: FiGrid },
+  { value: 'featuredWork', label: 'Featured Work', icon: FiImage },
+  { value: 'portfolioGallery', label: 'Portfolio Gallery', icon: FiImage },
+  { value: 'servicesList', label: 'Services List', icon: FiGrid },
+  { value: 'pricingPackages', label: 'Pricing Packages', icon: FiGrid },
+  { value: 'servicePricing', label: 'A La Carte Pricing', icon: FiGrid },
+  { value: 'faq', label: 'FAQ', icon: FiFileText },
   { value: 'pluginsList', label: 'Plugins List', icon: FiGrid },
-  { value: 'siteDemos', label: 'Site Demos', icon: FiMonitor }
+  { value: 'siteDemos', label: 'Site Demos', icon: FiMonitor },
+  { value: 'contactForm', label: 'Contact Form', icon: FiFileText },
+  { value: 'customForm', label: 'Custom Form', icon: FiFileText }
+]
+
+const buttonIconOptions = [
+  { value: '', label: 'No icon', icon: null },
+  { value: 'phone', label: 'Phone', icon: FiPhone },
+  { value: 'mail', label: 'Mail', icon: FiMail },
+  { value: 'message', label: 'Message', icon: FiMessageSquare },
+  { value: 'map', label: 'Map Pin', icon: FiMapPin },
+  { value: 'video', label: 'Video', icon: FiVideo },
+  { value: 'monitor', label: 'Monitor', icon: FiMonitor }
 ]
 
 const MAX_IMAGE_WIDTH = 1200
@@ -285,6 +324,8 @@ function makePageSection(type: string) {
     mapQuery: '',
     mapEmbedUrl: '',
     mapHeight: type === 'map' ? 420 : '',
+    videoUrl: '',
+    videoHeight: type === 'youtube' ? 420 : '',
     mediaType: 'image',
     alt: '',
     pluginSlug: 'restaurant',
@@ -416,6 +457,16 @@ function makeCustomFormField(type = 'text', overrides: Record<string, any> = {})
 }
 
 function makeNestedBlock(type: string) {
+  if (type !== 'imageCard') {
+    const baseSection = makePageSection(type)
+    return {
+      ...baseSection,
+      id: crypto.randomUUID(),
+      buttonLabel: type === 'button' ? 'Learn More' : baseSection.buttonLabel,
+      buttonUrl: type === 'button' ? '/contact' : baseSection.buttonUrl
+    }
+  }
+
   const base = {
     id: crypto.randomUUID(),
     type,
@@ -434,26 +485,6 @@ function makeNestedBlock(type: string) {
     buttonPaddingX: '',
     buttonPaddingY: '',
     buttonHoverEffect: 'lift'
-  }
-
-  if (type === 'pluginsList') {
-    return {
-      ...base,
-      title: 'Plugins',
-      body: '',
-      columns: 1,
-      itemLimit: 6
-    }
-  }
-
-  if (type === 'siteDemos') {
-    return {
-      ...base,
-      title: 'Site Demos',
-      body: '',
-      columns: 1,
-      itemLimit: 3
-    }
   }
 
   return base
@@ -2915,7 +2946,7 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
           </div>
         )}
 
-        {(section.type === 'header' || section.type === 'section' || section.type === 'services' || section.type === 'map') && (
+        {(section.type === 'header' || section.type === 'section' || section.type === 'services' || section.type === 'map' || section.type === 'youtube') && (
           <div className="space-y-3">
             <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="w-full px-4 py-2 border rounded-lg" />
             {section.type === 'header' && (
@@ -2934,7 +2965,7 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
           </div>
         )}
 
-        {(section.type === 'paragraph' || section.type === 'section' || section.type === 'services' || section.type === 'map') && (
+        {(section.type === 'paragraph' || section.type === 'section' || section.type === 'services' || section.type === 'map' || section.type === 'youtube') && (
           <DeferredRichTextEditorField label="Text content" value={section.body || ''} onChange={(value: string) => updateSection(index, 'body', value)} placeholder="Format certain words, add links, and set colors..." minHeight={160} />
         )}
 
@@ -3042,6 +3073,23 @@ function SectionInspector({ title, section, rawSection, index, updateSection, re
               <input type="range" min="220" max="900" step="10" value={Number(section.mapHeight || 420)} onChange={(e) => updateSection(index, 'mapHeight', e.target.value)} className="w-full accent-blue-600" />
               <div className="flex items-center gap-1">
                 <input type="number" min="220" max="1200" value={section.mapHeight ?? ''} onChange={(e) => updateSection(index, 'mapHeight', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                <span className="text-xs text-gray-500">px</span>
+              </div>
+            </label>
+          </div>
+        )}
+
+        {section.type === 'youtube' && (
+          <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
+            <label className="space-y-2 block">
+              <span className="text-sm font-semibold text-gray-700">YouTube URL</span>
+              <input value={section.videoUrl || ''} onChange={(e) => updateSection(index, 'videoUrl', e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="w-full rounded-lg border px-4 py-2" />
+            </label>
+            <label className="grid grid-cols-[5rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+              <span className="font-semibold">Height</span>
+              <input type="range" min="220" max="900" step="10" value={Number(section.videoHeight || 420)} onChange={(e) => updateSection(index, 'videoHeight', e.target.value)} className="w-full accent-blue-600" />
+              <div className="flex items-center gap-1">
+                <input type="number" min="220" max="1200" value={section.videoHeight ?? ''} onChange={(e) => updateSection(index, 'videoHeight', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
                 <span className="text-xs text-gray-500">px</span>
               </div>
             </label>
@@ -3338,7 +3386,7 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
               </div>
             )}
 
-            {(section.type === 'header' || section.type === 'section' || section.type === 'services' || section.type === 'map') && (
+            {(section.type === 'header' || section.type === 'section' || section.type === 'services' || section.type === 'map' || section.type === 'youtube') && (
               <div className="mb-3 space-y-3">
                 <input value={section.title || ''} onChange={(e) => updateSection(index, 'title', e.target.value)} placeholder="Section title" className="w-full px-4 py-2 border rounded-lg" />
                 {section.type === 'header' && (
@@ -3536,8 +3584,13 @@ function ColumnsEditor({ section, index, updateSection, uploadImageToField, open
       </div>
       {columns.map((column, columnIndex) => (
         <div key={column.id || columnIndex} className="space-y-3 rounded-lg border p-3">
-          <h4 className="font-bold text-gray-900">Column {columnIndex + 1}</h4>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h4 className="font-bold text-gray-900">Column {columnIndex + 1}</h4>
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+              + Add as many blocks as you want
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
             {nestedBlockOptions.map(option => {
               const Icon = option.icon
               return (
@@ -3558,19 +3611,36 @@ function ColumnsEditor({ section, index, updateSection, uploadImageToField, open
 }
 
 function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, removeBlock, uploadImageToField, openMediaPicker }: any) {
+  const hasTitle = ['header', 'imageCard', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm'].includes(block.type)
+  const hasBody = ['paragraph', 'header', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'customForm'].includes(block.type)
+  const hasButton = ['button', 'hero', 'banner', 'cta', 'imageOverlay'].includes(block.type)
+
   return (
     <div className="space-y-2 rounded-lg bg-gray-50 p-3">
       <div className="flex items-center justify-between gap-2">
         <strong className="text-sm text-gray-900">{block.type}</strong>
         <button type="button" onClick={() => removeBlock(columnIndex, blockIndex)} className="text-sm font-semibold text-red-600">Remove</button>
       </div>
-      {(block.type === 'header' || block.type === 'imageCard') && <input value={block.title || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'title', e.target.value)} placeholder="Header" className="w-full px-4 py-2 border rounded-lg" />}
+      {hasTitle && <input value={block.title || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'title', e.target.value)} placeholder="Header / section title" className="w-full px-4 py-2 border rounded-lg" />}
       {block.type === 'imageCard' && <input value={block.category || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'category', e.target.value)} placeholder="Category / small heading" className="w-full px-4 py-2 border rounded-lg" />}
-      {(block.type === 'paragraph' || block.type === 'header') && <DeferredRichTextEditorField label="Text" value={block.body || ''} onChange={(value: string) => updateBlock(columnIndex, blockIndex, 'body', value)} placeholder="Format text..." minHeight={120} />}
-      {block.type === 'button' && (
+      {hasBody && <DeferredRichTextEditorField label="Text" value={block.body || ''} onChange={(value: string) => updateBlock(columnIndex, blockIndex, 'body', value)} placeholder="Format text..." minHeight={120} />}
+      {hasButton && (
         <>
           <input value={block.buttonLabel || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonLabel', e.target.value)} placeholder="Button label" className="w-full px-4 py-2 border rounded-lg" />
           <input value={block.buttonUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonUrl', e.target.value)} placeholder="Button URL" className="w-full px-4 py-2 border rounded-lg" />
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+            <select value={block.buttonIcon || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonIcon', e.target.value)} className="w-full px-4 py-2 border rounded-lg bg-white">
+              {buttonIconOptions.map(option => <option key={option.value || 'none'} value={option.value}>{option.label}</option>)}
+            </select>
+            <label className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700">
+              <input type="checkbox" checked={Boolean(block.buttonIconOnly)} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonIconOnly', e.target.checked)} />
+              Icon only
+            </label>
+            <label className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700">
+              <input type="checkbox" checked={block.buttonShowArrow !== false} onChange={(e) => updateBlock(columnIndex, blockIndex, 'buttonShowArrow', e.target.checked)} />
+              Show arrow
+            </label>
+          </div>
         </>
       )}
       {(block.type === 'pluginsList' || block.type === 'siteDemos') && (
@@ -3584,13 +3654,31 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
         </>
       )}
       {block.type === 'imageCard' && <textarea value={block.description || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'description', e.target.value)} placeholder="Subtext" rows={2} className="w-full px-4 py-2 border rounded-lg" />}
-      {(block.type === 'image' || block.type === 'imageCard') && (
+      {(block.type === 'image' || block.type === 'imageCard' || block.type === 'hero' || block.type === 'banner' || block.type === 'imageOverlay' || block.type === 'section') && (
         <>
           <input value={block.imageUrl || block.image || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, block.type === 'imageCard' ? 'image' : 'imageUrl', e.target.value)} placeholder="Image URL" className="w-full px-4 py-2 border rounded-lg" />
           {openMediaPicker && <button type="button" onClick={() => openMediaPicker((url: string) => updateBlock(columnIndex, blockIndex, block.type === 'imageCard' ? 'image' : 'imageUrl', url), 'image')} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50"><FiImage /> Choose from Media Library</button>}
           <input type="file" accept="image/*" onChange={(e) => uploadImageToField((url: string) => updateBlock(columnIndex, blockIndex, block.type === 'imageCard' ? 'image' : 'imageUrl', url), e.target.files?.[0])} className="w-full px-4 py-2 border rounded-lg" />
           {(block.imageUrl || block.image) && <img src={resolveAssetUrl(block.imageUrl || block.image)} alt={block.title || ''} className="h-32 w-full rounded-lg object-cover" />}
         </>
+      )}
+      {block.type === 'map' && (
+        <>
+          <input value={block.mapQuery || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapQuery', e.target.value)} placeholder="Map search / address" className="w-full px-4 py-2 border rounded-lg" />
+          <input value={block.mapEmbedUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapEmbedUrl', e.target.value)} placeholder="Custom embed URL" className="w-full px-4 py-2 border rounded-lg" />
+          <input type="number" min="220" max="1200" value={block.mapHeight || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapHeight', e.target.value)} placeholder="Map height in px" className="w-full px-4 py-2 border rounded-lg" />
+        </>
+      )}
+      {block.type === 'youtube' && (
+        <>
+          <input value={block.videoUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'videoUrl', e.target.value)} placeholder="YouTube URL" className="w-full px-4 py-2 border rounded-lg" />
+          <input type="number" min="220" max="1200" value={block.videoHeight || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'videoHeight', e.target.value)} placeholder="Video height in px" className="w-full px-4 py-2 border rounded-lg" />
+        </>
+      )}
+      {block.type === 'plugin' && (
+        <select value={block.pluginSlug || 'restaurant'} onChange={(e) => updateBlock(columnIndex, blockIndex, 'pluginSlug', e.target.value)} className="w-full px-4 py-2 border rounded-lg bg-white">
+          {pluginOptions.map(plugin => <option key={plugin.value} value={plugin.value}>{plugin.label}</option>)}
+        </select>
       )}
       {block.type === 'imageCard' && (
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
@@ -4125,6 +4213,9 @@ function SectionButtonControls({ section, index, updateSection }: any) {
     const paddingXKey = `${prefix}PaddingX`
     const paddingYKey = `${prefix}PaddingY`
     const hoverEffectKey = `${prefix}HoverEffect`
+    const iconKey = `${prefix}Icon`
+    const iconOnlyKey = `${prefix}IconOnly`
+    const showArrowKey = `${prefix}ShowArrow`
 
     return (
       <div className="space-y-4 rounded-lg border bg-gray-50 p-4">
@@ -4133,6 +4224,22 @@ function SectionButtonControls({ section, index, updateSection }: any) {
           {prefix === 'secondaryButton' && <p className="mt-1 text-xs text-gray-600">Leave these blank to keep the global secondary button style.</p>}
         </div>
         <div className="space-y-3">
+          <label className="block text-sm font-semibold text-gray-700">
+            Icon
+            <select value={section[iconKey] || ''} onChange={(e) => updateSection(index, iconKey, e.target.value)} className="mt-2 w-full rounded-lg border px-3 py-2">
+              {buttonIconOptions.map(option => <option key={option.value || 'none'} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <input type="checkbox" checked={Boolean(section[iconOnlyKey])} onChange={(e) => updateSection(index, iconOnlyKey, e.target.checked)} />
+              Icon only
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <input type="checkbox" checked={prefix === 'secondaryButton' ? Boolean(section[showArrowKey]) : section[showArrowKey] !== false} onChange={(e) => updateSection(index, showArrowKey, e.target.checked)} />
+              Show arrow
+            </label>
+          </div>
           <div className="grid grid-cols-[1fr_3rem_6rem] items-center gap-2 text-sm text-gray-700">
             <span className="font-semibold">Background</span>
             <input type="color" value={colorValue(section[backgroundKey], backgroundFallback)} onChange={(e) => updateSection(index, backgroundKey, e.target.value)} className="h-10 w-12 rounded border p-1" />
