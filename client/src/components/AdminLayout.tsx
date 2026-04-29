@@ -1127,32 +1127,7 @@ export default function AdminLayout({ title, children, headerActions }: { title:
               </div>
               <div className="flex items-center gap-2">
                 {headerActions}
-                <Link
-                  to="/"
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-                  aria-label="Back to website"
-                  title="Back to website"
-                >
-                  <FiMonitor size={18} />
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-                  aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-100"
-                  aria-label="Logout"
-                  title="Logout"
-                >
-                  <FiLogOut size={18} />
-                </button>
+                <div className="mx-1 hidden h-8 w-px bg-gray-200 md:block" aria-hidden="true" />
                 <div className="relative">
                   <button
                     type="button"
@@ -1192,6 +1167,32 @@ export default function AdminLayout({ title, children, headerActions }: { title:
                     </div>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                  aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
+                </button>
+                <Link
+                  to="/"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                  aria-label="Back to website"
+                  title="Back to website"
+                >
+                  <FiMonitor size={18} />
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-100"
+                  aria-label="Logout"
+                  title="Logout"
+                >
+                  <FiLogOut size={18} />
+                </button>
               </div>
             </div>
           </div>
