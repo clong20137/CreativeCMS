@@ -439,6 +439,7 @@ function makePageSection(type: string) {
     paddingBottom: '',
     paddingLeft: '',
     backgroundColor: '',
+    backgroundOpacity: '',
     headingColor: '',
     textColor: '',
     buttonBackgroundColor: '',
@@ -5775,6 +5776,10 @@ function SectionColorControls({ section, index, updateSection }: any) {
     { label: 'Large', value: '0 28px 70px rgba(15, 23, 42, 0.24)' },
     { label: 'Inner', value: 'inset 0 2px 14px rgba(15, 23, 42, 0.16)' }
   ]
+  const backgroundOpacity = (() => {
+    const value = Number(section.backgroundOpacity)
+    return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 100
+  })()
 
   return (
     <InspectorCollapsible title="Colors">
@@ -5798,6 +5803,29 @@ function SectionColorControls({ section, index, updateSection }: any) {
           </label>
         ))}
         </div>
+        <label className="grid grid-cols-[6rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+          <span className="font-semibold">Bg opacity</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={backgroundOpacity}
+            onChange={(e) => updateSection(index, 'backgroundOpacity', e.target.value)}
+            className="w-full accent-blue-600"
+          />
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={section.backgroundOpacity ?? ''}
+              onChange={(e) => updateSection(index, 'backgroundOpacity', e.target.value)}
+              className="w-full rounded-lg border px-2 py-1 text-right"
+            />
+            <span className="text-xs text-gray-500">%</span>
+          </div>
+        </label>
         <div className="space-y-3 border-t pt-4">
           <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">Additional CSS</h4>
           <label className="block text-sm font-semibold text-gray-700">

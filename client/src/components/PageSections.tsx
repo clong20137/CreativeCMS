@@ -571,6 +571,39 @@ function getSectionSpacingStyle(section: any) {
     const number = Number(value)
     return Number.isFinite(number) ? String(number) : undefined
   }
+  const applyOpacityToColor = (value: any, opacityValue: any) => {
+    const raw = String(value || '').trim()
+    if (!raw) return undefined
+    const opacityNumber = Number(opacityValue)
+    const opacity = Number.isFinite(opacityNumber) ? Math.min(100, Math.max(0, opacityNumber)) / 100 : 1
+    if (opacity >= 1) return raw
+
+    const hex = raw.replace('#', '')
+    if (/^[0-9A-Fa-f]{6}$/.test(hex)) {
+      const red = parseInt(hex.slice(0, 2), 16)
+      const green = parseInt(hex.slice(2, 4), 16)
+      const blue = parseInt(hex.slice(4, 6), 16)
+      return `rgba(${red}, ${green}, ${blue}, ${opacity})`
+    }
+    if (/^[0-9A-Fa-f]{3}$/.test(hex)) {
+      const red = parseInt(hex[0] + hex[0], 16)
+      const green = parseInt(hex[1] + hex[1], 16)
+      const blue = parseInt(hex[2] + hex[2], 16)
+      return `rgba(${red}, ${green}, ${blue}, ${opacity})`
+    }
+
+    const rgbMatch = raw.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i)
+    if (rgbMatch) {
+      return `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, ${opacity})`
+    }
+
+    const rgbaMatch = raw.match(/^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*([0-9.]+)\s*\)$/i)
+    if (rgbaMatch) {
+      return `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, ${opacity})`
+    }
+
+    return raw
+  }
   const hoverEffect = section.buttonHoverEffect || 'lift'
   const hoverTransform = hoverEffect === 'grow'
     ? 'scale(1.04)'
@@ -614,7 +647,7 @@ function getSectionSpacingStyle(section: any) {
     paddingRight: toPixels(section.paddingRight),
     paddingBottom: resolvedPaddingBottom,
     paddingLeft: toPixels(section.paddingLeft),
-    backgroundColor: section.backgroundColor || undefined,
+    backgroundColor: applyOpacityToColor(section.backgroundColor, section.backgroundOpacity),
     color: section.textColor || undefined,
     boxShadow: section.boxShadow || undefined,
     borderWidth: toPixels(section.borderWidth),
