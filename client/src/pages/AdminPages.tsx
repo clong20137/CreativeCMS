@@ -147,6 +147,31 @@ const DEFAULT_RIGHT_PANEL_WIDTH = 420
 const MIN_RIGHT_PANEL_WIDTH = 320
 const MAX_RIGHT_PANEL_WIDTH = 620
 
+function handleBuilderDragAutoScroll(event: React.DragEvent<HTMLElement>) {
+  event.preventDefault()
+  const container = event.currentTarget
+  if (!(container instanceof HTMLElement)) return
+
+  const rect = container.getBoundingClientRect()
+  const edgeThreshold = 84
+  const containerStep = 28
+  const viewportStep = 24
+  const pointerY = event.clientY
+
+  if (pointerY < rect.top + edgeThreshold) {
+    container.scrollTop -= containerStep
+  } else if (pointerY > rect.bottom - edgeThreshold) {
+    container.scrollTop += containerStep
+  }
+
+  const viewportThreshold = 88
+  if (pointerY < viewportThreshold) {
+    window.scrollBy({ top: -viewportStep, behavior: 'auto' })
+  } else if (pointerY > window.innerHeight - viewportThreshold) {
+    window.scrollBy({ top: viewportStep, behavior: 'auto' })
+  }
+}
+
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
@@ -3448,7 +3473,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
         </div>
       </div>
       <div
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={handleBuilderDragAutoScroll}
         onDrop={onDrop}
         onClick={() => clearSelection?.()}
         className="min-h-[26rem] overflow-auto rounded-lg border bg-gray-100 p-3 md:min-h-[calc(100vh-24rem)]"
@@ -3473,7 +3498,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                   setDraggingSectionIndex(index)
                   e.dataTransfer.effectAllowed = 'move'
                 }}
-                onDragOver={(e) => e.preventDefault()}
+                onDragOver={handleBuilderDragAutoScroll}
                 onDrop={(e) => {
                   e.preventDefault()
                   if (draggingSectionIndex !== null) moveSection(draggingSectionIndex, index)
@@ -4349,8 +4374,9 @@ function PageSectionEditor({ title, sections, editingSectionId, draggingSectionI
             key={section.id || index}
             id={`built-in-section-${section.id || index}`}
             onClick={() => setEditingSectionId(section.id || String(index))}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={() => {
+            onDragOver={handleBuilderDragAutoScroll}
+            onDrop={(e) => {
+              e.preventDefault()
               if (draggingSectionIndex !== null) moveSection(draggingSectionIndex, index)
               setDraggingSectionIndex(null)
             }}
@@ -4696,6 +4722,9 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
   const hasTitle = ['header', 'imageCard', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'tabs', 'accordion', 'customForm', 'imageStrip', 'columns'].includes(block.type)
   const hasBody = ['paragraph', 'header', 'hero', 'banner', 'cta', 'imageOverlay', 'section', 'services', 'map', 'youtube', 'pluginsList', 'siteDemos', 'faq', 'tabs', 'accordion', 'customForm', 'imageStrip', 'columns'].includes(block.type)
   const hasButton = ['button', 'hero', 'banner', 'cta', 'imageOverlay'].includes(block.type)
+  const updateNestedSection = useCallback((_: number, field: string, value: any) => {
+    updateBlock(columnIndex, blockIndex, field, value)
+  }, [blockIndex, columnIndex, updateBlock])
 
   return (
     <div className="space-y-2 rounded-lg bg-gray-50 p-3">
@@ -4750,6 +4779,8 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
           <input value={block.mapEmbedUrl || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapEmbedUrl', e.target.value)} placeholder="Custom embed URL" className="w-full px-4 py-2 border rounded-lg" />
           <input type="number" min="220" max="1200" value={block.mapHeight || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapHeight', e.target.value)} placeholder="Map height in px" className="w-full px-4 py-2 border rounded-lg" />
           <input type="number" min="2" max="19" value={block.mapZoom || 14} onChange={(e) => updateBlock(columnIndex, blockIndex, 'mapZoom', e.target.value)} placeholder="Map zoom" className="w-full px-4 py-2 border rounded-lg" />
+          <MapPinsEditor section={block} index={0} updateSection={updateNestedSection} />
+          <MapRegionsEditor section={block} index={0} updateSection={updateNestedSection} />
         </>
       )}
       {block.type === 'youtube' && (
