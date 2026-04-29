@@ -5141,7 +5141,7 @@ function MapPinsEditor({ section, index, updateSection }: any) {
   const addPin = () => updateSection(index, 'mapPins', [...pins, makeMapPin({ label: `Location ${pins.length + 1}` })])
   const removePin = (pinIndex: number) => updateSection(index, 'mapPins', pins.filter((_: any, currentIndex: number) => currentIndex !== pinIndex))
   const togglePinCollapse = (pinKey: string) => {
-    setCollapsedPins((current) => ({ ...current, [pinKey]: !current[pinKey] }))
+    setCollapsedPins((current) => ({ ...current, [pinKey]: !(current[pinKey] !== false) }))
   }
 
   return (
@@ -5154,21 +5154,25 @@ function MapPinsEditor({ section, index, updateSection }: any) {
         <button type="button" onClick={addPin} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Add Pin</button>
       </div>
       {pins.map((pin: any, pinIndex: number) => (
+        (() => {
+          const pinKey = String(pin.id || pinIndex)
+          const isCollapsed = collapsedPins[pinKey] !== false
+          return (
         <div key={pin.id || pinIndex} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <button
             type="button"
-            onClick={() => togglePinCollapse(String(pin.id || pinIndex))}
+            onClick={() => togglePinCollapse(pinKey)}
             className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
-            aria-expanded={!collapsedPins[String(pin.id || pinIndex)]}
+            aria-expanded={!isCollapsed}
           >
             <div className="min-w-0">
               <p className="text-sm font-bold text-gray-900">Pin {pinIndex + 1}</p>
               <p className="truncate text-sm text-gray-600">{pin.label || pin.query || 'Unnamed location'}</p>
             </div>
-            <FiChevronDown className={`h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 ease-in-out ${collapsedPins[String(pin.id || pinIndex)] ? '' : 'rotate-180'}`} />
+            <FiChevronDown className={`h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 ease-in-out ${isCollapsed ? '' : 'rotate-180'}`} />
           </button>
 
-          <div className={`grid transition-all duration-300 ease-in-out ${collapsedPins[String(pin.id || pinIndex)] ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
+          <div className={`grid transition-all duration-300 ease-in-out ${isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
             <div className="overflow-hidden">
               <div className="space-y-3 border-t px-4 py-4">
                 <input value={pin.label || ''} onChange={(e) => updatePin(pinIndex, 'label', e.target.value)} placeholder="Place name" className="w-full rounded-lg border px-4 py-2" />
@@ -5224,6 +5228,8 @@ function MapPinsEditor({ section, index, updateSection }: any) {
             </div>
           </div>
         </div>
+          )
+        })()
       ))}
       {pins.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No pins yet. Add a pin to show a saved location pill on top of the map.</div>}
     </div>
