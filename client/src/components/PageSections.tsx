@@ -634,18 +634,14 @@ function getSectionSpacingStyle(section: any) {
       : secondaryHoverEffect === 'grow'
         ? '0 10px 20px rgba(15, 23, 42, 0.14)'
         : 'none'
-  const defaultVerticalPadding = ['hero', 'banner', 'imageOverlay'].includes(section.type) ? undefined : 'calc(4rem * var(--theme-spacing-scale, 1))'
-  const resolvedPaddingTop = toPixels(section.paddingTop) ?? defaultVerticalPadding
-  const resolvedPaddingBottom = toPixels(section.paddingBottom) ?? defaultVerticalPadding
-
   return {
     marginTop: toPixels(section.marginTop),
     marginRight: toPixels(section.marginRight),
     marginBottom: toPixels(section.marginBottom),
     marginLeft: toPixels(section.marginLeft),
-    paddingTop: resolvedPaddingTop,
+    paddingTop: toPixels(section.paddingTop),
     paddingRight: toPixels(section.paddingRight),
-    paddingBottom: resolvedPaddingBottom,
+    paddingBottom: toPixels(section.paddingBottom),
     paddingLeft: toPixels(section.paddingLeft),
     backgroundColor: applyOpacityToColor(section.backgroundColor, section.backgroundOpacity),
     color: section.textColor || undefined,

@@ -430,16 +430,16 @@ function makePageSection(type: string) {
           makeCustomFormField('textarea', { label: 'How can we help?', placeholder: 'Tell us about your project...', required: true })
         ]
       : [],
-    marginTop: '',
-    marginRight: '',
-    marginBottom: '',
-    marginLeft: '',
-    paddingTop: '',
-    paddingRight: '',
-    paddingBottom: '',
-    paddingLeft: '',
+    marginTop: '0',
+    marginRight: '0',
+    marginBottom: '0',
+    marginLeft: '0',
+    paddingTop: '0',
+    paddingRight: '0',
+    paddingBottom: '0',
+    paddingLeft: '0',
     backgroundColor: '',
-    backgroundOpacity: '',
+    backgroundOpacity: 100,
     headingColor: '',
     textColor: '',
     buttonBackgroundColor: '',
@@ -1354,11 +1354,23 @@ export default function AdminPages() {
 
     setPageDraft((current: any) => {
       const sections = [...(current.sections || [])]
-      if (fromIndex < 0 || fromIndex >= sections.length || toIndex >= sections.length) return current
+      if (fromIndex < 0 || fromIndex >= sections.length || toIndex > sections.length) return current
       const [movedSection] = sections.splice(fromIndex, 1)
       sections.splice(toIndex, 0, movedSection)
       return { ...current, sections }
     })
+  }
+
+  const insertPageSectionAt = (insertIndex: number, type: string) => {
+    recordHistory()
+    const section = makePageSection(type)
+    setPageDraft((current: any) => {
+      const sections = [...(current.sections || [])]
+      const safeIndex = Math.min(Math.max(0, insertIndex), sections.length)
+      sections.splice(safeIndex, 0, section)
+      return { ...current, sections }
+    })
+    markNewSection(section.id)
   }
 
   const getBuiltInSections = useCallback((pageKey: string) => (
@@ -1379,6 +1391,15 @@ export default function AdminPages() {
   const addBuiltInSection = (pageKey: string, type: string) => {
     const section = makePageSection(type)
     updateBuiltInSections(pageKey, [...getBuiltInSections(pageKey), section])
+    markNewSection(section.id)
+  }
+
+  const insertBuiltInSectionAt = (pageKey: string, insertIndex: number, type: string) => {
+    const section = makePageSection(type)
+    const sections = [...getBuiltInSections(pageKey)]
+    const safeIndex = Math.min(Math.max(0, insertIndex), sections.length)
+    sections.splice(safeIndex, 0, section)
+    updateBuiltInSections(pageKey, sections)
     markNewSection(section.id)
   }
 
@@ -1406,7 +1427,7 @@ export default function AdminPages() {
 
   const moveBuiltInSection = (pageKey: string, fromIndex: number, toIndex: number) => {
     const sections = [...getBuiltInSections(pageKey)]
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= sections.length || toIndex >= sections.length) return
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= sections.length || toIndex > sections.length) return
     const [movedSection] = sections.splice(fromIndex, 1)
     sections.splice(toIndex, 0, movedSection)
     updateBuiltInSections(pageKey, sections)
@@ -1426,6 +1447,9 @@ export default function AdminPages() {
       ? 'Homepage'
       : pageHeaderLabels[activeBuiltInPageKey] || 'Page'
   const addActiveSection = (type: string) => activeTab === 'Custom Pages' ? addPageSection(type) : addBuiltInSection(activeBuiltInPageKey, type)
+  const insertActiveSectionAt = (insertIndex: number, type: string) => activeTab === 'Custom Pages'
+    ? insertPageSectionAt(insertIndex, type)
+    : insertBuiltInSectionAt(activeBuiltInPageKey, insertIndex, type)
   const updateReusableSyncedBlock = (templateId: string, updater: (template: any) => any) => {
     recordHistory()
     setSettings((prev) => ({
@@ -1575,6 +1599,19 @@ export default function AdminPages() {
     }
     if (draggingSectionIndex !== null && activeSections.length > 0) {
       moveActiveSection(draggingSectionIndex, activeSections.length - 1)
+      setDraggingSectionIndex(null)
+    }
+  }
+  const handlePreviewDropAtIndex = (insertIndex: number, e: React.DragEvent) => {
+    e.preventDefault()
+    const sectionType = e.dataTransfer.getData('application/x-section-type')
+    if (sectionType) {
+      insertActiveSectionAt(insertIndex, sectionType)
+      return
+    }
+    if (draggingSectionIndex !== null) {
+      const adjustedIndex = draggingSectionIndex < insertIndex ? insertIndex - 1 : insertIndex
+      moveActiveSection(draggingSectionIndex, adjustedIndex)
       setDraggingSectionIndex(null)
     }
   }
@@ -2222,6 +2259,7 @@ export default function AdminPages() {
                   undoPageChange={undoPageChange}
                   redoPageChange={redoPageChange}
                   onDrop={handlePreviewDrop}
+                  onDropAtIndex={handlePreviewDropAtIndex}
                   emptyText={pageDraft.content || 'Drag a section from the right panel into the preview.'}
                   insights={pageInsights}
                   selectedSectionId={editingSectionId}
@@ -2407,6 +2445,7 @@ export default function AdminPages() {
                     undoPageChange={undoPageChange}
                   redoPageChange={redoPageChange}
                   onDrop={handlePreviewDrop}
+                  onDropAtIndex={handlePreviewDropAtIndex}
                   emptyText="Drag a section from the right panel into the preview."
                   insights={pageInsights}
                   selectedSectionId={editingSectionId}
@@ -3433,13 +3472,24 @@ function SectionPreviewToolbar({
   )
 }
 
-function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, highlightedSectionId, previewMode, setPreviewMode, canUndo, canRedo, undoPageChange, redoPageChange, onDrop, emptyText, insights, selectedSectionId, selectedTopLevelId, selectedSectionForToolbar, updateSelectedSection }: any) {
+function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, highlightedSectionId, previewMode, setPreviewMode, canUndo, canRedo, undoPageChange, redoPageChange, onDrop, onDropAtIndex, emptyText, insights, selectedSectionId, selectedTopLevelId, selectedSectionForToolbar, updateSelectedSection }: any) {
   const previewModes = [
     { value: 'desktop', label: 'Desktop', icon: FiMonitor, width: 'w-full' },
     { value: 'tablet', label: 'Tablet', icon: FiTablet, width: 'max-w-[820px]' },
     { value: 'mobile', label: 'Mobile', icon: FiSmartphone, width: 'max-w-[390px]' }
   ]
   const activePreview = previewModes.find(mode => mode.value === previewMode) || previewModes[0]
+  const DropZone = ({ insertIndex }: { insertIndex: number }) => (
+    <div
+      onDragOver={handleBuilderDragAutoScroll}
+      onDrop={(event) => onDropAtIndex?.(insertIndex, event)}
+      className="group px-2 py-1"
+    >
+      <div className="rounded-xl border border-dashed border-transparent bg-transparent px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400 transition group-hover:border-blue-300 group-hover:bg-blue-50 group-hover:text-blue-600">
+        Drop Section Here
+      </div>
+    </div>
+  )
 
   return (
     <section className="card space-y-4 p-4 md:space-y-6 md:p-6">
@@ -3484,75 +3534,78 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
         <div className={`mx-auto min-h-[24rem] overflow-hidden rounded-lg bg-white shadow-sm transition-all duration-300 md:min-h-[calc(100vh-26rem)] ${activePreview.width}`}>
         {(sections || []).length > 0 ? (
           <div>
+            <DropZone insertIndex={0} />
             {(sections || []).map((section: any, index: number) => (
               (() => {
                 const sectionKey = String(section.id || index)
                 const seoIssueCount = Number(insights?.sectionIssueCounts?.[sectionKey] || 0)
                 return (
-              <div
-                key={sectionKey}
-                id={`preview-section-${section.id || index}`}
-                draggable
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setEditingSectionId(section.id || String(index))
-                }}
-                onDragStart={(e) => {
-                  setDraggingSectionIndex(index)
-                  e.dataTransfer.effectAllowed = 'move'
-                }}
-                onDragOver={handleBuilderDragAutoScroll}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  if (draggingSectionIndex !== null) moveSection(draggingSectionIndex, index)
-                  setDraggingSectionIndex(null)
-                }}
-                onDragEnd={() => setDraggingSectionIndex(null)}
-                className={`relative cursor-pointer transition ${draggingSectionIndex === index ? 'scale-[0.99] opacity-60 ring-2 ring-blue-500' : highlightedSectionId === sectionKey ? 'animate-pulse ring-4 ring-blue-500 ring-offset-2' : seoIssueCount > 0 ? 'ring-2 ring-orange-300 hover:ring-orange-400' : 'hover:ring-2 hover:ring-blue-300'}`}
-                title={`Edit ${getSectionTitle(section, index)}`}
-              >
-                {selectedTopLevelId === sectionKey && selectedSectionForToolbar && (
-                  <SectionPreviewToolbar
-                    section={selectedSectionForToolbar}
-                    onUpdate={(field, value) => updateSelectedSection?.(field, value)}
-                  />
-                )}
-                <div className="absolute left-3 top-3 z-10 rounded bg-blue-600 px-2 py-1 text-xs font-bold text-white shadow">
-                  {index + 1}
+              <div key={sectionKey}>
+                <div
+                  id={`preview-section-${section.id || index}`}
+                  draggable
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setEditingSectionId(section.id || String(index))
+                  }}
+                  onDragStart={(e) => {
+                    setDraggingSectionIndex(index)
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onDragOver={handleBuilderDragAutoScroll}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    if (draggingSectionIndex !== null) moveSection(draggingSectionIndex, index)
+                    setDraggingSectionIndex(null)
+                  }}
+                  onDragEnd={() => setDraggingSectionIndex(null)}
+                  className={`relative cursor-pointer transition ${draggingSectionIndex === index ? 'scale-[0.99] opacity-60 ring-2 ring-blue-500' : highlightedSectionId === sectionKey ? 'animate-pulse ring-4 ring-blue-500 ring-offset-2' : seoIssueCount > 0 ? 'ring-2 ring-orange-300 hover:ring-orange-400' : 'hover:ring-2 hover:ring-blue-300'}`}
+                  title={`Edit ${getSectionTitle(section, index)}`}
+                >
+                  {selectedTopLevelId === sectionKey && selectedSectionForToolbar && (
+                    <SectionPreviewToolbar
+                      section={selectedSectionForToolbar}
+                      onUpdate={(field, value) => updateSelectedSection?.(field, value)}
+                    />
+                  )}
+                  <div className="absolute left-3 top-3 z-10 rounded bg-blue-600 px-2 py-1 text-xs font-bold text-white shadow">
+                    {index + 1}
+                  </div>
+                  {seoIssueCount > 0 && (
+                    <div className="absolute right-3 top-3 z-10 rounded bg-orange-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow">
+                      SEO {seoIssueCount}
+                    </div>
+                  )}
+                  {section.isHidden ? (
+                    <div className="border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-600">
+                      <FiEyeOff className="mx-auto mb-2" />
+                      <p className="font-bold">{getSectionTitle(section, index)} is hidden</p>
+                      <p className="text-sm">It will not appear on the live page until you show it again.</p>
+                    </div>
+                  ) : (
+                    <PreviewSectionContent
+                      section={section}
+                      previewMode={previewMode}
+                      isSelected={selectedSectionId === sectionKey}
+                      selectedSectionId={selectedSectionId}
+                      onSelectNestedSection={(sectionId: string) => setEditingSectionId(sectionId)}
+                      onSectionItemsChange={(items: any[]) => {
+                        updateSelectedSection?.('items', items)
+                      }}
+                      onMapZoomChange={(zoom: number) => {
+                        updateSelectedSection?.('mapZoom', zoom)
+                      }}
+                      onTitleContentChange={(html: string, text: string) => {
+                        updateSelectedSection?.('titleHtml', html)
+                        updateSelectedSection?.('title', text)
+                      }}
+                      onBodyContentChange={(html: string) => {
+                        updateSelectedSection?.('body', html)
+                      }}
+                    />
+                  )}
                 </div>
-                {seoIssueCount > 0 && (
-                  <div className="absolute right-3 top-3 z-10 rounded bg-orange-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow">
-                    SEO {seoIssueCount}
-                  </div>
-                )}
-                {section.isHidden ? (
-                  <div className="border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-600">
-                    <FiEyeOff className="mx-auto mb-2" />
-                    <p className="font-bold">{getSectionTitle(section, index)} is hidden</p>
-                    <p className="text-sm">It will not appear on the live page until you show it again.</p>
-                  </div>
-                ) : (
-                  <PreviewSectionContent
-                    section={section}
-                    previewMode={previewMode}
-                    isSelected={selectedSectionId === sectionKey}
-                    selectedSectionId={selectedSectionId}
-                    onSelectNestedSection={(sectionId: string) => setEditingSectionId(sectionId)}
-                    onSectionItemsChange={(items: any[]) => {
-                      updateSelectedSection?.('items', items)
-                    }}
-                    onMapZoomChange={(zoom: number) => {
-                      updateSelectedSection?.('mapZoom', zoom)
-                    }}
-                    onTitleContentChange={(html: string, text: string) => {
-                      updateSelectedSection?.('titleHtml', html)
-                      updateSelectedSection?.('title', text)
-                    }}
-                    onBodyContentChange={(html: string) => {
-                      updateSelectedSection?.('body', html)
-                    }}
-                  />
-                )}
+                <DropZone insertIndex={index + 1} />
               </div>
                 )
               })()
@@ -5819,7 +5872,7 @@ function SectionColorControls({ section, index, updateSection }: any) {
               type="number"
               min="0"
               max="100"
-              value={section.backgroundOpacity ?? ''}
+              value={section.backgroundOpacity ?? 100}
               onChange={(e) => updateSection(index, 'backgroundOpacity', e.target.value)}
               className="w-full rounded-lg border px-2 py-1 text-right"
             />
