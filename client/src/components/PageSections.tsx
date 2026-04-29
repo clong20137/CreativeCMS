@@ -1024,7 +1024,8 @@ function getMapEmbedSrc(section: any) {
   if (embedUrl) return embedUrl
   const query = String(section?.mapQuery || '').trim()
   if (!query) return ''
-  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=14&output=embed`
+  const zoom = Math.min(19, Math.max(2, Number(section?.mapZoom || 14)))
+  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=${zoom}&output=embed`
 }
 
 function LeafletLocationMap({ section, height }: { section: any; height: number }) {
@@ -1035,6 +1036,7 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
   const [ready, setReady] = useState(false)
   const [resolvedLocations, setResolvedLocations] = useState<any[]>([])
   const onZoomChange = section?.__liveMap?.onZoomChange
+  const targetZoom = Math.min(19, Math.max(2, Number(section?.mapZoom || 14)))
 
   const pins = useMemo(() => Array.isArray(section.mapPins) ? section.mapPins : [], [section.mapPins])
 
@@ -1128,12 +1130,12 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
 
     if (points.length > 1) {
       map.fitBounds(points, { padding: [30, 30] })
-      if (Number.isFinite(Number(section.mapZoom))) map.setZoom(Number(section.mapZoom))
+      if (Number.isFinite(targetZoom)) map.setZoom(targetZoom)
     } else if (points.length === 1) {
-      map.setView(points[0], Math.max(12, Number(section.mapZoom || 14)))
+      map.setView(points[0], targetZoom)
     } else if (section.mapQuery) {
       geocodeLocation(section.mapQuery).then((center) => {
-        if (center) map.setView([center.lat, center.lng], Math.max(10, Number(section.mapZoom || 13)))
+        if (center) map.setView([center.lat, center.lng], targetZoom)
       })
     } else {
       map.setView([39.8283, -98.5795], 4)
@@ -1145,7 +1147,7 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
     return () => {
       if (markerLayerRef.current) markerLayerRef.current.clearLayers()
     }
-  }, [ready, resolvedLocations, section.mapQuery, section.mapZoom, onZoomChange])
+  }, [ready, resolvedLocations, section.mapQuery, targetZoom, onZoomChange])
 
   useEffect(() => () => {
     if (mapRef.current) {
@@ -1226,10 +1228,11 @@ function InteractiveMapSection({ section, inColumn = false }: { section: any; in
   const height = Math.min(1200, Math.max(220, Number(section.mapHeight || 420)))
   const pins = Array.isArray(section.mapPins) ? section.mapPins : []
   const hasLocationPins = pins.some((pin: any) => String(pin.query || '').trim() || (pin.lat !== '' && pin.lng !== ''))
+  const shouldUseLeaflet = hasLocationPins || (String(section?.mapQuery || '').trim() && !String(section?.mapEmbedUrl || '').trim())
   const content = (
     <>
       <SectionHeading section={section} fallbackTitle="Find Us" compact={inColumn} />
-      {hasLocationPins ? (
+      {shouldUseLeaflet ? (
         <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
           <LeafletLocationMap section={section} height={height} />
         </div>
