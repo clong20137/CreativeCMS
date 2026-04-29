@@ -1,7 +1,7 @@
-import { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState, type FocusEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
-import { FiAlignCenter, FiAlignLeft, FiAlignRight, FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiChevronDown, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiLink, FiMail, FiMapPin, FiMessageSquare, FiMonitor, FiMove, FiPhone, FiRotateCcw, FiRotateCw, FiSave, FiSearch, FiSmartphone, FiSquare, FiTablet, FiTrash2, FiType, FiVideo } from 'react-icons/fi'
+import { FiActivity, FiAlignCenter, FiAlignLeft, FiAlignRight, FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiChevronDown, FiColumns, FiCopy, FiEye, FiEyeOff, FiFileText, FiGrid, FiImage, FiLayout, FiLink, FiMail, FiMapPin, FiMessageSquare, FiMonitor, FiMove, FiPhone, FiRotateCcw, FiRotateCw, FiSave, FiSearch, FiSmartphone, FiSquare, FiTablet, FiTrash2, FiType, FiVideo } from 'react-icons/fi'
 import AdminLayout from '../components/AdminLayout'
 import { PageSkeleton } from '../components/SkeletonLoaders'
 import { useToast } from '../components/ToastProvider'
@@ -1983,17 +1983,39 @@ export default function AdminPages() {
 
   return (
     <AdminLayout
-      title="Website Pages"
+      title="Pro Builder"
       headerActions={(
-        <button
-          type="button"
-          onClick={() => setSeoModalOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-          aria-label="Open page score"
-          title="Open page score"
-        >
-          <FiSearch size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSeoModalOpen(true)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+            aria-label="Open page score"
+            title="Open page score"
+          >
+            <FiActivity size={18} />
+          </button>
+          {activeTab === 'Custom Pages' && selectedPageId !== 'new' && (
+            <button
+              type="button"
+              onClick={() => setDeletePromptOpen(true)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-100"
+              aria-label="Delete page"
+              title="Delete page"
+            >
+              <FiTrash2 size={18} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={saveActivePage}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700"
+            aria-label="Save page"
+            title="Save page"
+          >
+            <FiSave size={18} />
+          </button>
+        </div>
       )}
     >
       {message && <div className="mx-2 mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 md:mx-4 md:mb-6">{message}</div>}
@@ -2530,14 +2552,6 @@ export default function AdminPages() {
           />
         </Suspense>
       )}
-        <FloatingPageActions
-          isCustomPage={activeTab === 'Custom Pages'}
-          isSavedCustomPage={activeTab === 'Custom Pages' && selectedPageId !== 'new'}
-          isPublished={Boolean(pageDraft.isPublished)}
-          updatePublished={(value: boolean) => updatePageDraft('isPublished', value)}
-          savePage={saveActivePage}
-          deletePage={() => setDeletePromptOpen(true)}
-        />
         {newPageTemplatePromptOpen && activeTab === 'Custom Pages' && selectedPageId === 'new' && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
             <div className="max-h-[85vh] w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl">
@@ -2711,33 +2725,6 @@ export default function AdminPages() {
         </div>
       )}
     </AdminLayout>
-  )
-}
-
-function FloatingPageActions({ isCustomPage, isSavedCustomPage, isPublished, updatePublished, savePage, deletePage }: any) {
-  return (
-    <div className="fixed inset-x-3 bottom-[5.25rem] z-[90] lg:inset-x-auto lg:bottom-5 lg:right-5">
-      <div className="ml-auto flex max-w-xl flex-wrap items-center gap-2 rounded-xl border bg-white/95 p-2 shadow-2xl backdrop-blur md:gap-3 md:p-3">
-        {isCustomPage && (
-          <label className="inline-flex items-center gap-2 rounded-lg border px-2.5 py-2 text-[11px] font-semibold text-gray-700 md:px-3 md:text-sm">
-            <input type="checkbox" checked={Boolean(isPublished)} onChange={(e) => updatePublished(e.target.checked)} />
-            Published
-          </label>
-        )}
-        {isSavedCustomPage && (
-          <button type="button" onClick={deletePage} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-red-700 lg:flex-none lg:py-3">
-            <FiTrash2 />
-            <span className="hidden sm:inline">Delete Page</span>
-            <span className="sm:hidden">Delete</span>
-          </button>
-        )}
-        <button type="button" onClick={savePage} className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 lg:flex-none lg:py-3">
-          <FiSave />
-          <span className="hidden sm:inline">Save Page</span>
-          <span className="sm:hidden">Save</span>
-        </button>
-      </div>
-    </div>
   )
 }
 
@@ -3492,7 +3479,7 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
   )
 
   return (
-    <section className="card space-y-4 p-4 md:space-y-6 md:p-6">
+    <section className="space-y-4 md:space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Live Preview</h2>
@@ -3529,9 +3516,9 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
         onDragOver={handleBuilderDragAutoScroll}
         onDrop={onDrop}
         onClick={() => clearSelection?.()}
-        className="min-h-[26rem] overflow-auto rounded-lg border bg-gray-100 p-3 md:min-h-[calc(100vh-24rem)]"
+        className="min-h-[26rem] overflow-auto rounded-xl border border-gray-200 bg-gray-100/70 p-1.5 md:min-h-[calc(100vh-24rem)] md:p-2"
       >
-        <div className={`mx-auto min-h-[24rem] overflow-hidden rounded-lg bg-white shadow-sm transition-all duration-300 md:min-h-[calc(100vh-26rem)] ${activePreview.width}`}>
+        <div className={`mx-auto min-h-[24rem] overflow-hidden rounded-lg bg-white transition-all duration-300 md:min-h-[calc(100vh-26rem)] ${activePreview.width}`}>
         {(sections || []).length > 0 ? (
           <div>
             <DropZone insertIndex={0} />
@@ -3627,7 +3614,9 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
 
 function SectionBlockLibrary({ addSection, reusableSections = [], addReusableSection, saveSelectedSectionAsTemplate, saveSelectedSectionAsSyncedBlock, saveCurrentPageAsTemplate, deleteReusableSection, hasSelectedSection, hasSections }: any) {
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const saveMenuRef = useRef<HTMLDivElement | null>(null)
   const [sectionSearch, setSectionSearch] = useState('')
+  const [saveMenuOpen, setSaveMenuOpen] = useState(false)
   const filteredSections = sectionTypeOptions.filter(option => option.label.toLowerCase().includes(sectionSearch.trim().toLowerCase()))
   const filteredTemplates = reusableSections.filter((template: any) => {
     const search = sectionSearch.trim().toLowerCase()
@@ -3640,6 +3629,14 @@ function SectionBlockLibrary({ addSection, reusableSections = [], addReusableSec
     scrollRef.current?.scrollBy({ left: direction === 'left' ? -360 : 360, behavior: 'smooth' })
   }
 
+  const closeSaveMenu = () => setSaveMenuOpen(false)
+
+  const handleSaveMenuBlur = (event: FocusEvent<HTMLDivElement>) => {
+    if (!saveMenuRef.current?.contains(event.relatedTarget as Node | null)) {
+      closeSaveMenu()
+    }
+  }
+
   return (
     <div className="min-w-0">
       <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -3648,43 +3645,73 @@ function SectionBlockLibrary({ addSection, reusableSections = [], addReusableSec
           <p className="text-sm text-gray-600">Drag into the preview or click to add.</p>
         </div>
         <div className="flex w-full flex-col gap-2 lg:w-auto lg:flex-row">
-          <button
-            type="button"
-            onClick={saveSelectedSectionAsTemplate}
-            disabled={!hasSelectedSection}
-            className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
-          >
-            Save Block
-          </button>
-          <button
-            type="button"
-            onClick={saveSelectedSectionAsSyncedBlock}
-            disabled={!hasSelectedSection}
-            className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
-          >
-            Save Synced
-          </button>
-          <button
-            type="button"
-            onClick={saveCurrentPageAsTemplate}
-            disabled={!hasSections}
-            className="rounded-lg border px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
-          >
-            Save Layout
-          </button>
-          <label className="flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm text-gray-600 lg:w-72">
+          <div ref={saveMenuRef} onBlur={handleSaveMenuBlur} className="relative">
+            <button
+              type="button"
+              onClick={() => setSaveMenuOpen((open) => !open)}
+              className="inline-flex h-11 w-full items-center justify-center gap-1 rounded-lg border bg-white px-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus-visible:outline-none focus-visible:ring-0 lg:w-12"
+              aria-haspopup="menu"
+              aria-expanded={saveMenuOpen}
+              aria-label="Open save options"
+              title="Open save options"
+            >
+              <FiSave className="h-4 w-4" />
+              <FiChevronDown className={`h-4 w-4 transition-transform ${saveMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {saveMenuOpen && (
+              <div className="absolute right-0 z-30 mt-2 min-w-[12rem] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveSelectedSectionAsTemplate()
+                    closeSaveMenu()
+                  }}
+                  disabled={!hasSelectedSection}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <FiSquare className="h-4 w-4" />
+                  <span>Save Block</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveSelectedSectionAsSyncedBlock()
+                    closeSaveMenu()
+                  }}
+                  disabled={!hasSelectedSection}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <FiLink className="h-4 w-4" />
+                  <span>Save Synced</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveCurrentPageAsTemplate()
+                    closeSaveMenu()
+                  }}
+                  disabled={!hasSections}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <FiLayout className="h-4 w-4" />
+                  <span>Save Layout</span>
+                </button>
+              </div>
+            )}
+          </div>
+          <label className="flex w-full items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm text-gray-600 focus-within:border-gray-300 focus-within:outline-none focus-within:ring-0 lg:w-72">
             <FiSearch className="shrink-0" />
             <input
               value={sectionSearch}
               onChange={(e) => setSectionSearch(e.target.value)}
               placeholder="Search sections"
-              className="w-full border-0 bg-transparent p-0 text-sm outline-none focus:ring-0"
+              className="w-full border-0 bg-transparent p-0 text-sm outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
             />
           </label>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <button type="button" onClick={() => scrollSections('left')} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-white text-gray-700 transition hover:bg-blue-50 hover:text-blue-700" aria-label="Scroll sections left">
+        <button type="button" onClick={() => scrollSections('left')} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-white text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:outline-none focus-visible:ring-0" aria-label="Scroll sections left">
           <FiArrowLeft />
         </button>
         <div ref={scrollRef} className="no-scrollbar flex min-w-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain pb-1">
@@ -3700,7 +3727,7 @@ function SectionBlockLibrary({ addSection, reusableSections = [], addReusableSec
                   e.dataTransfer.setData('application/x-section-type', option.value)
                   e.dataTransfer.effectAllowed = 'copy'
                 }}
-                className="flex min-h-20 w-24 shrink-0 flex-col items-center justify-center gap-2 rounded-lg border px-3 py-2 text-center text-xs font-semibold transition hover:bg-gray-50 hover:text-blue-700"
+                className="flex min-h-20 w-24 shrink-0 flex-col items-center justify-center gap-2 rounded-lg border px-3 py-2 text-center text-xs font-semibold transition hover:bg-gray-50 hover:text-blue-700 focus:outline-none focus-visible:outline-none focus-visible:ring-0"
               >
                 <Icon size={20} />
                 <span className="leading-tight">{option.label}</span>
@@ -3713,7 +3740,7 @@ function SectionBlockLibrary({ addSection, reusableSections = [], addReusableSec
             </div>
           )}
         </div>
-        <button type="button" onClick={() => scrollSections('right')} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-white text-gray-700 transition hover:bg-blue-50 hover:text-blue-700" aria-label="Scroll sections right">
+        <button type="button" onClick={() => scrollSections('right')} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-white text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:outline-none focus-visible:ring-0" aria-label="Scroll sections right">
           <FiArrowRight />
         </button>
       </div>
@@ -3730,7 +3757,7 @@ function SectionBlockLibrary({ addSection, reusableSections = [], addReusableSec
                 : sectionTypeOptions.find(option => option.value === template.type)?.icon || FiLayout
               return (
                 <div key={template.id} className="w-40 shrink-0 rounded-lg border bg-white p-2 text-center">
-                  <button type="button" onClick={() => addReusableSection(template)} className="flex min-h-20 w-full flex-col items-center justify-center gap-2 rounded-md text-xs font-semibold hover:bg-blue-50 hover:text-blue-700">
+                  <button type="button" onClick={() => addReusableSection(template)} className="flex min-h-20 w-full flex-col items-center justify-center gap-2 rounded-md text-xs font-semibold hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:outline-none focus-visible:ring-0">
                     <Icon size={20} />
                     <span className="leading-tight">{template.name}</span>
                   </button>
