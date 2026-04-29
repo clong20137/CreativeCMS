@@ -4747,6 +4747,8 @@ function NestedBlockEditor({ block, columnIndex, blockIndex, updateBlock, remove
         <strong className="text-sm text-gray-900">{block.type}</strong>
         <button type="button" onClick={() => removeBlock(columnIndex, blockIndex)} className="text-sm font-semibold text-red-600">Remove</button>
       </div>
+      <SectionSpacingControls section={block} index={0} updateSection={updateNestedSection} />
+      <SectionColorControls section={block} index={0} updateSection={updateNestedSection} />
       {hasTitle && <input value={block.title || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'title', e.target.value)} placeholder="Header / section title" className="w-full px-4 py-2 border rounded-lg" />}
       {block.type === 'imageCard' && <input value={block.category || ''} onChange={(e) => updateBlock(columnIndex, blockIndex, 'category', e.target.value)} placeholder="Category / small heading" className="w-full px-4 py-2 border rounded-lg" />}
       {hasBody && <DeferredRichTextEditorField label="Text" value={block.body || ''} onChange={(value: string) => updateBlock(columnIndex, blockIndex, 'body', value)} placeholder="Format text..." minHeight={120} />}

@@ -947,7 +947,13 @@ function PreviewSelectableBlock({ block, children }: { block: any; children: Rea
 function ColumnBlock({ block, selectedSectionId, onSelectNestedSection }: { block: any; selectedSectionId?: string; onSelectNestedSection?: (sectionId: string) => void }) {
   const renderWithSelection = (content: ReactNode) => {
     if (!content) return null
-    return <PreviewSelectableBlock block={block}>{content}</PreviewSelectableBlock>
+    return (
+      <PreviewSelectableBlock block={block}>
+        <div style={getSectionSpacingStyle(block)}>
+          {content}
+        </div>
+      </PreviewSelectableBlock>
+    )
   }
 
   if (block.type === 'header') {
