@@ -241,7 +241,7 @@ function PageScoreBadge({ score, inverse = false }: { score: number; inverse?: b
   )
 }
 
-export default function AdminLayout({ title, children }: { title: string; children: ReactNode }) {
+export default function AdminLayout({ title, children, headerActions }: { title: string; children: ReactNode; headerActions?: ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isPageEditor = location.pathname === '/admin/pages'
@@ -851,44 +851,47 @@ export default function AdminLayout({ title, children }: { title: string; childr
                   <h1 className="text-xl font-bold text-gray-900 sm:text-2xl md:text-3xl">{title}</h1>
                 </div>
               </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={openNotifications}
-                  className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
-                  aria-label={`${notifications.total} new admin notifications`}
-                  title={`${notifications.newMessages} new messages, ${notifications.newTickets} new tickets`}
-                >
-                  <FiBell size={20} />
-                  {notifications.total > 0 && (
-                    <span className="absolute -right-2 -top-2 min-w-6 h-6 px-1 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center ring-2 ring-white">
-                      {notifications.total > 99 ? '99+' : notifications.total}
-                    </span>
+              <div className="flex items-center gap-2">
+                {headerActions}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={openNotifications}
+                    className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                    aria-label={`${notifications.total} new admin notifications`}
+                    title={`${notifications.newMessages} new messages, ${notifications.newTickets} new tickets`}
+                  >
+                    <FiBell size={20} />
+                    {notifications.total > 0 && (
+                      <span className="absolute -right-2 -top-2 min-w-6 h-6 px-1 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center ring-2 ring-white">
+                        {notifications.total > 99 ? '99+' : notifications.total}
+                      </span>
+                    )}
+                  </button>
+                  {notificationsOpen && (
+                    <div className="absolute right-0 top-12 z-50 w-[20rem] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border bg-white shadow-xl">
+                      <div className="border-b p-4">
+                        <h2 className="font-bold text-gray-900">Notifications</h2>
+                        <p className="text-sm text-gray-600">{notifications.total} item{notifications.total === 1 ? '' : 's'} need attention</p>
+                      </div>
+                      <div className="max-h-96 overflow-auto p-2">
+                        {notificationsLoading && <div className="p-3 text-sm text-gray-600">Loading notifications...</div>}
+                        {!notificationsLoading && notificationItems.length === 0 && <div className="p-3 text-sm text-gray-600">No new notifications.</div>}
+                        {!notificationsLoading && notificationItems.map(item => (
+                          <Link
+                            key={item.id}
+                            to={item.to}
+                            onClick={() => setNotificationsOpen(false)}
+                            className="block rounded-lg p-3 transition hover:bg-blue-50"
+                          >
+                            <span className="block text-sm font-bold text-gray-900">{item.title}</span>
+                            <span className="mt-1 line-clamp-2 block text-xs text-gray-600">{item.body}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </button>
-                {notificationsOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-[20rem] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border bg-white shadow-xl">
-                    <div className="border-b p-4">
-                      <h2 className="font-bold text-gray-900">Notifications</h2>
-                      <p className="text-sm text-gray-600">{notifications.total} item{notifications.total === 1 ? '' : 's'} need attention</p>
-                    </div>
-                    <div className="max-h-96 overflow-auto p-2">
-                      {notificationsLoading && <div className="p-3 text-sm text-gray-600">Loading notifications...</div>}
-                      {!notificationsLoading && notificationItems.length === 0 && <div className="p-3 text-sm text-gray-600">No new notifications.</div>}
-                      {!notificationsLoading && notificationItems.map(item => (
-                        <Link
-                          key={item.id}
-                          to={item.to}
-                          onClick={() => setNotificationsOpen(false)}
-                          className="block rounded-lg p-3 transition hover:bg-blue-50"
-                        >
-                          <span className="block text-sm font-bold text-gray-900">{item.title}</span>
-                          <span className="mt-1 line-clamp-2 block text-xs text-gray-600">{item.body}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>

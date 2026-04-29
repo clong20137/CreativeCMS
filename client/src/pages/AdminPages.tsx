@@ -130,12 +130,8 @@ const MAX_IMAGE_HEIGHT = 800
 const MAX_UPLOAD_DATA_URL_LENGTH = 3_000_000
 const PAGE_AUTOSAVE_KEY_PREFIX = 'creativecms:page-autosave:'
 const PAGE_AUTOSAVE_DELAY = 1200
-const LEFT_PANEL_WIDTH_KEY = 'creativecms:builder-left-panel-width'
 const RIGHT_PANEL_WIDTH_KEY = 'creativecms:builder-right-panel-width'
-const DEFAULT_LEFT_PANEL_WIDTH = 320
 const DEFAULT_RIGHT_PANEL_WIDTH = 420
-const MIN_LEFT_PANEL_WIDTH = 260
-const MAX_LEFT_PANEL_WIDTH = 520
 const MIN_RIGHT_PANEL_WIDTH = 320
 const MAX_RIGHT_PANEL_WIDTH = 620
 
@@ -940,8 +936,8 @@ export default function AdminPages() {
   const [highlightedSectionId, setHighlightedSectionId] = useState('')
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   const [sectionsPanelOpen, setSectionsPanelOpen] = useState(true)
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => readStoredPanelWidth(LEFT_PANEL_WIDTH_KEY, DEFAULT_LEFT_PANEL_WIDTH))
   const [rightPanelWidth, setRightPanelWidth] = useState(() => readStoredPanelWidth(RIGHT_PANEL_WIDTH_KEY, DEFAULT_RIGHT_PANEL_WIDTH))
+  const [seoModalOpen, setSeoModalOpen] = useState(false)
   const [savedSnapshot, setSavedSnapshot] = useState('')
   const [unsavedPrompt, setUnsavedPrompt] = useState<{ open: boolean; href?: string; action?: () => void }>({ open: false })
   const [draftRecoveryPrompt, setDraftRecoveryPrompt] = useState<{ open: boolean; key: string; label: string; updatedAt?: string; data?: any }>({ open: false, key: '', label: '' })
@@ -953,7 +949,7 @@ export default function AdminPages() {
   const skipNextNewPagePromptRef = useRef(false)
   const lastAutosavedSnapshotRef = useRef('')
   const autosaveTimerRef = useRef<number | null>(null)
-  const resizeStateRef = useRef<{ panel: 'left' | 'right' | null; startX: number; startWidth: number }>({ panel: null, startX: 0, startWidth: 0 })
+  const resizeStateRef = useRef<{ panel: 'right' | null; startX: number; startWidth: number }>({ panel: null, startX: 0, startWidth: 0 })
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -970,11 +966,6 @@ export default function AdminPages() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    window.localStorage.setItem(LEFT_PANEL_WIDTH_KEY, String(leftPanelWidth))
-  }, [leftPanelWidth])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
     window.localStorage.setItem(RIGHT_PANEL_WIDTH_KEY, String(rightPanelWidth))
   }, [rightPanelWidth])
 
@@ -984,13 +975,8 @@ export default function AdminPages() {
     const handleMouseMove = (event: MouseEvent) => {
       const state = resizeStateRef.current
       if (!state.panel) return
-      if (state.panel === 'left') {
-        const nextWidth = Math.min(MAX_LEFT_PANEL_WIDTH, Math.max(MIN_LEFT_PANEL_WIDTH, state.startWidth + (event.clientX - state.startX)))
-        setLeftPanelWidth(nextWidth)
-      } else {
-        const nextWidth = Math.min(MAX_RIGHT_PANEL_WIDTH, Math.max(MIN_RIGHT_PANEL_WIDTH, state.startWidth - (event.clientX - state.startX)))
-        setRightPanelWidth(nextWidth)
-      }
+      const nextWidth = Math.min(MAX_RIGHT_PANEL_WIDTH, Math.max(MIN_RIGHT_PANEL_WIDTH, state.startWidth - (event.clientX - state.startX)))
+      setRightPanelWidth(nextWidth)
     }
 
     const handleMouseUp = () => {
@@ -1571,19 +1557,19 @@ export default function AdminPages() {
     updateActiveSection(selectedSectionContext.topLevelIndex, field, value)
   }
   const saveActivePage = () => activeTab === 'Custom Pages' ? saveCustomPageEdits() : saveBuiltInPageEdits()
-  const startPanelResize = useCallback((panel: 'left' | 'right', event: React.MouseEvent<HTMLButtonElement>) => {
+  const startPanelResize = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     if (typeof window !== 'undefined' && window.innerWidth < 1280) return
     event.preventDefault()
     event.stopPropagation()
     resizeStateRef.current = {
-      panel,
+      panel: 'right',
       startX: event.clientX,
-      startWidth: panel === 'left' ? leftPanelWidth : rightPanelWidth
+      startWidth: rightPanelWidth
     }
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
-  }, [leftPanelWidth, rightPanelWidth])
-  const editorGridColumns = `${leftPanelWidth}px minmax(0, 1fr) ${sectionsPanelOpen ? `${rightPanelWidth}px` : '3.25rem'}`
+  }, [rightPanelWidth])
+  const editorGridColumns = `minmax(0, 1fr) ${sectionsPanelOpen ? `${rightPanelWidth}px` : '3.25rem'}`
   const activePageSnapshot = useMemo(() => JSON.stringify(activeTab === 'Custom Pages' ? pageDraft : getActivePayload(settings, activeTab)), [activeTab, pageDraft, settings])
   const autosaveStorageKey = useMemo(() => getAutosaveStorageKey(activeTab, selectedPageId), [activeTab, selectedPageId])
   const hasUnsavedChanges = Boolean(savedSnapshot) && savedSnapshot !== activePageSnapshot
@@ -1887,14 +1873,27 @@ export default function AdminPages() {
   ) : null
 
   return (
-    <AdminLayout title="Website Pages">
+    <AdminLayout
+      title="Website Pages"
+      headerActions={(
+        <button
+          type="button"
+          onClick={() => setSeoModalOpen(true)}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+          aria-label="Open page score"
+          title="Open page score"
+        >
+          <FiSearch size={18} />
+        </button>
+      )}
+    >
       {message && <div className="mx-2 mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 md:mx-4 md:mb-6">{message}</div>}
       {autosaveMessage && !message && <div className="mx-2 mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 md:mx-4 md:mb-6">{autosaveMessage}</div>}
       {error && <div className="mx-2 mb-4 rounded-lg border border-red-400 bg-red-100 p-4 text-sm text-red-700 md:mx-4 md:mb-6">{error}</div>}
       {loading ? <PageSkeleton /> : (
         <div className="grid min-h-[calc(100vh-12rem)] grid-cols-1 items-start gap-3 transition-all duration-300 xl:grid-cols-[var(--editor-grid)]" style={{ '--editor-grid': editorGridColumns } as any}>
-          <section className="relative z-20 min-w-0 rounded-2xl border border-gray-200 bg-white/96 p-3 shadow-lg backdrop-blur xl:sticky xl:top-24 xl:max-h-[calc(100vh-11rem)] xl:min-h-[calc(100vh-11rem)] xl:overflow-hidden xl:p-4">
-            <div className="xl:h-full xl:overflow-y-auto">
+          <div className="space-y-4 px-1 md:space-y-6">
+            <section className="z-20 rounded-2xl border border-gray-200 bg-white/96 p-3 shadow-lg backdrop-blur xl:sticky xl:top-24 xl:p-4">
               <SectionBlockLibrary
                 addSection={addActiveSection}
                 reusableSections={settings.reusableSections || []}
@@ -1906,19 +1905,7 @@ export default function AdminPages() {
                 hasSelectedSection={Boolean(selectedSection)}
                 hasSections={activeSectionsRaw.length > 0}
               />
-            </div>
-            <button
-              type="button"
-              onMouseDown={(event) => startPanelResize('left', event)}
-              className="absolute right-[-10px] top-1/2 hidden h-24 w-5 -translate-y-1/2 cursor-col-resize items-center justify-center xl:flex"
-              aria-label="Resize sections panel"
-              title="Resize sections panel"
-            >
-              <span className="h-14 w-1.5 rounded-full bg-gray-300 transition hover:bg-blue-500" />
-            </button>
-          </section>
-
-          <div className="min-w-0 space-y-4 px-1 md:space-y-6">
+            </section>
 
           {activeTab === 'Custom Pages' ? (
             <section className="block">
@@ -2365,7 +2352,7 @@ export default function AdminPages() {
             {sectionsPanelOpen && (
               <button
                 type="button"
-                onMouseDown={(event) => startPanelResize('right', event)}
+                onMouseDown={startPanelResize}
                 className="absolute left-[-10px] top-1/2 hidden h-24 w-5 -translate-y-1/2 cursor-col-resize items-center justify-center xl:flex"
                 aria-label="Resize section settings panel"
                 title="Resize section settings panel"
@@ -2586,6 +2573,28 @@ export default function AdminPages() {
               <button type="button" onClick={dismissDraftRecoveryPrompt} className="w-full rounded-lg border px-4 py-3 font-bold text-gray-700 transition hover:bg-gray-50">
                 Keep saved version
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {seoModalOpen && (
+        <div className="fixed inset-0 z-[105] flex items-center justify-center bg-black/50 p-4">
+          <div className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b px-6 py-5">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Page Score</h2>
+                <p className="mt-1 text-sm text-gray-600">Live SEO, mobile, and speed guidance for the page you are editing.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSeoModalOpen(false)}
+                className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+            <div className="overflow-y-auto p-6">
+              <PageScoreCard insights={pageInsights} />
             </div>
           </div>
         </div>
@@ -3362,7 +3371,6 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
 
   return (
     <section className="card space-y-4 p-4 md:space-y-6 md:p-6">
-      <PageScoreCard insights={insights} />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900 md:text-2xl">Live Preview</h2>
