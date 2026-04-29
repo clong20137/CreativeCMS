@@ -5134,11 +5134,15 @@ function FaqItemsEditor({ section, index, updateSection }: any) {
 
 function MapPinsEditor({ section, index, updateSection }: any) {
   const pins = Array.isArray(section.mapPins) ? section.mapPins : []
+  const [collapsedPins, setCollapsedPins] = useState<Record<string, boolean>>({})
   const updatePin = (pinIndex: number, field: string, value: any) => {
     updateSection(index, 'mapPins', pins.map((item: any, currentIndex: number) => currentIndex === pinIndex ? { ...item, [field]: value } : item))
   }
   const addPin = () => updateSection(index, 'mapPins', [...pins, makeMapPin({ label: `Location ${pins.length + 1}` })])
   const removePin = (pinIndex: number) => updateSection(index, 'mapPins', pins.filter((_: any, currentIndex: number) => currentIndex !== pinIndex))
+  const togglePinCollapse = (pinKey: string) => {
+    setCollapsedPins((current) => ({ ...current, [pinKey]: !current[pinKey] }))
+  }
 
   return (
     <div className="space-y-3 rounded-lg border bg-white p-3">
@@ -5150,56 +5154,75 @@ function MapPinsEditor({ section, index, updateSection }: any) {
         <button type="button" onClick={addPin} className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Add Pin</button>
       </div>
       {pins.map((pin: any, pinIndex: number) => (
-        <div key={pin.id || pinIndex} className="space-y-3 rounded-lg border p-3">
-          <input value={pin.label || ''} onChange={(e) => updatePin(pinIndex, 'label', e.target.value)} placeholder="Place name" className="w-full rounded-lg border px-4 py-2" />
-          <input value={pin.query || ''} onChange={(e) => updatePin(pinIndex, 'query', e.target.value)} placeholder="Address or place search used to lock this pin" className="w-full rounded-lg border px-4 py-2" />
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <input value={pin.lat ?? ''} onChange={(e) => updatePin(pinIndex, 'lat', e.target.value)} placeholder="Latitude (optional override)" className="w-full rounded-lg border px-4 py-2" />
-            <input value={pin.lng ?? ''} onChange={(e) => updatePin(pinIndex, 'lng', e.target.value)} placeholder="Longitude (optional override)" className="w-full rounded-lg border px-4 py-2" />
+        <div key={pin.id || pinIndex} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <button
+            type="button"
+            onClick={() => togglePinCollapse(String(pin.id || pinIndex))}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
+            aria-expanded={!collapsedPins[String(pin.id || pinIndex)]}
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900">Pin {pinIndex + 1}</p>
+              <p className="truncate text-sm text-gray-600">{pin.label || pin.query || 'Unnamed location'}</p>
+            </div>
+            <FiChevronDown className={`h-4 w-4 shrink-0 text-gray-500 transition-transform duration-300 ease-in-out ${collapsedPins[String(pin.id || pinIndex)] ? '' : 'rotate-180'}`} />
+          </button>
+
+          <div className={`grid transition-all duration-300 ease-in-out ${collapsedPins[String(pin.id || pinIndex)] ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
+            <div className="overflow-hidden">
+              <div className="space-y-3 border-t px-4 py-4">
+                <input value={pin.label || ''} onChange={(e) => updatePin(pinIndex, 'label', e.target.value)} placeholder="Place name" className="w-full rounded-lg border px-4 py-2" />
+                <input value={pin.query || ''} onChange={(e) => updatePin(pinIndex, 'query', e.target.value)} placeholder="Address or place search used to lock this pin" className="w-full rounded-lg border px-4 py-2" />
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <input value={pin.lat ?? ''} onChange={(e) => updatePin(pinIndex, 'lat', e.target.value)} placeholder="Latitude (optional override)" className="w-full rounded-lg border px-4 py-2" />
+                  <input value={pin.lng ?? ''} onChange={(e) => updatePin(pinIndex, 'lng', e.target.value)} placeholder="Longitude (optional override)" className="w-full rounded-lg border px-4 py-2" />
+                </div>
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                  <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
+                    <span>Pin color</span>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input type="color" value={pin.pinColor || '#2563eb'} onChange={(e) => updatePin(pinIndex, 'pinColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
+                      <input value={pin.pinColor || '#2563eb'} onChange={(e) => updatePin(pinIndex, 'pinColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
+                    </div>
+                  </label>
+                  <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
+                    <span>Pill background</span>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input type="color" value={pin.pillBackgroundColor || '#ffffff'} onChange={(e) => updatePin(pinIndex, 'pillBackgroundColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
+                      <input value={pin.pillBackgroundColor || '#ffffff'} onChange={(e) => updatePin(pinIndex, 'pillBackgroundColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
+                    </div>
+                  </label>
+                  <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
+                    <span>Pill text</span>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input type="color" value={pin.pillTextColor || '#111827'} onChange={(e) => updatePin(pinIndex, 'pillTextColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
+                      <input value={pin.pillTextColor || '#111827'} onChange={(e) => updatePin(pinIndex, 'pillTextColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
+                    </div>
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="grid grid-cols-[4rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+                    <span className="font-semibold">X</span>
+                    <input type="range" min="0" max="100" step="1" value={Number(pin.x || 50)} onChange={(e) => updatePin(pinIndex, 'x', e.target.value)} className="w-full accent-blue-600" />
+                    <div className="flex items-center gap-1">
+                      <input type="number" min="0" max="100" value={pin.x ?? ''} onChange={(e) => updatePin(pinIndex, 'x', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                      <span className="text-xs text-gray-500">%</span>
+                    </div>
+                  </label>
+                  <label className="grid grid-cols-[4rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
+                    <span className="font-semibold">Y</span>
+                    <input type="range" min="0" max="100" step="1" value={Number(pin.y || 50)} onChange={(e) => updatePin(pinIndex, 'y', e.target.value)} className="w-full accent-blue-600" />
+                    <div className="flex items-center gap-1">
+                      <input type="number" min="0" max="100" value={pin.y ?? ''} onChange={(e) => updatePin(pinIndex, 'y', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
+                      <span className="text-xs text-gray-500">%</span>
+                    </div>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500">Address or coordinates will keep the pin locked to the real map while zooming. X/Y is only used for the older overlay fallback.</p>
+                <button type="button" onClick={() => removePin(pinIndex)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Remove Pin</button>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
-              <span>Pin color</span>
-              <div className="mt-2 flex items-center gap-2">
-                <input type="color" value={pin.pinColor || '#2563eb'} onChange={(e) => updatePin(pinIndex, 'pinColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
-                <input value={pin.pinColor || '#2563eb'} onChange={(e) => updatePin(pinIndex, 'pinColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
-              </div>
-            </label>
-            <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
-              <span>Pill background</span>
-              <div className="mt-2 flex items-center gap-2">
-                <input type="color" value={pin.pillBackgroundColor || '#ffffff'} onChange={(e) => updatePin(pinIndex, 'pillBackgroundColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
-                <input value={pin.pillBackgroundColor || '#ffffff'} onChange={(e) => updatePin(pinIndex, 'pillBackgroundColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
-              </div>
-            </label>
-            <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
-              <span>Pill text</span>
-              <div className="mt-2 flex items-center gap-2">
-                <input type="color" value={pin.pillTextColor || '#111827'} onChange={(e) => updatePin(pinIndex, 'pillTextColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
-                <input value={pin.pillTextColor || '#111827'} onChange={(e) => updatePin(pinIndex, 'pillTextColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
-              </div>
-            </label>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label className="grid grid-cols-[4rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
-              <span className="font-semibold">X</span>
-              <input type="range" min="0" max="100" step="1" value={Number(pin.x || 50)} onChange={(e) => updatePin(pinIndex, 'x', e.target.value)} className="w-full accent-blue-600" />
-              <div className="flex items-center gap-1">
-                <input type="number" min="0" max="100" value={pin.x ?? ''} onChange={(e) => updatePin(pinIndex, 'x', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
-                <span className="text-xs text-gray-500">%</span>
-              </div>
-            </label>
-            <label className="grid grid-cols-[4rem_1fr_5rem] items-center gap-3 text-sm text-gray-700">
-              <span className="font-semibold">Y</span>
-              <input type="range" min="0" max="100" step="1" value={Number(pin.y || 50)} onChange={(e) => updatePin(pinIndex, 'y', e.target.value)} className="w-full accent-blue-600" />
-              <div className="flex items-center gap-1">
-                <input type="number" min="0" max="100" value={pin.y ?? ''} onChange={(e) => updatePin(pinIndex, 'y', e.target.value)} className="w-full rounded-lg border px-2 py-1 text-right" />
-                <span className="text-xs text-gray-500">%</span>
-              </div>
-            </label>
-          </div>
-          <p className="text-xs text-gray-500">Address or coordinates will keep the pin locked to the real map while zooming. X/Y is only used for the older overlay fallback.</p>
-          <button type="button" onClick={() => removePin(pinIndex)} className="rounded-lg border px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Remove Pin</button>
         </div>
       ))}
       {pins.length === 0 && <div className="rounded-lg border border-dashed p-4 text-center text-gray-600">No pins yet. Add a pin to show a saved location pill on top of the map.</div>}

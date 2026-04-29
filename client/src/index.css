@@ -1528,6 +1528,10 @@ html.dark-mode .login-page {
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
 }
 
+.creativecms-leaflet-pin-wrap:hover .creativecms-leaflet-pin {
+  animation: creativecms-map-pin-wiggle 650ms ease-in-out;
+}
+
 .creativecms-leaflet-pin-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -1544,6 +1548,27 @@ html.dark-mode .login-page {
   padding: 0.35rem 0.8rem;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
   border: 1px solid transparent;
+}
+
+@keyframes creativecms-map-pin-wiggle {
+  0% {
+    transform: rotate(-45deg) translate3d(0, 0, 0);
+  }
+  20% {
+    transform: rotate(-52deg) translate3d(-1px, -1px, 0);
+  }
+  40% {
+    transform: rotate(-39deg) translate3d(1px, -1px, 0);
+  }
+  60% {
+    transform: rotate(-49deg) translate3d(-1px, 0, 0);
+  }
+  80% {
+    transform: rotate(-42deg) translate3d(1px, 0, 0);
+  }
+  100% {
+    transform: rotate(-45deg) translate3d(0, 0, 0);
+  }
 }
 
 .rich-text-content ul,
