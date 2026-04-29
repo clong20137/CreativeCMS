@@ -1060,6 +1060,7 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
   const markerLayerRef = useRef<any>(null)
   const regionLayerRef = useRef<any>(null)
   const zoomSyncRef = useRef<number | null>(null)
+  const popupCloseTimerRef = useRef<number | null>(null)
   const [ready, setReady] = useState(false)
   const [resolvedLocations, setResolvedLocations] = useState<any[]>([])
   const onZoomChange = section?.__liveMap?.onZoomChange
@@ -1183,10 +1184,15 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
       if (pin.showPopupCard) {
         const popupButtonLabel = String(pin.popupButtonLabel || '').trim()
         const popupButtonUrl = String(pin.popupButtonUrl || '').trim()
+        const popupButtonStyle = [
+          `--popup-button-bg:${escapeHtmlForAttribute(pin.popupButtonBackgroundColor || '#2563eb')}`,
+          `--popup-button-text:${escapeHtmlForAttribute(pin.popupButtonTextColor || '#ffffff')}`,
+          `--popup-button-hover:${escapeHtmlForAttribute(pin.popupButtonHoverBackgroundColor || '#1d4ed8')}`
+        ].join(';')
         const popupButtonHtml = popupButtonLabel && popupButtonUrl
           ? (isExternalOrSpecialUrl(popupButtonUrl)
-              ? `<a href="${escapeHtmlForAttribute(popupButtonUrl)}" class="creativecms-map-popup-button" ${popupButtonUrl.startsWith('http') ? 'target="_blank" rel="noreferrer noopener"' : ''}>${escapeHtmlForAttribute(popupButtonLabel)}</a>`
-              : `<a href="${escapeHtmlForAttribute(popupButtonUrl)}" class="creativecms-map-popup-button">${escapeHtmlForAttribute(popupButtonLabel)}</a>`)
+              ? `<a href="${escapeHtmlForAttribute(popupButtonUrl)}" class="creativecms-map-popup-button" style="${popupButtonStyle}" ${popupButtonUrl.startsWith('http') ? 'target="_blank" rel="noreferrer noopener"' : ''}>${escapeHtmlForAttribute(popupButtonLabel)}</a>`
+              : `<a href="${escapeHtmlForAttribute(popupButtonUrl)}" class="creativecms-map-popup-button" style="${popupButtonStyle}">${escapeHtmlForAttribute(popupButtonLabel)}</a>`)
           : ''
         marker.bindPopup(
           `<div class="creativecms-map-popup-card">
@@ -1196,8 +1202,30 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
           </div>`,
           { closeButton: false, autoClose: false, closeOnClick: false, className: 'creativecms-map-popup-shell', offset: [0, -18] }
         )
-        marker.on('mouseover', () => marker.openPopup())
-        marker.on('mouseout', () => marker.closePopup())
+        const clearPopupCloseTimer = () => {
+          if (popupCloseTimerRef.current) {
+            window.clearTimeout(popupCloseTimerRef.current)
+            popupCloseTimerRef.current = null
+          }
+        }
+        const queuePopupClose = () => {
+          clearPopupCloseTimer()
+          popupCloseTimerRef.current = window.setTimeout(() => {
+            marker.closePopup()
+          }, 180)
+        }
+        marker.on('mouseover', () => {
+          clearPopupCloseTimer()
+          marker.openPopup()
+        })
+        marker.on('mouseout', queuePopupClose)
+        marker.on('popupopen', () => {
+          const popupElement = marker.getPopup?.()?.getElement?.()
+          if (!popupElement) return
+          popupElement.addEventListener('mouseenter', clearPopupCloseTimer)
+          popupElement.addEventListener('mouseleave', queuePopupClose)
+        })
+        marker.on('popupclose', clearPopupCloseTimer)
       }
     })
 
@@ -1226,6 +1254,10 @@ function LeafletLocationMap({ section, height }: { section: any; height: number 
   }, [ready, resolvedLocations, regions, section.mapQuery, targetZoom, onZoomChange])
 
   useEffect(() => () => {
+    if (popupCloseTimerRef.current) {
+      window.clearTimeout(popupCloseTimerRef.current)
+      popupCloseTimerRef.current = null
+    }
     if (mapRef.current) {
       mapRef.current.remove()
       mapRef.current = null

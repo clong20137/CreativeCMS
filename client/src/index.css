@@ -1601,17 +1601,18 @@ html.dark-mode .login-page {
   justify-content: center;
   margin-top: 0.75rem;
   border-radius: 9999px;
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--popup-button-bg, #2563eb);
+  color: var(--popup-button-text, #ffffff);
   padding: 0.45rem 0.8rem;
   font-size: 0.75rem;
   font-weight: 700;
   text-decoration: none;
+  transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
 .creativecms-map-popup-button:hover {
-  background: #1d4ed8;
-  color: #ffffff;
+  background: var(--popup-button-hover, #1d4ed8);
+  color: var(--popup-button-text, #ffffff);
 }
 
 .creativecms-map-region-tooltip {

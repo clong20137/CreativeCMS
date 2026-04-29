@@ -517,6 +517,9 @@ function makeMapPin(overrides: Record<string, any> = {}) {
     showPopupCard: false,
     popupButtonLabel: '',
     popupButtonUrl: '',
+    popupButtonBackgroundColor: '#2563eb',
+    popupButtonTextColor: '#ffffff',
+    popupButtonHoverBackgroundColor: '#1d4ed8',
     pinColor: '#2563eb',
     pillBackgroundColor: '#ffffff',
     pillTextColor: '#111827',
@@ -5415,9 +5418,34 @@ function MapPinsEditor({ section, index, updateSection }: any) {
                   <input value={pin.lng ?? ''} onChange={(e) => updatePin(pinIndex, 'lng', e.target.value)} placeholder="Longitude (optional override)" className="w-full rounded-lg border px-4 py-2" />
                 </div>
                 {pin.showPopupCard && (
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <input value={pin.popupButtonLabel || ''} onChange={(e) => updatePin(pinIndex, 'popupButtonLabel', e.target.value)} placeholder="Popup button label (optional)" className="w-full rounded-lg border px-4 py-2" />
-                    <input value={pin.popupButtonUrl || ''} onChange={(e) => updatePin(pinIndex, 'popupButtonUrl', e.target.value)} placeholder="Popup button URL (optional)" className="w-full rounded-lg border px-4 py-2" />
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <input value={pin.popupButtonLabel || ''} onChange={(e) => updatePin(pinIndex, 'popupButtonLabel', e.target.value)} placeholder="Popup button label (optional)" className="w-full rounded-lg border px-4 py-2" />
+                      <input value={pin.popupButtonUrl || ''} onChange={(e) => updatePin(pinIndex, 'popupButtonUrl', e.target.value)} placeholder="Popup button URL (optional)" className="w-full rounded-lg border px-4 py-2" />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                      <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
+                        <span>Popup button bg</span>
+                        <div className="mt-2 flex items-center gap-2">
+                          <input type="color" value={pin.popupButtonBackgroundColor || '#2563eb'} onChange={(e) => updatePin(pinIndex, 'popupButtonBackgroundColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
+                          <input value={pin.popupButtonBackgroundColor || '#2563eb'} onChange={(e) => updatePin(pinIndex, 'popupButtonBackgroundColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
+                        </div>
+                      </label>
+                      <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
+                        <span>Popup button text</span>
+                        <div className="mt-2 flex items-center gap-2">
+                          <input type="color" value={pin.popupButtonTextColor || '#ffffff'} onChange={(e) => updatePin(pinIndex, 'popupButtonTextColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
+                          <input value={pin.popupButtonTextColor || '#ffffff'} onChange={(e) => updatePin(pinIndex, 'popupButtonTextColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
+                        </div>
+                      </label>
+                      <label className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm font-semibold text-gray-700">
+                        <span>Popup button hover</span>
+                        <div className="mt-2 flex items-center gap-2">
+                          <input type="color" value={pin.popupButtonHoverBackgroundColor || '#1d4ed8'} onChange={(e) => updatePin(pinIndex, 'popupButtonHoverBackgroundColor', e.target.value)} className="h-11 w-14 shrink-0 rounded border p-1" />
+                          <input value={pin.popupButtonHoverBackgroundColor || '#1d4ed8'} onChange={(e) => updatePin(pinIndex, 'popupButtonHoverBackgroundColor', e.target.value)} className="min-w-0 flex-1 rounded-lg border px-3 py-2 font-normal" />
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 )}
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
