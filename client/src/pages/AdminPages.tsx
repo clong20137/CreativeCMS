@@ -3168,6 +3168,34 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
 
     const decorateNestedBlocks = (inputSection: any): any => {
       if (!inputSection || inputSection.type !== 'columns' || !Array.isArray(inputSection.items)) return inputSection
+      const decorateImageCardItems = (block: any, updateBlockItems: (items: any[]) => void) => {
+        if (block?.type !== 'imageCards' || !Array.isArray(block.items)) return block
+        return {
+          ...block,
+          items: block.items.map((cardItem: any, cardIndex: number) => ({
+            ...cardItem,
+            body: cardItem.body ?? cardItem.description ?? '',
+            __liveEdit: {
+              titleEditable: true,
+              bodyEditable: true,
+              onTitleChange: (html: string, text: string) => {
+                updateBlockItems(block.items.map((item: any, currentIndex: number) => currentIndex === cardIndex ? {
+                  ...item,
+                  title: text,
+                  titleHtml: html
+                } : item))
+              },
+              onBodyChange: (html: string) => {
+                updateBlockItems(block.items.map((item: any, currentIndex: number) => currentIndex === cardIndex ? {
+                  ...item,
+                  body: html,
+                  description: html
+                } : item))
+              }
+            }
+          }))
+        }
+      }
       const decorateFaqItems = (block: any, updateBlockItems: (items: any[]) => void) => {
         if (block?.type !== 'faq' || !Array.isArray(block.items)) return block
         return {
@@ -3212,8 +3240,8 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
             ? column.sections.map((block: any) => {
               const blockId = String(block?.id || '')
               const isNestedSelected = Boolean(blockId) && blockId === selectedSectionId
-              const withFaqDecoration = isNestedSelected
-                ? decorateFaqItems(block, (items: any[]) => onSectionItemsChange?.(
+              const withImageCardDecoration = isNestedSelected
+                ? decorateImageCardItems(block, (items: any[]) => onSectionItemsChange?.(
                     inputSection.items.map((columnItem: any) => (
                       columnItem.id === column.id
                         ? {
@@ -3224,6 +3252,18 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
                     ))
                   ))
                 : block
+              const withFaqDecoration = isNestedSelected
+                ? decorateFaqItems(withImageCardDecoration, (items: any[]) => onSectionItemsChange?.(
+                    inputSection.items.map((columnItem: any) => (
+                      columnItem.id === column.id
+                        ? {
+                            ...columnItem,
+                            sections: (column.sections || []).map((columnBlock: any) => columnBlock.id === block.id ? { ...columnBlock, items } : columnBlock)
+                          }
+                        : columnItem
+                    ))
+                  ))
+                : withImageCardDecoration
               return {
                 ...withFaqDecoration,
                 __previewSelection: blockId
@@ -3281,8 +3321,40 @@ const PreviewSectionContent = memo(function PreviewSectionContent({
       }
     }
 
+    const decorateTopLevelImageCards = (inputSection: any) => {
+      if (inputSection?.type !== 'imageCards' || !Array.isArray(inputSection.items) || !isSelected) return inputSection
+      return {
+        ...inputSection,
+        items: inputSection.items.map((cardItem: any, cardIndex: number) => ({
+          ...cardItem,
+          body: cardItem.body ?? cardItem.description ?? '',
+          __liveEdit: {
+            titleEditable: true,
+            bodyEditable: true,
+            onTitleChange: (html: string, text: string) => {
+              const nextItems = inputSection.items.map((item: any, currentIndex: number) => currentIndex === cardIndex ? {
+                ...item,
+                title: text,
+                titleHtml: html
+              } : item)
+              onSectionItemsChange?.(nextItems)
+            },
+            onBodyChange: (html: string) => {
+              const nextItems = inputSection.items.map((item: any, currentIndex: number) => currentIndex === cardIndex ? {
+                ...item,
+                body: html,
+                description: html
+              } : item)
+              onSectionItemsChange?.(nextItems)
+            }
+          }
+        }))
+      }
+    }
+
     let baseSection = decorateNestedBlocks(section)
     baseSection = decorateTopLevelFaq(baseSection)
+    baseSection = decorateTopLevelImageCards(baseSection)
     if (!isSelected && selectedSectionId !== section?.id) return baseSection
     return {
       ...baseSection,

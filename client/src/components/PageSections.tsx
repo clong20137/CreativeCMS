@@ -802,6 +802,16 @@ function PageSection({
     return <ButtonSection section={section} />
   }
 
+  if (section.type === 'paragraph') {
+    return (
+      <section className="section-padding">
+        <div className="container max-w-4xl">
+          <EditableRichTextContent section={section} className="text-lg leading-relaxed text-gray-700" />
+        </div>
+      </section>
+    )
+  }
+
   if (section.type === 'map') {
     return <InteractiveMapSection section={section} />
   }
@@ -1582,8 +1592,14 @@ function ImageCard({ item }: { item: any }) {
       {item.imageUrl && !item.image && <img src={resolveAssetUrl(item.imageUrl)} alt={item.title || ''} loading="lazy" decoding="async" className="h-64 w-full object-cover" />}
       <div className="p-6">
         {(item.category || item.subtitle) && <p className="text-sm font-semibold text-blue-600">{item.category || item.subtitle}</p>}
-        {item.title && <h3 className="mt-2 text-2xl font-bold text-gray-900">{item.title}</h3>}
-        {(item.description || item.body) && <p className="mt-3 text-gray-600">{item.description || item.body}</p>}
+        {item.title && (
+          <h3 className="mt-2 text-2xl font-bold text-gray-900">
+            {item.titleHtml
+              ? <EditableHeadingText section={item} />
+              : <EditableHeadingText section={item} fallbackText={item.title} />}
+          </h3>
+        )}
+        {(item.description || item.body) && <EditableRichTextContent section={{ ...item, body: item.body || item.description || '' }} className="mt-3 text-gray-600" />}
         {item.buttonLabel && item.buttonUrl && (
           <Link to={item.buttonUrl} className="section-button mt-5 inline-flex items-center justify-center gap-2" aria-label={item.buttonLabel || 'Button'}>
             {item.buttonLabel}
