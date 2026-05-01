@@ -284,6 +284,18 @@ async function ensureCustomPagesSchema() {
     }
   }
 
+  if (!table.ownerClientId) {
+    try {
+      await queryInterface.addColumn('CustomPages', 'ownerClientId', {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      })
+    } catch (error) {
+      const message = String(error?.message || '')
+      if (!message.includes('Duplicate column')) throw error
+    }
+  }
+
   customPagesSchemaReady = true
 }
 

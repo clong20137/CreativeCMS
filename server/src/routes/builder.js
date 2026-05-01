@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { randomBytes, randomUUID } from 'crypto'
+import { DataTypes } from 'sequelize'
 import CustomPage from '../models/CustomPage.js'
 import SiteDemo from '../models/SiteDemo.js'
 import PortfolioItem from '../models/PortfolioItem.js'
@@ -19,6 +20,7 @@ const router = express.Router()
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const uploadsDir = path.resolve(__dirname, '../../uploads')
+let customPagesSchemaReady = false
 
 const BUILDER_SITE_SETTING_KEYS = new Set([
   'heroTitle',
@@ -64,6 +66,37 @@ const mediaMimeExtensions = {
 }
 
 router.use(verifyToken, ensureActiveUser, requireRole('builder', 'admin'))
+
+async function ensureCustomPagesSchema() {
+  if (customPagesSchemaReady) return
+
+  const queryInterface = CustomPage.sequelize.getQueryInterface()
+  const table = await queryInterface.describeTable('CustomPages').catch(() => null)
+  if (!table) return
+
+  const addColumn = async (name, config) => {
+    if (table[name]) return
+    await queryInterface.addColumn('CustomPages', name, config).catch((error) => {
+      if (!String(error?.message || '').includes('Duplicate column')) throw error
+    })
+  }
+
+  await addColumn('previewToken', {
+    type: DataTypes.STRING,
+    allowNull: true
+  })
+  await addColumn('showPageHeader', {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true
+  })
+  await addColumn('ownerClientId', {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  })
+
+  customPagesSchemaReady = true
+}
 
 function getMediaType(mimeType) {
   if (mimeType.startsWith('image/')) return 'image'
@@ -198,6 +231,7 @@ router.put('/site-settings', async (req, res) => {
 router.get('/pages', async (req, res) => {
   try {
     await getBuilderScope(req)
+    await ensureCustomPagesSchema()
     const pages = await CustomPage.findAll({ order: [['createdAt', 'DESC']] })
     res.json(pages)
   } catch (error) {
@@ -208,6 +242,7 @@ router.get('/pages', async (req, res) => {
 router.post('/pages', async (req, res) => {
   try {
     const scope = await getBuilderScope(req)
+    await ensureCustomPagesSchema()
     const page = await CustomPage.create({
       title: cleanString(req.body.title, 160) || 'New Page',
       slug: cleanString(req.body.slug, 200),
@@ -239,6 +274,7 @@ router.post('/pages', async (req, res) => {
 router.put('/pages/:id', async (req, res) => {
   try {
     const scope = await getBuilderScope(req)
+    await ensureCustomPagesSchema()
     const page = await CustomPage.findByPk(req.params.id)
     if (!page) return res.status(404).json({ error: 'Page not found' })
     await page.update({
@@ -271,6 +307,7 @@ router.put('/pages/:id', async (req, res) => {
 router.delete('/pages/:id', async (req, res) => {
   try {
     const scope = await getBuilderScope(req)
+    await ensureCustomPagesSchema()
     const page = await CustomPage.findByPk(req.params.id)
     if (!page) return res.status(404).json({ error: 'Page not found' })
     const title = page.title
@@ -294,6 +331,7 @@ router.delete('/pages/:id', async (req, res) => {
 router.post('/pages/:id/preview-link', async (req, res) => {
   try {
     await getBuilderScope(req)
+    await ensureCustomPagesSchema()
     const page = await CustomPage.findByPk(req.params.id)
     if (!page) return res.status(404).json({ error: 'Page not found' })
     if (!page.previewToken) {
@@ -309,6 +347,7 @@ router.post('/pages/:id/preview-link', async (req, res) => {
 router.post('/pages/:id/preview-link/regenerate', async (req, res) => {
   try {
     await getBuilderScope(req)
+    await ensureCustomPagesSchema()
     const page = await CustomPage.findByPk(req.params.id)
     if (!page) return res.status(404).json({ error: 'Page not found' })
     page.previewToken = randomBytes(16).toString('hex')

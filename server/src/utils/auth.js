@@ -1,7 +1,45 @@
 import jwt from 'jsonwebtoken'
+import { DataTypes } from 'sequelize'
 import User from '../models/User.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+let builderUserSchemaReady = false
+
+async function ensureBuilderUserSchema() {
+  if (builderUserSchemaReady) return
+
+  const queryInterface = User.sequelize.getQueryInterface()
+  const table = await queryInterface.describeTable('Users').catch(() => null)
+  if (!table) return
+
+  const addColumn = async (name, config) => {
+    if (table[name]) return
+    await queryInterface.addColumn('Users', name, config).catch((error) => {
+      if (!String(error?.message || '').includes('Duplicate column')) throw error
+    })
+  }
+
+  await addColumn('ownerClientId', {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  })
+
+  await addColumn('cmsLicenseId', {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  })
+
+  await queryInterface.changeColumn('Users', 'role', {
+    type: DataTypes.ENUM('admin', 'client', 'builder'),
+    allowNull: false,
+    defaultValue: 'client'
+  }).catch((error) => {
+    const message = String(error?.message || '')
+    if (!message.includes('Duplicate column')) throw error
+  })
+
+  builderUserSchemaReady = true
+}
 
 export function verifyToken(req, res, next) {
   try {
@@ -19,6 +57,7 @@ export function verifyToken(req, res, next) {
 
 export async function ensureActiveUser(req, res, next) {
   try {
+    await ensureBuilderUserSchema()
     const user = await User.findByPk(req.userId, { attributes: ['id', 'role', 'isActive', 'ownerClientId', 'cmsLicenseId'] })
     if (!user) return res.status(404).json({ error: 'User not found' })
     if (user.isActive === false) {

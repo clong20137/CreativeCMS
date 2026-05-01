@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { Suspense, lazy, useEffect } from 'react'
 import Navigation from './components/Navigation'
 import Footer from './components/Footer'
@@ -82,6 +82,7 @@ function AppRoutes() {
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/homepage" element={<Navigate to="/" replace />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/portfolio/:id" element={<PortfolioDetail />} />
             <Route path="/services" element={<Services />} />
