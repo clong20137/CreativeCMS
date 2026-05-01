@@ -283,6 +283,7 @@ export default function AdminLayout({ title, children, headerActions }: { title:
   const [customPages, setCustomPages] = useState<any[]>([])
   const [siteSettings, setSiteSettings] = useState<any>({})
   const [builderOutlineState, setBuilderOutlineState] = useState<{ pageKey: string; sections: any[] }>({ pageKey: '', sections: [] })
+  const [builderOutlineActiveState, setBuilderOutlineActiveState] = useState<{ pageKey: string; sectionId: string; topLevelId: string }>({ pageKey: '', sectionId: '', topLevelId: '' })
   const [theme, setTheme] = useState(() => localStorage.getItem('siteTheme') || 'light')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -414,8 +415,21 @@ export default function AdminLayout({ title, children, headerActions }: { title:
       })
     }
 
+    const handleOutlineActive = (event: Event) => {
+      const detail = (event as CustomEvent<{ pageKey?: string; sectionId?: string; topLevelId?: string }>).detail
+      setBuilderOutlineActiveState({
+        pageKey: String(detail?.pageKey || ''),
+        sectionId: String(detail?.sectionId || ''),
+        topLevelId: String(detail?.topLevelId || '')
+      })
+    }
+
     window.addEventListener('creative-builder-outline-sync', handleOutlineSync as EventListener)
-    return () => window.removeEventListener('creative-builder-outline-sync', handleOutlineSync as EventListener)
+    window.addEventListener('creative-builder-outline-active', handleOutlineActive as EventListener)
+    return () => {
+      window.removeEventListener('creative-builder-outline-sync', handleOutlineSync as EventListener)
+      window.removeEventListener('creative-builder-outline-active', handleOutlineActive as EventListener)
+    }
   }, [])
 
   const handleLogout = () => {
@@ -481,6 +495,8 @@ export default function AdminLayout({ title, children, headerActions }: { title:
     : `builtIn:${activePageParams.get('page') || 'home'}`
   const fallbackOutlineSections = getOutlineSectionsForPage({ location, siteSettings, customPages })
   const currentOutlineSections = builderOutlineState.pageKey === activePageKey ? builderOutlineState.sections : fallbackOutlineSections
+  const activeOutlineSectionId = builderOutlineActiveState.pageKey === activePageKey ? builderOutlineActiveState.sectionId : ''
+  const activeOutlineTopLevelId = builderOutlineActiveState.pageKey === activePageKey ? builderOutlineActiveState.topLevelId : ''
 
   const emitBuilderOutlineEvent = useCallback((name: string, detail: Record<string, any>) => {
     window.dispatchEvent(new CustomEvent(name, { detail }))
@@ -581,6 +597,7 @@ export default function AdminLayout({ title, children, headerActions }: { title:
       <div className="mt-2 ml-4 space-y-1 border-l border-gray-200 pl-3">
         {currentOutlineSections.map((section: any, index: number) => {
           const sectionId = String(section?.id || index)
+          const isTopLevelSelected = activeOutlineTopLevelId === sectionId || activeOutlineSectionId === sectionId
           const nestedBlocks = section?.type === 'columns'
             ? (Array.isArray(section?.items) ? section.items.flatMap((item: any) => Array.isArray(item?.sections) ? item.sections : []) : [])
             : []
@@ -599,7 +616,9 @@ export default function AdminLayout({ title, children, headerActions }: { title:
                   if (!sourceId || sourceId === sectionId) return
                   emitBuilderOutlineEvent('creative-builder-outline-move', { sourceId, targetId: sectionId })
                 }}
-                className="group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                className={`group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold transition ${
+                  isTopLevelSelected ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+                }`}
               >
                 <FiMove className="h-3.5 w-3.5 shrink-0 opacity-60" />
                 {outlineEditingId === sectionId ? (
@@ -670,8 +689,11 @@ export default function AdminLayout({ title, children, headerActions }: { title:
                 <div className="ml-4 space-y-1 border-l border-gray-100 pl-3">
                   {nestedBlocks.map((block: any, blockIndex: number) => {
                     const blockId = String(block?.id || `${sectionId}-nested-${blockIndex}`)
+                    const isBlockSelected = activeOutlineSectionId === blockId
                     return (
-                      <div key={blockId} className="flex items-center gap-2 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-50 hover:text-gray-700">
+                      <div key={blockId} className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs transition ${
+                        isBlockSelected ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                      }`}>
                         <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
                         {outlineEditingId === blockId ? (
                           <input

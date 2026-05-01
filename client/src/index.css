@@ -496,7 +496,7 @@ html.dark-mode .demo-page .text-green-800 {
 }
 
 .builder-section-highlight {
-  animation: sectionFlash 1.4s ease-in-out;
+  animation: sectionFlash 1.6s ease-in-out infinite;
 }
 
 .no-scrollbar {

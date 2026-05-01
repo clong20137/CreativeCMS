@@ -1202,7 +1202,6 @@ export default function AdminPages() {
     window.setTimeout(() => {
       document.getElementById(`preview-section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 80)
-    window.setTimeout(() => setHighlightedSectionId(current => current === sectionId ? '' : current), 1800)
   }
 
   const saveSettingsTab = async (e: React.FormEvent) => {
@@ -1513,7 +1512,6 @@ export default function AdminPages() {
     window.setTimeout(() => {
       document.getElementById(`preview-section-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 80)
-    window.setTimeout(() => setHighlightedSectionId((current) => current === highlightId ? '' : current), 1800)
   }
   const addActiveSection = (type: string) => activeTab === 'Custom Pages' ? addPageSection(type) : addBuiltInSection(activeBuiltInPageKey, type)
   const insertActiveSectionAt = (insertIndex: number, type: string) => activeTab === 'Custom Pages'
@@ -1731,6 +1729,23 @@ export default function AdminPages() {
     () => findSectionContextById(activeSections, activeSectionsRaw, editingSectionId),
     [activeSections, activeSectionsRaw, editingSectionId]
   )
+  useEffect(() => {
+    if (!selectedSectionContext) {
+      setHighlightedSectionId('')
+      return
+    }
+    setHighlightedSectionId(selectedSectionContext.topLevelId)
+  }, [selectedSectionContext])
+  useEffect(() => {
+    const pageKey = activeTab === 'Custom Pages' ? `custom:${selectedPageId}` : `builtIn:${activeBuiltInPageKey || 'home'}`
+    window.dispatchEvent(new CustomEvent('creative-builder-outline-active', {
+      detail: {
+        pageKey,
+        sectionId: editingSectionId || '',
+        topLevelId: selectedSectionContext?.topLevelId || ''
+      }
+    }))
+  }, [activeBuiltInPageKey, activeTab, editingSectionId, selectedPageId, selectedSectionContext?.topLevelId])
   const selectedSectionIndex = selectedSectionContext?.topLevelIndex ?? -1
   const selectedSection = selectedSectionContext?.resolvedSection || null
   const selectedSectionRaw = selectedSectionContext?.rawSection || null
@@ -2532,7 +2547,6 @@ export default function AdminPages() {
                   sections={activeSections}
                   draggingSectionIndex={draggingSectionIndex}
                   setDraggingSectionIndex={setDraggingSectionIndex}
-                  moveSection={moveActiveSection}
                   setEditingSectionId={setEditingSectionId}
                   clearSelection={() => setEditingSectionId('')}
                   highlightedSectionId={highlightedSectionId}
@@ -2718,7 +2732,6 @@ export default function AdminPages() {
                     sections={activeSections}
                     draggingSectionIndex={draggingSectionIndex}
                     setDraggingSectionIndex={setDraggingSectionIndex}
-                    moveSection={moveActiveSection}
                     setEditingSectionId={setEditingSectionId}
                     clearSelection={() => setEditingSectionId('')}
                     highlightedSectionId={highlightedSectionId}
@@ -3721,7 +3734,7 @@ function SectionPreviewToolbar({
   )
 }
 
-function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, moveSection, setEditingSectionId, clearSelection, highlightedSectionId, previewMode, setPreviewMode, canUndo, canRedo, undoPageChange, redoPageChange, onDrop, onDropAtIndex, emptyText, insights, selectedSectionId, selectedTopLevelId, selectedSectionForToolbar, updateSelectedSection }: any) {
+function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSectionIndex, setEditingSectionId, clearSelection, highlightedSectionId, previewMode, setPreviewMode, canUndo, canRedo, undoPageChange, redoPageChange, onDrop, onDropAtIndex, emptyText, insights, selectedSectionId, selectedTopLevelId, selectedSectionForToolbar, updateSelectedSection }: any) {
   const previewModes = [
     { value: 'desktop', label: 'Desktop', icon: FiMonitor, width: 'w-full' },
     { value: 'tablet', label: 'Tablet', icon: FiTablet, width: 'max-w-[820px]' },
@@ -3802,11 +3815,6 @@ function PagePreviewPanel({ title, sections, draggingSectionIndex, setDraggingSe
                     e.dataTransfer.effectAllowed = 'move'
                   }}
                   onDragOver={handleBuilderDragAutoScroll}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    if (draggingSectionIndex !== null) moveSection(draggingSectionIndex, index)
-                    setDraggingSectionIndex(null)
-                  }}
                   onDragEnd={() => setDraggingSectionIndex(null)}
                   className={`relative cursor-pointer transition ${draggingSectionIndex === index ? 'scale-[0.99] opacity-60 ring-2 ring-blue-500' : highlightedSectionId === sectionKey ? 'builder-section-highlight ring-4 ring-blue-500 ring-offset-2' : seoIssueCount > 0 ? 'ring-2 ring-orange-300 hover:ring-orange-400' : 'hover:ring-2 hover:ring-blue-300'}`}
                   title={`Edit ${getSectionTitle(section, index)}`}
