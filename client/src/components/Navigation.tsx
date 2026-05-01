@@ -45,6 +45,10 @@ function sortNavigationItems(items: NavigationItem[]): NavigationItem[] {
     .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
 }
 
+function isExternalUrl(url: string) {
+  return /^(https?:)?\/\//i.test(url) || /^mailto:/i.test(url) || /^tel:/i.test(url)
+}
+
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null)
@@ -54,6 +58,14 @@ export default function Navigation() {
   const [clientPortalName, setClientPortalName] = useState('Client Portal')
   const [logoUrl, setLogoUrl] = useState('')
   const [logoSize, setLogoSize] = useState(40)
+  const [announcementBar, setAnnouncementBar] = useState({
+    enabled: false,
+    text: '',
+    linkLabel: '',
+    linkUrl: '',
+    backgroundColor: '#111827',
+    textColor: '#ffffff'
+  })
   const [navigationItems, setNavigationItems] = useState<NavigationItem[]>(defaultNavigationItems)
   const [hasActivePlugins, setHasActivePlugins] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('siteTheme') || 'light')
@@ -79,6 +91,14 @@ export default function Navigation() {
         setClientPortalName(settings.clientPortalName || 'Client Portal')
         setLogoUrl(resolveAssetUrl(settings.logoUrl))
         setLogoSize(Number(settings.logoSize) || 40)
+        setAnnouncementBar({
+          enabled: settings.announcementBarEnabled === true,
+          text: String(settings.announcementBarText || ''),
+          linkLabel: String(settings.announcementBarLinkLabel || ''),
+          linkUrl: String(settings.announcementBarLinkUrl || ''),
+          backgroundColor: String(settings.announcementBarBackgroundColor || '#111827'),
+          textColor: String(settings.announcementBarTextColor || '#ffffff')
+        })
         if (Array.isArray(settings.navigationItems) && settings.navigationItems.length) {
           setNavigationItems(settings.navigationItems.map(normalizeNavigationItem))
         } else if (settings.pageMetadata) {
@@ -128,6 +148,8 @@ export default function Navigation() {
     }))
 
   const visibleNavigationItems = filterNavigationItems(navigationItems)
+  const showAnnouncementBar = announcementBar.enabled && Boolean(announcementBar.text.trim())
+  const announcementLinkUrl = String(announcementBar.linkUrl || '').trim()
 
   const linkClassName = (url: string) => {
     const active = url === '/plugins' ? isSectionActive(url) : isActive(url)
@@ -136,6 +158,49 @@ export default function Navigation() {
 
   return (
     <nav className="site-nav sticky top-0 z-50 shadow-lg">
+      {showAnnouncementBar && (
+        <div
+          className="site-announcement-bar border-b"
+          style={{
+            backgroundColor: announcementBar.backgroundColor,
+            color: announcementBar.textColor,
+            borderColor: 'rgba(255,255,255,0.12)'
+          }}
+        >
+          <div className="container py-3">
+            <div className="flex flex-col gap-2 text-center md:flex-row md:items-center md:justify-between md:text-left">
+              <p className="text-sm font-semibold" style={{ color: announcementBar.textColor }}>
+                {announcementBar.text}
+              </p>
+              {announcementBar.linkLabel.trim() && announcementLinkUrl && (
+                isExternalUrl(announcementLinkUrl) ? (
+                  <a
+                    href={announcementLinkUrl}
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition"
+                    style={{
+                      color: announcementBar.textColor,
+                      borderColor: announcementBar.textColor
+                    }}
+                  >
+                    {announcementBar.linkLabel}
+                  </a>
+                ) : (
+                  <Link
+                    to={announcementLinkUrl}
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition"
+                    style={{
+                      color: announcementBar.textColor,
+                      borderColor: announcementBar.textColor
+                    }}
+                  >
+                    {announcementBar.linkLabel}
+                  </Link>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="container">
         <div className="flex justify-between items-center min-h-16 py-2">
           <Link to="/" className="site-nav-brand flex items-center text-2xl font-bold">

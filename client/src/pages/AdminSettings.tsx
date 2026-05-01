@@ -15,6 +15,12 @@ const emptySettings = {
   emailFromName: '',
   showPoweredBy: true,
   poweredByText: 'Powered by Creative CMS',
+  announcementBarEnabled: false,
+  announcementBarText: '',
+  announcementBarLinkLabel: '',
+  announcementBarLinkUrl: '',
+  announcementBarBackgroundColor: '#111827',
+  announcementBarTextColor: '#ffffff',
   themeFontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   themeBackgroundColor: '#ffffff',
   themeSurfaceColor: '#ffffff',
@@ -243,7 +249,7 @@ async function compactSettingsPayload(settings: Record<string, any>) {
 function getActiveTabPayload(settings: typeof emptySettings, activeTab: string) {
   const payloadMap: Record<string, string[]> = {
     'Setup Wizard': ['setupWizardCompleted', 'setupWizardCompletedAt', 'onboardingState', 'siteName', 'logoUrl', 'contactEmail'],
-    General: ['siteName', 'faviconUrl', 'logoUrl', 'logoSize', 'clientPortalName', 'adminPortalName', 'emailFromName', 'showPoweredBy', 'poweredByText'],
+    General: ['siteName', 'faviconUrl', 'logoUrl', 'logoSize', 'clientPortalName', 'adminPortalName', 'emailFromName', 'showPoweredBy', 'poweredByText', 'announcementBarEnabled', 'announcementBarText', 'announcementBarLinkLabel', 'announcementBarLinkUrl', 'announcementBarBackgroundColor', 'announcementBarTextColor'],
     Theme: [
       'themeFontFamily',
       'themeBackgroundColor',
@@ -1108,6 +1114,64 @@ export default function AdminSettings() {
                         <p className="mt-2 text-sm text-gray-600">{card.body}</p>
                       </div>
                     ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border p-4 space-y-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Announcement and Promo Bar</h3>
+                    <p className="text-sm text-gray-600">Show a site-wide message above the navigation with an optional call to action.</p>
+                  </div>
+                  <label className="flex items-center gap-3 rounded-lg border px-4 py-3">
+                    <input type="checkbox" checked={settings.announcementBarEnabled === true} onChange={(e) => handleChange('announcementBarEnabled', e.target.checked)} />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-800">Enable announcement bar</span>
+                      <span className="block text-xs text-gray-500">Useful for promos, launches, waitlists, seasonal offers, and urgent updates.</span>
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-sm font-semibold text-gray-700">Message</span>
+                      <textarea
+                        value={settings.announcementBarText || ''}
+                        onChange={(e) => handleChange('announcementBarText', e.target.value)}
+                        placeholder="Now booking June projects. Reserve your spot before the next sprint fills up."
+                        rows={3}
+                        className="w-full px-4 py-2 border rounded-lg"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-semibold text-gray-700">CTA label</span>
+                      <input value={settings.announcementBarLinkLabel || ''} onChange={(e) => handleChange('announcementBarLinkLabel', e.target.value)} placeholder="Book a call" className="w-full px-4 py-2 border rounded-lg" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-semibold text-gray-700">CTA URL</span>
+                      <input value={settings.announcementBarLinkUrl || ''} onChange={(e) => handleChange('announcementBarLinkUrl', e.target.value)} placeholder="/contact" className="w-full px-4 py-2 border rounded-lg" />
+                    </label>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <ColorField label="Bar background" value={settings.announcementBarBackgroundColor || '#111827'} onChange={(value) => handleChange('announcementBarBackgroundColor', value)} />
+                    <ColorField label="Bar text" value={settings.announcementBarTextColor || '#ffffff'} onChange={(value) => handleChange('announcementBarTextColor', value)} />
+                  </div>
+                  <div
+                    className="rounded-xl border px-4 py-3"
+                    style={{
+                      backgroundColor: settings.announcementBarBackgroundColor || '#111827',
+                      color: settings.announcementBarTextColor || '#ffffff'
+                    }}
+                  >
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <p className="text-sm font-medium">
+                        {settings.announcementBarText?.trim() || 'Your announcement or promo message will preview here.'}
+                      </p>
+                      {settings.announcementBarLinkLabel?.trim() ? (
+                        <span
+                          className="inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold"
+                          style={{ borderColor: settings.announcementBarTextColor || '#ffffff', color: settings.announcementBarTextColor || '#ffffff' }}
+                        >
+                          {settings.announcementBarLinkLabel}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
                 {(settings.logoUrl || settings.faviconUrl) && (

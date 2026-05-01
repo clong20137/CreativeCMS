@@ -43,6 +43,30 @@ const SiteSetting = sequelize.define('SiteSetting', {
     type: DataTypes.STRING,
     defaultValue: 'Powered by Creative CMS'
   },
+  announcementBarEnabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  announcementBarText: {
+    type: DataTypes.TEXT,
+    defaultValue: ''
+  },
+  announcementBarLinkLabel: {
+    type: DataTypes.STRING,
+    defaultValue: ''
+  },
+  announcementBarLinkUrl: {
+    type: DataTypes.STRING,
+    defaultValue: ''
+  },
+  announcementBarBackgroundColor: {
+    type: DataTypes.STRING,
+    defaultValue: '#111827'
+  },
+  announcementBarTextColor: {
+    type: DataTypes.STRING,
+    defaultValue: '#ffffff'
+  },
   themeFontFamily: {
     type: DataTypes.STRING,
     defaultValue: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'

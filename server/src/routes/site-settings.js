@@ -610,6 +610,12 @@ async function ensureSiteSettingsSchema() {
     ['emailFromName', { type: DataTypes.STRING, allowNull: true }],
     ['showPoweredBy', { type: DataTypes.BOOLEAN, allowNull: true }],
     ['poweredByText', { type: DataTypes.STRING, allowNull: true }],
+    ['announcementBarEnabled', { type: DataTypes.BOOLEAN, allowNull: true }],
+    ['announcementBarText', { type: DataTypes.TEXT, allowNull: true }],
+    ['announcementBarLinkLabel', { type: DataTypes.STRING, allowNull: true }],
+    ['announcementBarLinkUrl', { type: DataTypes.STRING, allowNull: true }],
+    ['announcementBarBackgroundColor', { type: DataTypes.STRING, allowNull: true }],
+    ['announcementBarTextColor', { type: DataTypes.STRING, allowNull: true }],
     ['themeBackgroundColor', { type: DataTypes.STRING, allowNull: true }],
     ['themeSurfaceColor', { type: DataTypes.STRING, allowNull: true }],
     ['themeHeadingColor', { type: DataTypes.STRING, allowNull: true }],
@@ -739,6 +745,30 @@ export async function getOrCreateSiteSettings() {
     settings.poweredByText = 'Powered by Creative CMS'
     changed = true
   }
+  if (typeof settings.announcementBarEnabled !== 'boolean') {
+    settings.announcementBarEnabled = false
+    changed = true
+  }
+  if (typeof settings.announcementBarText !== 'string') {
+    settings.announcementBarText = ''
+    changed = true
+  }
+  if (typeof settings.announcementBarLinkLabel !== 'string') {
+    settings.announcementBarLinkLabel = ''
+    changed = true
+  }
+  if (typeof settings.announcementBarLinkUrl !== 'string') {
+    settings.announcementBarLinkUrl = ''
+    changed = true
+  }
+  if (!settings.announcementBarBackgroundColor) {
+    settings.announcementBarBackgroundColor = '#111827'
+    changed = true
+  }
+  if (!settings.announcementBarTextColor) {
+    settings.announcementBarTextColor = '#ffffff'
+    changed = true
+  }
   if (!Array.isArray(settings.footerNavigationColumns) || settings.footerNavigationColumns.length === 0) {
     settings.footerNavigationColumns = buildFooterColumns(settings)
     changed = true
@@ -760,6 +790,12 @@ function publicSiteSettings(settings) {
     'emailFromName',
     'showPoweredBy',
     'poweredByText',
+    'announcementBarEnabled',
+    'announcementBarText',
+    'announcementBarLinkLabel',
+    'announcementBarLinkUrl',
+    'announcementBarBackgroundColor',
+    'announcementBarTextColor',
     'logoText',
     'themeFontFamily',
     'themeBackgroundColor',
