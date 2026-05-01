@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { adminAPI } from '../services/api'
 import { DashboardStatsSkeleton } from '../components/SkeletonLoaders'
 import AdminLayout from '../components/AdminLayout'
+import { buildSiteHealthDashboard } from '../utils/siteHealth'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -13,6 +14,7 @@ export default function AdminDashboard() {
   const [invoices, setInvoices] = useState<any[]>([])
   const [monthlyRevenue, setMonthlyRevenue] = useState<any[]>([])
   const [seoDashboard, setSeoDashboard] = useState<any>(null)
+  const [siteHealth, setSiteHealth] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -26,13 +28,16 @@ export default function AdminDashboard() {
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true)
-      const [data, clientsData, subscriptionsData, invoicesData, revenueData, seoData] = await Promise.all([
+      const [data, clientsData, subscriptionsData, invoicesData, revenueData, seoData, settingsData, pagesData, mediaData] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.getClients(),
         adminAPI.getSubscriptions(),
         adminAPI.getInvoices(),
         adminAPI.getMonthlyRevenue(),
-        adminAPI.getSeoDashboard().catch((seoError: any) => ({ errors: [seoError.error || 'Failed to load SEO dashboard'] }))
+        adminAPI.getSeoDashboard().catch((seoError: any) => ({ errors: [seoError.error || 'Failed to load SEO dashboard'] })),
+        adminAPI.getSiteSettings(),
+        adminAPI.getPages(),
+        adminAPI.getMedia('all', 'all')
       ])
       setStats(data)
       setClients(clientsData)
@@ -40,6 +45,7 @@ export default function AdminDashboard() {
       setInvoices(invoicesData)
       setMonthlyRevenue(revenueData)
       setSeoDashboard(seoData)
+      setSiteHealth(buildSiteHealthDashboard({ settings: settingsData, pages: pagesData, media: mediaData }))
     } catch (err: any) {
       setError(err.error || 'Failed to load stats')
     } finally {
@@ -120,6 +126,7 @@ export default function AdminDashboard() {
         </div>
 
         <SeoDashboardPanel data={seoDashboard} />
+        <SiteHealthPanel data={siteHealth} navigate={navigate} />
 
         {stats && (
           <div className="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-6">
@@ -288,6 +295,131 @@ function SeoDashboardPanel({ data }: any) {
       </div>
     </section>
   )
+}
+
+function SiteHealthPanel({ data, navigate }: any) {
+  if (!data) return null
+
+  const summary = data.summary || {}
+  const topIssues = data.topIssues || []
+  const orphanPages = data.orphanPages || []
+  const mediaAssetsMissingAlt = data.mediaAssetsMissingAlt || []
+
+  return (
+    <section className="mt-8 space-y-4 sm:space-y-5 lg:mt-10 lg:space-y-6">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">Site Health Dashboard</h2>
+          <p className="text-sm text-gray-600 sm:text-base">Page quality, navigation coverage, link health, and media accessibility across the CMS.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => navigate('/admin/pages')} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Open Pages</button>
+          <button onClick={() => navigate('/admin/navigation')} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Open Navigation</button>
+          <button onClick={() => navigate('/admin/media')} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Open Media</button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <HealthMetricCard label="Avg Page Score" value={`${summary.averageScore || 0}/100`} tone={Number(summary.averageScore || 0) >= 85 ? 'good' : Number(summary.averageScore || 0) >= 65 ? 'warn' : 'bad'} hint={`${summary.totalPages || 0} pages audited`} />
+        <HealthMetricCard label="Pages With Issues" value={summary.pagesWithIssues || 0} tone={(summary.pagesWithIssues || 0) === 0 ? 'good' : 'warn'} hint="Pages with one or more audit flags" />
+        <HealthMetricCard label="Broken Internal Links" value={summary.brokenLinks || 0} tone={(summary.brokenLinks || 0) === 0 ? 'good' : 'bad'} hint="Relative links that do not start with /" />
+        <HealthMetricCard label="Missing Alt" value={`${summary.missingAltImages || 0} / ${summary.missingAltAssets || 0}`} tone={(summary.missingAltImages || 0) + (summary.missingAltAssets || 0) === 0 ? 'good' : 'warn'} hint="Page images / media assets" />
+        <HealthMetricCard label="Orphan Pages" value={summary.orphanPages || 0} tone={(summary.orphanPages || 0) === 0 ? 'good' : 'warn'} hint="Pages not linked in primary nav" />
+        <HealthMetricCard label="Unpublished Custom Pages" value={summary.unpublishedPages || 0} tone={(summary.unpublishedPages || 0) === 0 ? 'neutral' : 'warn'} hint="Draft-only custom pages" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3 xl:gap-6">
+        <div className="card p-4 sm:p-5 lg:p-6 xl:col-span-2">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 sm:text-xl">Pages Needing Attention</h3>
+              <p className="text-sm text-gray-600">Sorted by issue count, then lowest score.</p>
+            </div>
+            <button onClick={() => navigate('/admin/pages')} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Review Pages</button>
+          </div>
+          <div className="space-y-3">
+            {topIssues.map((page: any) => (
+              <div key={page.id} className="rounded-lg bg-gray-100 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-gray-900">{page.label}</p>
+                    <p className="text-sm text-gray-600">{page.path} • {page.source}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ScoreChip value={page.overall} />
+                    <span className={`rounded-full px-2 py-1 text-xs font-bold uppercase ${page.issuesCount >= 4 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{page.issuesCount} issue{page.issuesCount === 1 ? '' : 's'}</span>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  {page.isOrphan && <span className="rounded-full bg-yellow-100 px-2 py-1 font-semibold text-yellow-800">Orphan</span>}
+                  {page.isUnpublished && <span className="rounded-full bg-gray-200 px-2 py-1 font-semibold text-gray-700">Unpublished</span>}
+                  {page.diagnostics.seo.slice(0, 2).map((issue: string) => <span key={issue} className="rounded-full bg-red-50 px-2 py-1 font-medium text-red-700">{issue}</span>)}
+                  {page.diagnostics.mobile.slice(0, 1).map((issue: string) => <span key={issue} className="rounded-full bg-yellow-50 px-2 py-1 font-medium text-yellow-700">{issue}</span>)}
+                  {page.diagnostics.speed.slice(0, 1).map((issue: string) => <span key={issue} className="rounded-full bg-blue-50 px-2 py-1 font-medium text-blue-700">{issue}</span>)}
+                </div>
+              </div>
+            ))}
+            {topIssues.length === 0 && <p className="text-gray-600">No page-level health warnings right now.</p>}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="card p-4 sm:p-5 lg:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-bold text-gray-900 sm:text-xl">Orphan Pages</h3>
+              <button onClick={() => navigate('/admin/navigation')} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Fix Nav</button>
+            </div>
+            <div className="space-y-3">
+              {orphanPages.map((page: any) => (
+                <div key={page.id} className="rounded-lg bg-gray-100 p-3">
+                  <p className="font-semibold text-gray-900">{page.label}</p>
+                  <p className="text-sm text-gray-600">{page.path}</p>
+                </div>
+              ))}
+              {orphanPages.length === 0 && <p className="text-gray-600">Every audited page is linked from the main navigation.</p>}
+            </div>
+          </div>
+
+          <div className="card p-4 sm:p-5 lg:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-bold text-gray-900 sm:text-xl">Media Missing Alt</h3>
+              <button onClick={() => navigate('/admin/media')} className="rounded-lg border px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Open Media</button>
+            </div>
+            <div className="space-y-3">
+              {mediaAssetsMissingAlt.map((asset: any) => (
+                <div key={asset.id} className="rounded-lg bg-gray-100 p-3">
+                  <p className="font-semibold text-gray-900">{asset.title || asset.filename || `Asset #${asset.id}`}</p>
+                  <p className="text-sm text-gray-600">{asset.mediaType || 'asset'}{asset.usageCount ? ` • used ${asset.usageCount} time${asset.usageCount === 1 ? '' : 's'}` : ''}</p>
+                </div>
+              ))}
+              {mediaAssetsMissingAlt.length === 0 && <p className="text-gray-600">No media assets are missing alt text.</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function HealthMetricCard({ label, value, hint, tone = 'neutral' }: any) {
+  const toneClasses: Record<string, string> = {
+    neutral: 'bg-gray-100 text-gray-700',
+    good: 'bg-green-100 text-green-700',
+    warn: 'bg-yellow-100 text-yellow-700',
+    bad: 'bg-red-100 text-red-700'
+  }
+  return (
+    <div className="card p-4 sm:p-5">
+      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold uppercase ${toneClasses[tone] || toneClasses.neutral}`}>{label}</span>
+      <p className="mt-3 text-2xl font-bold text-gray-900">{value}</p>
+      <p className="mt-1 text-sm text-gray-600">{hint}</p>
+    </div>
+  )
+}
+
+function ScoreChip({ value }: { value: number }) {
+  const tone = value >= 85 ? 'bg-green-100 text-green-700' : value >= 65 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+  return <span className={`rounded-full px-2 py-1 text-xs font-bold ${tone}`}>{value}/100</span>
 }
 
 function MiniMetric({ icon: Icon, label, value }: any) {
